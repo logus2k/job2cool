@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Player</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #ffe39e;
+            margin-bottom: 24px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+            transition: background 0.3s;
+        }
+
+        .status-dot.connected { background: #4caf50; }
+        .status-dot.error { background: #e53935; }
+        .status-dot.speaking { background: #2196f3; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: #16213e;
+            border: 1px solid #2a3a5c;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.5;
+            padding: 14px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus { border-color: #ffe39e; }
+
+        textarea::placeholder { color: #556; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-speak {
+            background: #ffe39e;
+            color: #1a1a2e;
+        }
+
+        .btn-speak:hover:not(:disabled) { background: #ffd566; }
+
+        .btn-stop {
+            background: #e53935;
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) { background: #c62828; }
+
+        .btn-save {
+            background: #2a3a5c;
+            color: #e0e0e0;
+        }
+
+        .btn-save:hover:not(:disabled) { background: #3a4a6c; }
+
+        select {
+            padding: 8px 10px;
+            background: #16213e;
+            border: 1px solid #2a3a5c;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:focus { border-color: #ffe39e; }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .speed-control input[type="range"] {
+            width: 80px;
+            accent-color: #ffe39e;
+            cursor: pointer;
+        }
+
+        .speed-control span {
+            font-size: 12px;
+            color: #888;
+            min-width: 30px;
+        }
+
+        .save-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+            font-size: 13px;
+            color: #888;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .save-toggle input {
+            accent-color: #ffe39e;
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        .log {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            line-height: 1.6;
+        }
+
+        .log .entry { padding: 1px 0; }
+        .log .error { color: #e53935; }
+        .log .success { color: #4caf50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TTS Player</h1>
+
+        <div class="status-bar">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Disconnected</span>
+        </div>
+
+        <textarea id="textInput">Welcome to our Tutorial 2 demonstration for Engineering of Intelligent Models. We are group EMI-3 and our project is weather temperature forecasting using the Jena Climate dataset. We built noted, an integrated MLOps platform that unifies notebooks, data versioning, experiment tracking, configuration management, pipeline orchestration, and model serving in a single web interface. In this video, we will demonstrate the complete MLOps lifecycle using our platform.</textarea>
+
+        <div class="controls">
+            <button class="btn-speak" id="btnSpeak" disabled>Speak</button>
+            <button class="btn-stop" id="btnStop" disabled>Stop</button>
+            <select id="voiceSelect" title="Voice"></select>
+            <div class="speed-control">
+                <input type="range" id="speedRange" min="0.5" max="2.0" step="0.1" value="1.0">
+                <span id="speedLabel">1.0x</span>
+            </div>
+            <label class="save-toggle">
+                <input type="checkbox" id="chkSave">
+                Save audio
+            </label>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="static/player/tts-player.js"></script>
+</body>
+</html>

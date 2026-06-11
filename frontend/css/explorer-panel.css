@@ -1,0 +1,1337 @@
+/* Explorer sidebar title bar */
+.explorer-title-bar {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.explorer-title-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+}
+.explorer-title-label:not(:empty) {
+    flex: 1;
+    color: #333;
+}
+
+.explorer-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.explorer-title-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 6px;
+    height: 22px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    color: #555;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.explorer-title-action-btn:hover {
+    background: #c8e6c0;
+    color: #202020;
+}
+
+/* Explorer tree pane (sidebar view) */
+.explorer-tree-pane {
+    overflow: hidden;
+    min-width: 0;
+    height: 100%;
+    background: #fffdf3;
+    position: relative;
+}
+
+/* Explorer detail pane (center tab) */
+.explorer-detail-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: #fefefe;
+    position: relative;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    box-sizing: border-box;
+}
+
+.explorer-detail-content {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px 16px 48px;
+    margin-right: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.explorer-detail-content > * {
+    flex-shrink: 0;
+}
+
+.explorer-detail-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.explorer-detail-parent {
+    font-size: 10px;
+    color: #1d1d1d;
+    /* text-align: right; */
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.explorer-detail-header {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 30px;
+}
+
+.explorer-detail-header > i:first-child {
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.explorer-detail-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.explorer-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
+.explorer-autoload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    cursor: pointer;
+    margin-left: 4px;
+}
+
+/* Buttons */
+.explorer-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.explorer-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.explorer-btn.primary {
+    background: var(--accent-blue);
+    color: #fff;
+    border-color: var(--accent-blue);
+}
+
+.explorer-btn.primary:hover {
+    opacity: 0.85;
+}
+
+.explorer-btn.primary:disabled {
+    cursor: wait;
+}
+
+.explorer-btn.inverted {
+    background: #5c5c5c;
+    color: #ffffff;
+    border-color: var(--text-primary);
+}
+
+.explorer-btn.inverted:hover {
+    opacity: 0.85;
+}
+
+.explorer-btn.danger {
+    color: #fff;
+    border-color: transparent;
+    background: #e07070;
+}
+
+.explorer-btn.danger:hover {
+    background: #d45555;
+}
+
+.explorer-btn.orange {
+    color: #fff;
+    border-color: transparent;
+    background: #e8a850;
+}
+
+.explorer-btn.orange:hover {
+    background: #d4943f;
+}
+
+.explorer-btn.small {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin-bottom: 8px;
+}
+
+/* Inline create forms */
+.explorer-create-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.explorer-create-form label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.explorer-create-form select {
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.explorer-create-form select:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.explorer-create-form input {
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.explorer-create-form input:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.explorer-create-form textarea {
+    padding: 6px 8px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 60px;
+}
+
+.explorer-create-form textarea:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.explorer-create-form .explorer-btn {
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+.explorer-form-error {
+    font-size: 12px;
+    color: var(--accent-red);
+    min-height: 0;
+}
+
+.explorer-form-error:empty {
+    display: none;
+}
+
+/* --- Wunderbaum tree styling (adapted from docbro) --- */
+
+#explorerTreeWrapper {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 0px;
+    bottom: 10px;
+}
+
+#explorerTree {
+    height: 100%;
+    outline: none;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    border: none !important;
+    background: transparent !important;
+    font-family: Roboto, sans-serif;
+    font-size: 12px;
+    /* Override Wunderbaum icon size */
+    --wb-icon-width: 15px;
+    --wb-icon-height: 15px;
+    --wb-icon-outer-width: 18px;
+    --wb-icon-outer-height: 18px;
+    --wb-icon-padding-x: 0px;
+    --wb-icon-padding-y: 0px;
+    /* Override Wunderbaum color variables */
+    --wb-background-color: transparent;
+    --wb-hover-color: rgba(122, 229, 140, 0.15);
+    --wb-hover-border-color: transparent;
+    --wb-active-color: #7ae58c96;
+    --wb-active-border-color: #99999933;
+    --wb-active-hover-color: #7ae58cbb;
+    --wb-active-hover-border-color: #99999933;
+    --wb-active-color-grayscale: #7ae58c96;
+    --wb-active-border-color-grayscale: #99999933;
+    --wb-active-hover-color-grayscale: #7ae58cbb;
+    --wb-icon-padding-y: 0px;
+}
+
+#explorerTree > .wb-header {
+    display: none !important;
+}
+
+#explorerTree .wb-list-container {
+    outline: none;
+    cursor: pointer;
+}
+
+/* Vertically center all icon types within row */
+#explorerTree span.wb-node i.wb-icon,
+#explorerTree span.wb-node img.wb-icon {
+    vertical-align: middle !important;
+}
+
+#explorerTree span.wb-node i.wb-expander,
+#explorerTree span.wb-node i.wb-icon {
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+
+/* Empty-state placeholder icon (fa-info-circle is only used for the
+   "No documents", "No communities", etc. leaves). Class-based color
+   survives Wunderbaum's row re-renders on selection state changes -
+   inline `style="color"` set by _recolorNode is wiped when the row is
+   reactivated. */
+#explorerTree i.wb-icon.fa-info-circle {
+    color: #4a9eda !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+
+/* Unique icons in the per-Domain Knowledge Base tree. These FA classes
+   are NOT used anywhere else in the Explorer, so we can target them
+   directly without needing the data-type attribute (which is fragile
+   under Wunderbaum's row re-renders). */
+#explorerTree i.wb-icon.fa-bars-progress {
+    /* Vector node - light grey */
+    color: #cfd8dc !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+#explorerTree i.wb-icon.fa-share-nodes {
+    /* Graph node - cyan */
+    color: #4dd0e1 !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+#explorerTree i.wb-icon.fa-circle-nodes {
+    /* Community leaves under Graph - cyan */
+    color: #4dd0e1 !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+
+/* Per-Domain tree icon colors. Same survives-re-render reasoning as
+   above. data-type attribute is set by _onTreeRender on each row;
+   inline-style coloring runs in parallel as a belt-and-suspenders
+   for the initial render but the CSS rule below is the source of
+   truth across selection state changes.
+
+   `-webkit-text-stroke: 0` overrides the dark outline that other
+   explorer icon rules apply (e.g. .fa-database has a 1.5px #666 stroke).
+   On the dark unselected background that stroke makes the icon look
+   darker than its actual color; removing it keeps the colors clean
+   in both states. */
+#explorerTree div.wb-row[data-type="domains-parent"] i.wb-icon,
+#explorerTree div.wb-row[data-type="kb-domain-row"] i.wb-icon,
+#explorerTree div.wb-row[data-type="asst-domain-row"] i.wb-icon {
+    color: #ffcc00 !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+#explorerTree div.wb-row[data-type="kb-domain-vector"] i.wb-icon {
+    color: #cfd8dc !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+#explorerTree div.wb-row[data-type="kb-domain-graph"] i.wb-icon,
+#explorerTree div.wb-row[data-type="kb-domain-comm"] i.wb-icon {
+    color: #4dd0e1 !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+#explorerTree div.wb-row[data-type="kb-documents"] i.wb-icon,
+#explorerTree div.wb-row[data-type="kb-documents-cat"] i.wb-icon,
+#explorerTree div.wb-row[data-type="asst-domain-skills"] i.wb-icon {
+    color: #81c784 !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+#explorerTree div.wb-row[data-type="asst-domain-tools"] i.wb-icon {
+    color: #64b5f6 !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+/* Document leaves under KB > Documents > <category> and per-Domain corpus
+   list. Override the default gray .fa-file-lines fill with white. */
+#explorerTree div.wb-row[data-type="kb-documents-doc"] i.wb-icon,
+#explorerTree div.wb-row[data-type="kb-domain-corpus-doc"] i.wb-icon {
+    color: #ffffff !important;
+    -webkit-text-stroke: 1.5px #666666 !important;
+}
+
+/* Folder icons */
+.explorer-tree-pane .fa-folder,
+.explorer-tree-pane .fa-folder-open,
+.explorer-detail-header .fa-folder,
+.explorer-detail-header .fa-folder-open {
+    color: #eec541 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* File icons (notebooks) */
+.explorer-tree-pane .fa-file,
+.explorer-detail-header .fa-file {
+    color: #ffffff !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Cube icons (environments) */
+.explorer-tree-pane .fa-cube,
+.explorer-tree-pane .fa-cubes,
+.explorer-detail-header .fa-cube,
+.explorer-detail-header .fa-cubes {
+    color: #90d490 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Layer group icons (runtimes) */
+.explorer-tree-pane .fa-layer-group,
+.explorer-detail-header .fa-layer-group {
+    color: #7ec8e3 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Package icons */
+.explorer-tree-pane .fa-box-open,
+.explorer-detail-header .fa-box-open {
+    color: #c4a6e0 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Clipboard icons (Projects) */
+.explorer-tree-pane .fa-clipboard-list,
+.explorer-detail-header .fa-clipboard-list {
+    color: #a8d8a8 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Hard drive icons (Mounts) */
+.explorer-tree-pane .fa-hard-drive,
+.explorer-detail-header .fa-hard-drive {
+    color: #f0a87a !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Plug icons (APIs) */
+.explorer-tree-pane .fa-plug,
+.explorer-detail-header .fa-plug {
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Robot icons (Assistant) */
+.explorer-tree-pane .fa-robot,
+.explorer-detail-header .fa-robot {
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Book icons (KB category nodes - children of Knowledge Base).
+   Inherits the same yellow as the KB landmark icon for visual cohesion. */
+.explorer-tree-pane .fa-book,
+.explorer-detail-header .fa-book {
+    color: #ffd97a !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Landmark icons (Knowledge Base) */
+.explorer-tree-pane .fa-landmark,
+.explorer-detail-header .fa-landmark {
+    color: #ffffff !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Database icons (Storage) */
+.explorer-tree-pane .fa-database,
+.explorer-detail-header .fa-database {
+    color: #a0b4c8 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Bookmark icons (Embeddings chunk leaves + chunk detail header).
+   The tree-side stroke is provided by the global wb-icon rule; this
+   adds the matching stroke to the detail-header fa-bookmark only. */
+.explorer-detail-header .fa-bookmark {
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Pipeline section icons */
+.explorer-detail-header .fa-diagram-project,
+.explorer-tree-pane .fa-diagram-project {
+    color: #5c9ce6 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+.explorer-tree-pane .fa-circle-pause,
+.explorer-detail-header .fa-circle-pause {
+    color: #ff9800 !important;
+}
+.explorer-tree-pane .fa-clock,
+.explorer-detail-header .fa-clock {
+    color: #ff9800 !important;
+}
+.explorer-tree-pane .fa-circle-play,
+.explorer-detail-header .fa-circle-play {
+    color: #2196f3 !important;
+}
+.explorer-tree-pane .fa-forward,
+.explorer-detail-header .fa-forward {
+    color: #999 !important;
+}
+.explorer-tree-pane .fa-terminal,
+.explorer-detail-header .fa-terminal {
+    color: #333 !important;
+}
+
+/* Configuration section icons */
+.explorer-detail-header .fa-sliders,
+.explorer-tree-pane .fa-sliders {
+    color: #b08cd8 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+.explorer-tree-pane .fa-file-code,
+.explorer-detail-header .fa-file-code {
+    color: #42a5f5 !important;
+}
+.explorer-tree-pane .fa-star,
+.explorer-detail-header .fa-star {
+    color: #f0c040 !important;
+}
+
+/* Data section icon */
+.explorer-detail-header .fa-cubes-stacked,
+.explorer-tree-pane .fa-cubes-stacked {
+    color: #7cb3a0 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Vial icons (Experiments) */
+.explorer-tree-pane .fa-vial,
+.explorer-detail-header .fa-vial {
+    color: #e08b8b !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* Running status icon */
+.explorer-tree-pane .fa-circle-play,
+.explorer-detail-header .fa-circle-play {
+    color: #ff9800 !important;
+}
+.explorer-tree-pane .fa-circle-stop,
+.explorer-detail-header .fa-circle-stop {
+    color: #ff9800 !important;
+}
+
+/* Run status icons */
+.explorer-tree-pane .fa-circle-check,
+.explorer-detail-header .fa-circle-check {
+    color: #4caf50 !important;
+}
+.explorer-tree-pane .fa-circle-xmark,
+.explorer-detail-header .fa-circle-xmark {
+    color: #f44336 !important;
+}
+.explorer-tree-pane .fa-circle-question,
+.explorer-detail-header .fa-circle-question {
+    color: #78909c !important;
+}
+
+/* Artifact category icons */
+.explorer-tree-pane .fa-brain,
+.explorer-detail-header .fa-brain {
+    color: #e091d0 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+/* Logged Models (MLflow 3.x) category and its descendants use the same
+ * fa-brain as Models but recolored to the Files grey so the two Models-
+ * looking rows in the Artifacts tree are visually distinct. The rule is
+ * scoped to data-type attributes set by ExplorerPanel._onTreeRender. */
+.explorer-tree-pane .wb-row[data-type="mllm-cat"] .fa-brain,
+.explorer-tree-pane .wb-row[data-type="logged-model"] .fa-brain {
+    color: #b0bec5 !important;
+}
+.explorer-tree-pane .fa-image,
+.explorer-detail-header .fa-image {
+    color: #81c784 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+.explorer-tree-pane .fa-chart-simple,
+.explorer-detail-header .fa-chart-simple {
+    color: #42a5f5 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+.explorer-tree-pane .fa-file-lines,
+.explorer-detail-header .fa-file-lines {
+    color: #b0bec5 !important;
+    -webkit-text-stroke: 1px #666666;
+    paint-order: stroke fill;
+}
+.explorer-tree-pane .fa-circle-info,
+.explorer-detail-header .fa-circle-info {
+    color: #42a5f5 !important;
+}
+
+/* Detail pane action buttons */
+.detail-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.detail-action-btn:hover {
+    opacity: 0.85;
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+.detail-action-btn.danger {
+    color: #ffffff;
+    border-color: #c74e3944;
+}
+.detail-action-btn.danger:hover {
+    background: #c74e3922;
+    color: #f44336;
+}
+
+/* Bucket icons (Storage buckets) */
+.explorer-tree-pane .fa-bucket,
+.explorer-detail-header .fa-bucket {
+    color: #8dd3f7 !important;
+    -webkit-text-stroke: 1.5px #666666;
+    paint-order: stroke fill;
+}
+
+/* SVG file icon images in tree and detail header */
+.explorer-tree-pane img.wb-icon {
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+}
+
+.explorer-detail-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 7px;
+}
+
+/* Node styling */
+#explorerTree span.wb-node {
+    padding: 0px 0px;
+    border-radius: 3px;
+}
+
+#explorerTree span.wb-node:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+#explorerTree div.wb-row.wb-active span.wb-title {
+    font-weight: 500;
+}
+
+#explorerTree span.wb-node.wb-focus {
+    outline: none;
+}
+
+
+/* Root nodes */
+#explorerTree .wb-row[data-type="root"] span.wb-node {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+/* Project nodes */
+#explorerTree .wb-row[data-type="project"] span.wb-node {
+    color: #333;
+}
+
+/* Notebook nodes */
+#explorerTree .wb-row[data-type="notebook"] span.wb-node {
+    color: #444;
+}
+
+/* Runtime nodes */
+#explorerTree .wb-row[data-type="runtime"] span.wb-node {
+    color: #333;
+    font-weight: 500;
+}
+
+/* Env nodes */
+#explorerTree .wb-row[data-type="env"] span.wb-node {
+    color: #333;
+}
+
+/* Style explorerTree scrollbar */
+#explorerTree::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#explorerTree::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0;
+}
+
+#explorerTree::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+#explorerTree:hover::-webkit-scrollbar-thumb {
+    background: #6096e5ad;
+}
+
+#explorerTree::-webkit-scrollbar-thumb:hover {
+    background: #4a7bd0cc;
+    cursor: pointer;
+}
+
+/* SVG icons rendered as background-image on <i> elements */
+#explorerTree span.wb-node i.wb-icon[style*="background-image"] {
+    background-size: 15px 15px !important;
+}
+
+/* FA icons need extra top offset to center the glyph */
+#explorerTree span.wb-node i.wb-icon:not([style*="background-image"]) {
+    margin-top: 5px !important;
+    -webkit-text-stroke: 1.5px #333333;
+    paint-order: stroke fill;
+}
+
+/* Tighter spacing for folder icons (override the general 6px) */
+#explorerTree span.wb-node i.fa-folder + span.wb-title,
+#explorerTree span.wb-node i.fa-folder-open + span.wb-title {
+    padding-left: 3px !important;
+}
+
+div.wunderbaum span.wb-node span.wb-title {
+    min-width: 1em;
+    vertical-align: top !important;
+    margin-top: 2px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-left: 6px;
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif !important;
+    position: relative;
+    top: 0px;
+}
+
+#explorerTree *:focus,
+#explorerTree *:focus-visible {
+    outline: none !important;
+    border-color: transparent !important;
+}
+
+i.wb-expander {
+    margin-right: 3px;
+}
+
+i.wb-expander.fa-solid {
+    font-size: 10px;
+    text-align: center;
+    margin-top: 1px;
+}
+
+div.wunderbaum div.wb-node-list div.wb-row.wb-active,
+div.wunderbaum div.wb-node-list div.wb-row.wb-selected {
+    background-color: #7ae58c96;
+    border: 0.5px solid #99999933;
+    border-radius: 2px;
+}
+
+/* Git status decoration dots — right-aligned in tree rows */
+.git-decoration-dot {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: auto;
+    z-index: 1;
+}
+
+/* Trailing "U" badge for user-authored tools and skills in the Explorer.
+ * Lives in the same right-edge slot as .git-decoration-dot — tool / skill
+ * rows never carry git status (not files in the working tree), so the slot
+ * is free. Single-letter glyph keeps the visual weight close to the git
+ * dot so rows feel uniformly decorated. */
+.user-tool-badge {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: #9575cd;
+    line-height: 1;
+    pointer-events: auto;
+    z-index: 1;
+    user-select: none;
+}
+
+/* DVC uses a triangle (delta Δ) to distinguish from git's circle */
+.git-decoration-dot.dvc {
+    border-radius: 0;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    width: 9px;
+    height: 8px;
+    margin-top: -1px;
+}
+
+.git-decoration-dot.ancestor {
+    opacity: 0.45;
+}
+
+.git-status-badges {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    pointer-events: auto;
+    z-index: 1;
+}
+.git-source-badge {
+    font-size: 9px;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 2px;
+    letter-spacing: 0.3px;
+}
+.git-source-badge.source-git {
+    background: #f0e6d2;
+    color: #8a6d3b;
+}
+.git-source-badge.source-dvc {
+    background: #d9eff5;
+    color: #1a7f9b;
+}
+.git-letter-badge {
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-mono, monospace);
+    line-height: 1;
+}
+
+/* Detail pane scrollbar */
+.explorer-detail-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.explorer-detail-content::-webkit-scrollbar-track,
+.explorer-tree-pane ::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 10px 0;
+}
+
+.explorer-detail-content::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.explorer-detail-content:hover::-webkit-scrollbar-thumb {
+    background: #6096e5ad;
+}
+
+.explorer-detail-content::-webkit-scrollbar-thumb:hover {
+    background: #4a7bd0cc;
+    cursor: pointer;
+}
+
+/* Notebook summary info */
+.explorer-nb-info {
+    margin: 8px 0 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.explorer-nb-info-row {
+    display: flex;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.explorer-nb-info-row:last-child {
+    border-bottom: none;
+}
+
+.explorer-nb-info-label {
+    width: 80px;
+    flex-shrink: 0;
+    color: #333333;
+    font-weight: 500;
+}
+
+.explorer-nb-info-value {
+    color: var(--text-primary);
+}
+
+.explorer-nb-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.explorer-nb-description h1,
+.explorer-nb-description h2,
+.explorer-nb-description h3 {
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+}
+
+.explorer-nb-description h1 { font-size: 14px; }
+
+.explorer-nb-description p {
+    margin: 0 0 6px;
+}
+
+.explorer-nb-description p:last-child {
+    margin-bottom: 0;
+}
+
+.explorer-nb-description ul,
+.explorer-nb-description ol {
+    margin: 0 0 6px;
+    padding-left: 18px;
+}
+
+.explorer-nb-description table {
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 4px 0;
+}
+
+.explorer-nb-description th,
+.explorer-nb-description td {
+    border: 1px solid var(--border-color);
+    padding: 2px 6px;
+}
+
+.explorer-nb-description code {
+    font-size: 11px;
+    background: rgba(0,0,0,0.05);
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+/* Environment status tags */
+.explorer-env-tag {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.explorer-env-tag.active {
+    background: #c6f5c6;
+    color: #1a6b1a;
+}
+
+.explorer-env-tag.inactive {
+    background: #e0e0e0;
+    color: #666;
+}
+
+/* Inline packages section */
+.explorer-pkg-section {
+    padding-top: 10px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.explorer-pkg-section-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #1d1d1d;
+    margin-bottom: 8px;
+}
+
+.explorer-pkg-section .package-list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+}
+
+/* Bottom action bar */
+.explorer-action-bar {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    display: flex;
+    gap: 8px;
+}
+
+/* Editable header with rename icon */
+.explorer-editable-header {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 30px;
+}
+
+.explorer-header-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.explorer-rename-icon {
+    font-size: 10px;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.explorer-editable-header:hover .explorer-rename-icon {
+    opacity: 0.6;
+}
+
+.explorer-rename-icon:hover {
+    opacity: 1 !important;
+    color: var(--accent-blue);
+}
+
+.explorer-rename-input {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border: 1px solid var(--accent-blue);
+    border-radius: var(--radius);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+    min-width: 120px;
+    flex: 1;
+    margin-left: 4px;
+}
+
+/* Context menu */
+.explorer-context-menu {
+    position: fixed;
+    z-index: 10000;
+    min-width: 160px;
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 4px 0;
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+}
+
+.explorer-context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text-primary, #333);
+    white-space: nowrap;
+}
+
+.explorer-context-menu-item:hover {
+    background: var(--bg-hover, rgba(0, 0, 0, 0.06));
+}
+
+.explorer-context-menu-item.danger {
+    color: #d45555;
+}
+
+.explorer-context-menu-item.danger:hover {
+    background: #fdf0f0;
+}
+
+.explorer-context-menu-item i {
+    width: 14px;
+    text-align: center;
+    font-size: 11px;
+}
+
+.explorer-context-menu-item i.fa-file-circle-plus {
+    color: #4a9eda;
+}
+
+.explorer-context-menu-item i.fa-folder-plus {
+    color: #eec541;
+    -webkit-text-stroke: 0.5px #999;
+    paint-order: stroke fill;
+}
+
+.explorer-context-menu-item i.fa-pen {
+    color: #e8a850;
+}
+
+.explorer-context-menu-item i.fa-book-open {
+    color: #6db56d;
+}
+
+.explorer-context-menu-item i.fa-up-right-from-square {
+    color: #4a9eda;
+}
+
+.explorer-context-menu-item i.fa-play {
+    color: #6db56d;
+}
+
+.explorer-context-menu-item.danger i {
+    color: #d45555;
+}
+
+.explorer-context-menu-sep {
+    height: 1px;
+    background: var(--border-color, #e0e0e0);
+    margin: 4px 0;
+}
+
+/* Inline rename input in tree node */
+.explorer-tree-rename-input {
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+    padding: 0 4px;
+    border: 1px solid var(--accent-blue);
+    border-radius: 2px;
+    background: var(--bg-primary, #fff);
+    color: var(--text-primary);
+    outline: none;
+    margin-left: 2px;
+    height: 18px;
+    line-height: 18px;
+}
+
+/* DVC version history */
+.dvc-detail-subtitle {
+    color: #1a7f9b;
+    font-size: 12px;
+    font-weight: 500;
+    margin: -4px 0 12px 0;
+}
+.dvc-version-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.dvc-version-row {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border-left: 3px solid #1a7f9b;
+    background: var(--bg-secondary, #f8f8f8);
+}
+.dvc-version-commit {
+    font-size: 13px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.dvc-version-hash {
+    font-family: monospace;
+    font-size: 12px;
+    color: #1a7f9b;
+    font-weight: 600;
+    margin-right: 4px;
+}
+.dvc-version-meta {
+    font-size: 11px;
+    color: var(--text-secondary, #888);
+    margin-top: 2px;
+}
+.dvc-version-current {
+    font-size: 10px;
+    color: #1a7f9b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border: 1px solid #1a7f9b;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Storage (MinIO) ─────────────────────────────────────── */
+.storage-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.storage-bucket-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: var(--bg-secondary, #f8f8f8);
+    font-size: 12px;
+    color: var(--text-primary);
+    margin-top: 4px;
+}
+.storage-bucket-icon {
+    color: #72b8d4 !important;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+.storage-bucket-stats {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-secondary, #888);
+    white-space: nowrap;
+}
+
+/* S3 object detail card */
+.s3-object-card {
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.s3-object-loading {
+    padding: 12px;
+    font-size: 12px;
+    color: var(--text-tertiary, #aaa);
+}
+.s3-meta-row {
+    display: flex;
+    align-items: baseline;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border-color, #f0f0f0);
+    font-size: 12px;
+}
+.s3-meta-row:last-child {
+    border-bottom: none;
+}
+.s3-meta-label {
+    flex: 0 0 100px;
+    font-weight: 600;
+    color: var(--text-secondary, #666);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.s3-meta-value {
+    flex: 1;
+    color: var(--text-primary, #1a1a1a);
+    word-break: break-all;
+}
+.s3-meta-value.mono {
+    font-family: monospace;
+    font-size: 11px;
+}
+.s3-meta-section-title {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary, #666);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+    background: var(--bg-secondary, #f8f8f8);
+}

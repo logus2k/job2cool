@@ -1,0 +1,472 @@
+/* Tab bar — first child of #center-column, fills toolbar zone */
+.tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    /* Align with notebook top bars: left = 10px padding + 36px margin, right = 10px padding + 8px scrollbar */
+    margin: 0 20px 0 45px;
+    padding: 0 6px;
+    gap: 0px;
+    align-items: flex-end;
+    font-size: 0.85em;
+    flex-shrink: 0;
+    z-index: 4;
+    height: var(--toolbar-height, 37px);
+}
+
+.tab-bar .tab {
+    position: relative;
+    padding: 2px 13px 1px 13px !important;
+    background-color: #ffecb9;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    white-space: nowrap;
+    color: #1a1a1a;
+    border: 0.5px solid #666666;
+    border-bottom: 0.5px solid #1d1d1d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    user-select: none;
+    -webkit-user-select: none;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    line-height: 1.8;
+}
+
+.tab-bar .tab.active {
+    background-color: #ffe39e;
+    color: #1a1a1a;
+    z-index: 1;
+    padding: 3px 13px 1px 13px !important;
+    margin-bottom: -1px;
+    border-bottom: none;
+    line-height: 1.8;
+}
+
+.tab-bar .tab.sticky {
+    border-top: 2px solid #ffc630;
+}
+
+/* Close button */
+.tab-bar .tab-close-btn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background-color: #333333;
+    color: #fafafa;
+    font-size: 15px;
+    line-height: 12px;
+    font-weight: 400;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    border: none;
+    padding: 1px 0px 0px 0px;
+    font-family: Arial, sans-serif;
+}
+
+.tab-bar .tab:hover .tab-close-btn {
+    display: block;
+}
+
+/* Preview (transient) tab — italic label */
+.tab-bar .tab.tab-preview {
+    font-style: italic;
+}
+
+/* Tab with icon (service tabs) */
+.tab-bar .tab .tab-icon {
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
+    vertical-align: text-top;
+    /* border-radius: 2px; */
+}
+
+/* Service iframe container (inside center-column) */
+#service-tab-container {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    background: var(--bg-primary);
+    border-radius: 5px 5px 0px 0px;
+}
+
+/* Match PDF gray on the container itself so the 5px strip exposed by
+   .document-viewer-wrapper's right margin (and any other gaps) blends
+   with the page background. Only applies when the active tab is a PDF
+   viewer. */
+#service-tab-container:has(.document-viewer-pdf) {
+    background: #e9e9e9;
+}
+
+#service-tab-container iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    display: block;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+/* Disable iframe pointer events during splitter drag to prevent mouse capture */
+body.resizing #service-tab-container iframe {
+    pointer-events: none;
+}
+
+/* Service top bar — mirrors notebook top bar */
+.service-top-bar {
+    height: 25px;
+    background: #ffe39e;
+    display: flex;
+    align-items: center;
+    padding: 2px 6px 0px 12px;
+    gap: 8px;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    flex-shrink: 0;
+    border-bottom: 0.5px solid #666666;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+}
+
+.service-top-bar-title {
+    color: #1a1a1a;
+}
+
+.service-top-bar-spacer {
+    flex: 1;
+}
+
+/* Second bar below service top bar */
+.service-second-bar {
+    height: 26px;
+    background: #fff2bc;
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    gap: 8px;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    flex-shrink: 0;
+    border-bottom: 0.5px solid #aeaeae;
+    border-left: 0.5px solid #666666;
+    border-right: 0.5px solid #666666;
+    position: relative;
+}
+
+.service-second-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: auto;
+}
+
+.service-second-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+/* Centered cluster — used by the PDF page-navigation controls in doc
+   tabs. Absolute positioning so the cluster centers against the bar's
+   width regardless of any -left/-right siblings on the same bar. */
+.service-second-bar-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* PDF page-navigation controls (prev / page input / total / next). */
+.pdf-controls .pdf-ctl-btn {
+    height: 20px;
+    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: #333;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s;
+}
+.pdf-controls .pdf-ctl-btn:hover {
+    background: #ffe7a2;
+    color: #000;
+}
+.pdf-controls .pdf-ctl-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Download + Info buttons (left of the second bar, separate from the
+   centered nav cluster). Fully transparent — no native button frame —
+   with the icons rendered via CSS mask so each can carry its own
+   tint without shipping a recoloured asset. Slight opacity drop on
+   hover replaces the amber background hover used elsewhere. */
+.pdf-ctl-download,
+.pdf-ctl-info,
+.pdf-ctl-sliders,
+.pdf-ctl-expand {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0 4px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.12s;
+}
+.pdf-ctl-download:hover,
+.pdf-ctl-info:hover,
+.pdf-ctl-sliders:hover,
+.pdf-ctl-expand:hover {
+    background: transparent;
+    opacity: 0.75;
+}
+
+.pdf-ctl-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    -webkit-mask-position: center;
+            mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+            mask-size: contain;
+}
+.pdf-ctl-icon-download {
+    background-color: #666666;
+    height: 13px;  /* one px shorter than the info icon */
+    -webkit-mask-image: url('../images/download-file-remix.svg');
+            mask-image: url('../images/download-file-remix.svg');
+}
+.pdf-ctl-icon-info {
+    background-color: #333333;
+    height: 14px;
+    -webkit-mask-image: url('../images/info-circled.svg');
+            mask-image: url('../images/info-circled.svg');
+}
+.pdf-ctl-icon-sliders {
+    background-color: #1d1d1d;
+    height: 13px;
+    -webkit-mask-image: url('../images/sliders-horizontal-16.svg');
+            mask-image: url('../images/sliders-horizontal-16.svg');
+}
+.pdf-ctl-icon-expand {
+    background-color: #1d1d1d;
+    height: 13px;
+    -webkit-mask-image: url('../images/expand-lines.svg');
+            mask-image: url('../images/expand-lines.svg');
+}
+
+/* Document Information jsPanel rows. Two-column k/v layout, section
+   headings every few rows, soft hover. Scoped under .docinfo- so the
+   styling doesn't bleed into other panels using key/value rows. */
+.docinfo-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary, #888);
+    margin: 14px 0 6px 0;
+    border-bottom: 0.5px solid #d4cfc0;
+    padding-bottom: 3px;
+    background-color: #fff5dd;
+    padding: 6px 0px 3px 0px;
+    color: #000000;
+}
+.docinfo-section:first-child {
+    margin-top: 0;
+}
+.docinfo-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 4px 0;
+    border-bottom: 0.5px solid #efe9d9;
+}
+.docinfo-row:last-child {
+    border-bottom: none;
+}
+.docinfo-k {
+    color: var(--text-secondary, #555);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+.docinfo-v {
+    color: var(--text-color, #1d1d1d);
+    font-size: 12px;
+    text-align: right;
+    word-break: break-word;
+}
+.pdf-controls .pdf-ctl-page-input {
+    width: 36px;
+    height: 20px;
+    padding: 0 4px;
+    border: 0.5px solid #999;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #333;
+    font-size: 11px;
+    text-align: center;
+    font-family: var(--font-sans);
+    box-sizing: border-box;
+    /* Hide the spinner controls — we have our own prev/next. */
+    -moz-appearance: textfield;
+}
+.pdf-controls .pdf-ctl-page-input::-webkit-inner-spin-button,
+.pdf-controls .pdf-ctl-page-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.pdf-controls .pdf-ctl-total {
+    color: #555;
+    font-size: 11px;
+    line-height: 1;
+    user-select: none;
+    margin-right: 2px;
+}
+
+/* PDF settings popover (Page layout + Zoom). Anchored under the
+   sliders icon in the breadcrumb bar; positioned via fixed top/left
+   set inline by app.js. z-index above jsPanel-floating so it works
+   for both docked and floating PDF tabs. */
+.pdf-settings-popover {
+    position: fixed;
+    background: #ffffff;
+    border: 0.5px solid #999;
+    border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    padding: 10px 14px;
+    min-width: 200px;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: #1a1a1a;
+    z-index: 99999;
+}
+
+.pdf-settings-section {
+    margin-bottom: 8px;
+}
+.pdf-settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.pdf-settings-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.pdf-settings-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    cursor: pointer;
+    user-select: none;
+}
+.pdf-settings-radio input[type="radio"] {
+    margin: 0;
+    cursor: pointer;
+    accent-color: #ffc630;
+}
+.pdf-settings-radio span {
+    font-size: 12px;
+    color: #1a1a1a;
+}
+
+.pdf-settings-zoom-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pdf-settings-zoom-slider {
+    flex: 1;
+    height: 4px;
+    accent-color: #ffc630;
+    cursor: pointer;
+}
+.pdf-settings-zoom-value {
+    font-size: 11px;
+    color: #555;
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Connection status LED */
+.service-status-led {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: #999999;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s;
+}
+
+.service-status-led.connected {
+    background-color: #4caf50;
+    box-shadow: 0 0 4px rgba(76, 175, 80, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.service-status-led.disconnected {
+    background-color: #f44336;
+    box-shadow: 0 0 4px rgba(244, 67, 54, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.service-status-label {
+    font-size: 10px;
+    color: #555555;
+    font-family: var(--font-sans);
+}
+
+/* Breadcrumb segments in second bar */
+.breadcrumb-segment {
+    font-size: 11px;
+    font-family: var(--font-sans);
+    color: #333333;
+}
+
+.breadcrumb-segment.breadcrumb-current {
+    color: #333333;
+}
+
+.breadcrumb-sep {
+    font-size: 11px;
+    color: #999999;
+    margin: 0 2px;
+    font-family: var(--font-sans);
+}
+
+@media (max-width: 900px) {
+    .tab-bar .tab {
+        max-width: 120px;
+        padding: 3px 10px 3px 10px;
+    }
+    .tab-bar .tab.active {
+        padding: 5px 10px 3px 10px;
+    }
+}

@@ -1,0 +1,328 @@
+/* File Editor - CodeMirror-based editor for text files */
+
+.file-editor {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-right: 10px;
+}
+
+.file-editor .cm-editor {
+    flex: 1;
+    min-height: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.file-editor .cm-editor .cm-scroller {
+    overflow: auto;
+}
+
+/* Override global scrollbar track margins for the editor */
+.file-editor .cm-editor .cm-scroller::-webkit-scrollbar-track {
+    margin: 10px 0;
+}
+
+.file-editor .cm-editor .cm-content {
+    padding: 8px 0 8px 4px;
+    caret-color: var(--text-primary);
+}
+
+.file-editor .cm-editor .cm-gutters {
+    background: #f7f7f7;
+    border-right: none;
+    color: var(--text-muted);
+    padding: 0 5px 0 2px;
+    margin-right: 5px;
+}
+
+.file-editor .cm-editor .cm-lineNumbers .cm-gutterElement {
+    text-align: right;
+    padding: 0 4px;
+    font-size: 11px;
+    line-height: 19.5px;
+    color: var(--text-muted);
+    min-width: 24px;
+}
+
+/* Lint gutter - thin vertical bars at the left edge (global) */
+.cm-editor .cm-gutter-lint {
+    width: 3px;
+    min-width: 3px;
+    padding: 0;
+    border-right: none;
+}
+
+.cm-editor .cm-gutter-lint .cm-gutterElement {
+    padding: 0;
+}
+
+.cm-editor .cm-lint-marker {
+    width: 3px;
+    height: 100%;
+    cursor: pointer;
+    display: block;
+    border-radius: 0;
+}
+
+/* Thin bar colors by severity */
+.cm-editor .cm-lint-marker-error {
+    content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 20"><rect width="3" height="20" fill="%23e53935"/></svg>');
+}
+
+.cm-editor .cm-lint-marker-warning {
+    content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 20"><rect width="3" height="20" fill="%23e67e22"/></svg>');
+}
+
+.cm-editor .cm-lint-marker-info {
+    content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 20"><rect width="3" height="20" fill="%234a9eda"/></svg>');
+}
+
+.file-editor .cm-editor .cm-activeLineGutter {
+    background: var(--bg-hover);
+}
+
+.file-editor .cm-editor .cm-activeLine {
+    background: rgba(108, 140, 255, 0.05);
+}
+
+.file-editor .cm-editor.cm-focused {
+    outline: none;
+}
+
+.file-editor .cm-editor .cm-selectionBackground {
+    background: rgba(108, 140, 255, 0.2) !important;
+}
+
+/* Loading indicator */
+.file-editor-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+}
+
+.file-editor-loading-label {
+    font-size: 12px;
+    color: var(--text-muted, #888);
+}
+
+.file-editor-loading-bar {
+    width: 180px;
+    height: 3px;
+    background: var(--border-color, #e0e0e0);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.file-editor-loading-bar-fill {
+    width: 40%;
+    height: 100%;
+    background: var(--accent-blue, #4a9eda);
+    border-radius: 2px;
+    animation: file-loading-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes file-loading-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+}
+
+/* Lint diagnostic tooltips and panels */
+.cm-diagnostic {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 500px;
+    color: #1d1d1d;
+    overflow: hidden;
+}
+
+.cm-tooltip {
+    border: 0.5px solid #999;
+    background-color: #f5f5f5;
+    border-radius: 0px 3px 3px 0px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+}
+
+/* Hover documentation tooltip - matches Documentation panel styling */
+.cm-tooltip-hover {
+    max-width: 550px;
+    max-height: 400px;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #1d1d1d;
+    background: #fdfdfd;
+    border-radius: 3px;
+    padding: 0 !important;
+    pointer-events: auto !important;
+}
+
+.cm-tooltip-hover > div {
+    padding: 12px 15px;
+}
+
+.cm-tooltip-hover pre {
+    background-color: #ffffff;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 10px 0;
+    overflow-x: auto;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+}
+
+.cm-tooltip-hover pre code {
+    background: none;
+    padding: 0;
+    color: #24292e;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.cm-tooltip-hover code {
+    font-size: 11px;
+    background-color: #f6f8fa;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #24292e;
+}
+
+.cm-tooltip-hover h1, .cm-tooltip-hover h2, .cm-tooltip-hover h3 {
+    margin: 8px 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.cm-tooltip-hover h1 { font-size: 14px; }
+
+.cm-tooltip-hover hr {
+    border: none;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+    margin: 8px 0;
+}
+
+.cm-tooltip-hover p {
+    margin: 6px 0;
+}
+
+.cm-tooltip-hover a {
+    color: #0969da;
+    text-decoration: underline;
+}
+
+.cm-tooltip-hover ol, .cm-tooltip-hover ul {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.cm-tooltip-hover li {
+    margin: 2px 0;
+}
+
+/* Autocomplete dropdown */
+.cm-tooltip-autocomplete {
+    max-height: 250px;
+}
+
+/* Hide LSP hover tooltip - docs shown in Documentation panel instead.
+   Keep lint hover tooltips (.cm-diagnostic) visible. */
+.cm-tooltip-hover:not(:has(.cm-diagnostic)) {
+    display: none !important;
+}
+
+/* Completion icons - SVG replacements for broken unicode glyphs */
+.cm-completionIcon::after { content: '' !important; }
+.cm-completionIcon {
+    display: inline-block !important;
+    width: 16px !important;
+    height: 16px !important;
+    background-size: 14px 14px;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    padding-right: 4px !important;
+    opacity: 1 !important;
+}
+.cm-completionIcon-property {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='4.5' y='4.5' width='7' height='7' rx='1' fill='%23e0a030'/%3E%3C/svg%3E");
+}
+.cm-completionIcon-function, .cm-completionIcon-method {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%237b5bb6'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3Ef%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-class {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23e0a030'/%3E%3Ctext x='8' y='11.5' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3EC%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-interface {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%2338a1db'/%3E%3Ctext x='8' y='11.5' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3EI%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-variable {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%2338a1db'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='10' font-family='sans-serif' font-style='italic' fill='white'%3Ex%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-constant {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%23357e67'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3EC%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-type {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23357e67'/%3E%3Ctext x='8' y='11.5' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3ET%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-enum {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%23e0a030'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3EE%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-keyword {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%23cc6b2c'/%3E%3Cpath d='M5.5 5v2.5L8 9l-2.5 1.5V11M8 9l2.5-1.5V5M8 9v2' stroke='white' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.cm-completionIcon-namespace {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%236a6a6a'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='10' font-family='sans-serif' font-weight='bold' fill='white'%3EN%3C/text%3E%3C/svg%3E");
+}
+.cm-completionIcon-text {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='1' fill='%236a6a6a'/%3E%3Ctext x='8' y='11' text-anchor='middle' font-size='7' font-family='sans-serif' fill='white'%3Eabc%3C/text%3E%3C/svg%3E");
+}
+
+.cm-tooltip-lint {
+    pointer-events: auto !important;
+    border-radius: 0px 3px 3px 0px;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.cm-editor .cm-lintRange {
+    background-size: auto 3px;
+}
+
+/* Minimap */
+.cm-minimap-container {
+    cursor: pointer;
+}
+
+.cm-minimap-gutter {
+    background: #f7f7f7;
+}
+
+.cm-minimap-overlay-container.cm-minimap-overlay-mouse-over:hover {
+    cursor: pointer;
+}
+
+/* Fix minimap in undocked jsPanels: CodeMirror adds overlay-on + overlay-off
+   when editor is moved to a new DOM parent. Override display:none from overlay-off. */
+.jsPanel-content .cm-minimap-overlay-container.cm-minimap-overlay-off {
+    display: block !important;
+}
+
+/* File editor tab container in service-tab-container */
+.file-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    border-right: 0.5px solid #333333;
+    border-left: 0.5px solid #333333;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+}

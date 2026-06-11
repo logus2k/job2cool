@@ -1,0 +1,240 @@
+.notebook {
+    position: relative;
+    padding-bottom: 40px;
+    user-select: none;
+}
+
+.cell-output,
+.cell-markdown-rendered {
+    user-select: text;
+}
+
+.notebook::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 36px;
+    right: 0;
+    bottom: 72px;
+    border-radius: 3px;
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+    pointer-events: none;
+    transition: opacity 0.15s;
+}
+
+#notebook-container:hover .notebook::after,
+.notebook-undocked::after {
+    opacity: 0;
+}
+
+.notebook-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.notebook-empty p {
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+.add-cell-container {
+    display: none;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    padding: 4px 5px;
+    margin-left: 36px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.add-cell-container .add-cell-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    grid-column: 2;
+}
+
+.add-cell-container.add-cell-last {
+    display: grid;
+    opacity: 0;
+}
+
+#notebook-container:hover .add-cell-container.add-cell-last,
+.notebook-undocked:hover .add-cell-container.add-cell-last {
+    opacity: 1;
+}
+
+.add-cell-container:hover,
+.add-cell-container:focus-within,
+.add-cell-container.drop-target {
+    opacity: 1;
+}
+
+.add-cell-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 11px;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.add-cell-code:hover {
+    background: #c6e2ff;
+    color: #3366cc;
+    border-color: #a8ccee;
+}
+
+.add-cell-markdown:hover {
+    background: #d2eecd;
+    color: #3a7a3a;
+    border-color: #a8d9a0;
+}
+
+.project-browser {
+    max-width: 600px;
+    margin: 40px auto;
+}
+
+.project-browser h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.project-list, .notebook-list {
+    list-style: none;
+}
+
+.project-list li, .notebook-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.project-list li:hover, .notebook-list li:hover {
+    background: var(--bg-tertiary);
+}
+
+.project-list li span, .notebook-list li span {
+    font-size: 14px;
+}
+
+.project-list li .meta, .notebook-list li .meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.create-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.create-form input {
+    flex: 1;
+}
+
+/* Welcome screen */
+.welcome-screen {
+    display: flex;
+    justify-content: center;
+    padding: 48px 24px 80px;
+}
+
+.welcome-content {
+    max-width: 560px;
+    width: 100%;
+}
+
+.welcome-content h1 {
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.welcome-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+}
+
+.welcome-section {
+    margin-bottom: 28px;
+}
+
+.welcome-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.welcome-section ol {
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.8;
+}
+
+.welcome-section ol li {
+    padding-left: 4px;
+}
+
+.welcome-shortcuts {
+    font-size: 13px;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.welcome-shortcuts td {
+    padding: 5px 0;
+    color: var(--text-primary);
+}
+
+.welcome-shortcuts td:first-child {
+    width: 160px;
+}
+
+.welcome-content kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    box-shadow: 0 1px 0 var(--border-color);
+}
+
+.welcome-code {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.welcome-code code {
+    font-family: inherit;
+}

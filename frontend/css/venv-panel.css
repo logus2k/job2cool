@@ -1,0 +1,343 @@
+/* Unified environment panel items */
+.env-item {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.12s;
+}
+
+.env-item:last-child {
+    border-bottom: none;
+}
+
+.env-item.active {
+    background: rgba(66, 133, 244, 0.08);
+    border-left: 3px solid var(--accent-blue);
+}
+
+.env-item-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.env-item.active .env-item-main {
+    padding-left: 11px;
+}
+
+.env-item-main:hover {
+    background: var(--bg-hover);
+}
+
+.env-item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.env-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.env-item-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.env-active-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    background: rgba(66, 133, 244, 0.12);
+    padding: 1px 6px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.env-item-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.env-item-actions button {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: transparent;
+}
+
+/* Create environment toggle + collapsible form */
+.env-create-toggle {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent-blue);
+    transition: background 0.12s;
+}
+
+.env-create-toggle:hover {
+    background: var(--bg-hover);
+}
+
+.env-create-toggle.expanded {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.env-create-wrapper {
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    max-height: 400px;
+}
+
+.env-create-wrapper.collapsed {
+    max-height: 0;
+}
+
+/* Create venv form */
+.venv-create-form {
+    padding: 12px 14px;
+    background: var(--bg-secondary);
+}
+
+.venv-create-form label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.venv-create-form input {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.venv-create-form select {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.venv-create-form textarea {
+    width: 100%;
+    min-height: 60px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    resize: vertical;
+    margin-bottom: 8px;
+}
+
+.venv-create-form textarea:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+/* Inline terminal for env creation */
+.env-create-term {
+    display: none;
+    flex: 1;
+    min-height: 120px;
+    margin-top: 8px;
+    margin-bottom: 13px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #1e1e20;
+    padding: 15px;
+}
+
+/* Package detail section */
+.package-detail {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* Package install textarea */
+.package-install-textarea {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.package-install-textarea:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+/* Action row: Install + Upload + count */
+.package-install-actions {
+    display: flex;
+    align-items: end;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.package-install-actions button {
+    font-size: 12px;
+    padding: 5px 12px;
+}
+
+.package-install-actions .package-count {
+    margin-right: auto;
+}
+
+.installer-select {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.package-count {
+    font-size: 11px;
+    color: #1d1d1d;
+}
+
+/* Install log area */
+.package-install-log {
+    display: none;
+    margin-bottom: 8px;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.package-install-log.visible {
+    display: block;
+}
+
+.package-install-term {
+    height: 200px;
+    border-radius: var(--radius);
+}
+
+.package-install-term .xterm {
+    height: 100%;
+    padding: 4px;
+    overflow-x: auto;
+}
+
+/* Log actions bar (Open New Window button) */
+.package-log-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 0;
+}
+
+/* Filter input */
+.package-filter-input {
+    width: 100%;
+    font-size: 12px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+}
+
+.package-filter-input:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+/* Package list */
+.package-list {
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.package-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.package-item:last-child {
+    border-bottom: none;
+}
+
+.package-name {
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.package-version {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-left: auto;
+    margin-right: 8px;
+}
+
+/* Uninstall button */
+.package-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+    line-height: 1;
+}
+
+.package-item:hover .package-remove-btn {
+    opacity: 1;
+}
+
+.package-remove-btn:hover {
+    color: var(--accent-red);
+}
+
+/* Loading spinner */
+.venv-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--text-muted);
+    gap: 8px;
+}
+
+.venv-loading .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Pulsing animation for in-progress buttons (create, install) */
+.venv-create-form button.primary:disabled,
+.package-install-actions button.primary:disabled {
+    animation: btnPulse 1.5s ease-in-out infinite;
+    cursor: wait;
+}
+
+@keyframes btnPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+

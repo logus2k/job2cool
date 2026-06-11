@@ -1,0 +1,254 @@
+.cell-output {
+    position: relative;
+    border-top: 1px dashed #999999;
+    padding: 20px 11px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border-radius: 0px 0px 0px 6px;
+    margin: 0px 20px 0px 43px;
+    user-select: text;
+}
+
+.cell-output::before {
+    content: 'output';
+    position: absolute;
+    top: 6px;
+    right: 5px;
+    font-size: 10px;
+    color: #999999;
+}
+
+.cell-output:empty {
+    display: none;
+}
+
+.output-stream {
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.output-stream.stderr {
+    color: var(--accent-red);
+    background: rgba(255, 108, 108, 0.05);
+    padding: 4px 8px;
+    border-radius: 3px;
+}
+
+.output-result {
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--accent-blue);
+    line-height: 1.5;
+}
+
+.output-display {
+    margin: 4px 0;
+}
+
+.output-display img {
+    max-width: 100%;
+    border-radius: var(--radius);
+}
+
+.output-display-html {
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.output-display-html table {
+    border-collapse: collapse;
+    margin: 4px 0;
+    font-size: 12px;
+}
+
+.output-display-html table th,
+.output-display-html table td {
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.output-display-html table th {
+    background: #bfdcff;
+    font-weight: 600;
+}
+
+.output-display-html table tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.output-error {
+    color: var(--accent-red);
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+.output-error .error-name {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.output-error .error-traceback {
+    font-size: 12px;
+    opacity: 0.85;
+    padding: 4px 0;
+}
+
+.output-json {
+    font-size: 12px;
+}
+
+.output-json .json-key {
+    color: var(--accent-blue);
+}
+
+.output-json .json-string {
+    color: var(--accent-green);
+}
+
+.output-json .json-number {
+    color: var(--accent-yellow);
+}
+
+.output-json .json-boolean {
+    color: var(--accent-orange);
+}
+
+.output-json .json-null {
+    color: var(--text-muted);
+}
+
+.output-executing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.output-executing .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.output-elapsed {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+    font-size: 12px;
+    color: #1d1d1d;
+}
+
+.output-elapsed .elapsed-check {
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.output-clear {
+    display: flex;
+    justify-content: flex-end;
+    padding: 2px 0;
+}
+
+.output-clear button {
+    font-size: 11px;
+    padding: 1px 6px;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.output-clear button:hover {
+    color: var(--text-secondary);
+}
+
+/* Copy button for text outputs */
+.output-copy-wrapper {
+    position: relative;
+}
+
+.output-copy-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #888;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+    z-index: 1;
+}
+
+.output-copy-wrapper:hover .output-copy-btn {
+    opacity: 1;
+}
+
+.output-copy-btn:hover {
+    background: #c8e6c0;
+    color: #333;
+}
+
+/* CSS-drawn copy icon: back page (::before) + front page (::after) */
+.output-copy-btn::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 11px;
+    top: 3px;
+    left: 6px;
+    border: 1.5px solid #202020;
+    border-radius: 2px;
+    background: #ffffff;
+    box-sizing: border-box;
+}
+.output-copy-btn::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 11px;
+    top: 6px;
+    left: 9px;
+    border: 1.5px solid #202020;
+    border-radius: 2px;
+    background: #a8d8a0;
+    box-sizing: border-box;
+}
+
+/* Checkmark after copy */
+.output-copy-btn--copied::before {
+    border: none;
+    background: transparent;
+}
+.output-copy-btn--copied::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 5px;
+    width: 13px;
+    height: 7px;
+    border-left: 2px solid #2a7a2a;
+    border-bottom: 2px solid #2a7a2a;
+    transform: rotate(-45deg);
+    box-sizing: border-box;
+}

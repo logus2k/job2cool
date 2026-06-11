@@ -1,0 +1,184 @@
+/* Post-it floating note on cells */
+.cell-post-it {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    cursor: grab;
+    z-index: 10;
+    opacity: 1;
+    pointer-events: auto;
+    user-select: none;
+}
+
+.cell-post-it:active {
+    cursor: grabbing;
+}
+
+.cell-post-it img {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.9;
+    box-shadow: rgba(0, 0, 0, 0.45) 0px 25px 20px -20px;
+}
+
+/* Post-it icon in cell header — inherits from .cell-header-btn */
+.cell-postit-btn:hover {
+    background: #c8e6c0;
+}
+
+.cell-postit-btn.has-note svg path[fill="#f7e15c"] {
+    fill: #f0d060;
+}
+.cell-postit-btn.has-note svg path[fill="#e6b800"] {
+    fill: #d4a020;
+}
+
+/* Notes count badge on toolbar icon */
+.toolbar-notes-badge {
+    position: absolute;
+    bottom: 0px;
+    right: -3px;
+    background: #a8dda0;
+    color: #1a3a18;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: var(--font-sans);
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+    text-align: center;
+    border-radius: 7px;
+    padding: 0 3px;
+    display: none;
+    pointer-events: none;
+}
+
+/* Post-it edit panel */
+.postit-panel .jsPanel-hdr {
+    background: #ffe680ee !important;
+}
+
+/* Color circles in panel title */
+.postit-panel-title-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 3px;
+}
+
+.postit-color-circle {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+}
+
+.postit-color-circle:hover {
+    transform: scale(1.15);
+}
+
+.postit-color-circle.active {
+    border-color: #00000044;
+}
+
+.postit-panel-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-family: var(--font-sans);
+}
+
+.postit-panel-rendered {
+    flex: 1;
+    padding: 12px 16px;
+    overflow-y: auto;
+    cursor: text;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.postit-panel-rendered:empty::before {
+    content: 'Click to write a note...';
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.postit-panel-editor {
+    flex: 1;
+    overflow: hidden;
+}
+
+.postit-panel-editor .cm-editor {
+    height: 100%;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.postit-panel-editor .cm-editor .cm-content {
+    padding: 12px 16px;
+}
+
+.postit-panel-editor .cm-editor .cm-scroller {
+    overflow: auto;
+}
+
+/* Post-it index panel */
+.postit-index-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.postit-index-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-bottom: 1px solid var(--border-color);
+    font-family: var(--font-sans);
+}
+
+.postit-index-item:last-child {
+    border-bottom: none;
+}
+
+.postit-index-item:hover {
+    background: var(--bg-hover);
+}
+
+.postit-index-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.postit-index-cell {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    min-width: 50px;
+}
+
+.postit-index-preview {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.postit-index-empty {
+    padding: 24px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+    font-family: var(--font-sans);
+}

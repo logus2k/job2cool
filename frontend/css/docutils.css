@@ -1,0 +1,354 @@
+
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 9511 2024-01-13 09:50:07Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+Despite the name, some widely supported CSS2 features are used.
+
+See https://docutils.sourceforge.io/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.doc-panel-content .borderless, .doc-panel-content table.borderless td, .doc-panel-content table.borderless th {
+  border: 0 }
+
+.doc-panel-content table.borderless td, .doc-panel-content table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.doc-panel-content .first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.doc-panel-content .last, .doc-panel-content .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.doc-panel-content .hidden {
+  display: none }
+
+.doc-panel-content .subscript {
+  vertical-align: sub;
+  font-size: smaller }
+
+.doc-panel-content .superscript {
+  vertical-align: super;
+  font-size: smaller }
+
+.doc-panel-content a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+.doc-panel-content blockquote.epigraph {
+  margin: 2em 5em ; }
+
+.doc-panel-content dl.docutils dd {
+  margin-bottom: 0.5em }
+
+.doc-panel-content object[type="image/svg+xml"], .doc-panel-content object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+.doc-panel-content dl.docutils dt {
+  font-weight: bold }
+*/
+
+.doc-panel-content div.abstract {
+  margin: 2em 5em }
+
+.doc-panel-content div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+.doc-panel-content div.hint, .doc-panel-content div.important, .doc-panel-content div.note, .doc-panel-content div.tip, .doc-panel-content div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+.doc-panel-content div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+.doc-panel-content div.warning p.admonition-title, .doc-panel-content .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+.doc-panel-content div.compound .compound-first, .doc-panel-content div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+.doc-panel-content div.compound .compound-last, .doc-panel-content div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+.doc-panel-content div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+.doc-panel-content div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+.doc-panel-content div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+.doc-panel-content div.footer, .doc-panel-content div.header {
+  clear: both;
+  font-size: smaller }
+
+.doc-panel-content div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+.doc-panel-content div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+.doc-panel-content div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+.doc-panel-content div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+.doc-panel-content div.system-messages {
+  margin: 5em }
+
+.doc-panel-content div.system-messages h1 {
+  color: red }
+
+.doc-panel-content div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+.doc-panel-content div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+.doc-panel-content div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+.doc-panel-content h4.section-subtitle, .doc-panel-content h5.section-subtitle, .doc-panel-content h6.section-subtitle {
+  margin-top: 0.4em }
+
+.doc-panel-content h1.title {
+  text-align: center }
+
+.doc-panel-content h2.subtitle {
+  text-align: center }
+
+.doc-panel-content hr.docutils {
+  width: 75% }
+
+.doc-panel-content img.align-left, .doc-panel-content .figure.align-left, .doc-panel-content object.align-left, .doc-panel-content table.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+.doc-panel-content img.align-right, .doc-panel-content .figure.align-right, .doc-panel-content object.align-right, .doc-panel-content table.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+.doc-panel-content img.align-center, .doc-panel-content .figure.align-center, .doc-panel-content object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.doc-panel-content table.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.doc-panel-content .align-left {
+  text-align: left }
+
+.doc-panel-content .align-center {
+  clear: both ;
+  text-align: center }
+
+.doc-panel-content .align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+.doc-panel-content div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+.doc-panel-content .align-top {
+  vertical-align: top }
+
+.doc-panel-content .align-middle {
+  vertical-align: middle }
+
+.doc-panel-content .align-bottom {
+  vertical-align: bottom }
+
+.doc-panel-content ol.simple, .doc-panel-content ul.simple {
+  margin-bottom: 1em }
+
+.doc-panel-content ol.arabic {
+  list-style: decimal }
+
+.doc-panel-content ol.loweralpha {
+  list-style: lower-alpha }
+
+.doc-panel-content ol.upperalpha {
+  list-style: upper-alpha }
+
+.doc-panel-content ol.lowerroman {
+  list-style: lower-roman }
+
+.doc-panel-content ol.upperroman {
+  list-style: upper-roman }
+
+.doc-panel-content p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+.doc-panel-content p.caption {
+  font-style: italic }
+
+.doc-panel-content p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+.doc-panel-content p.label {
+  white-space: nowrap }
+
+.doc-panel-content p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+.doc-panel-content p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+.doc-panel-content p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+.doc-panel-content p.topic-title {
+  font-weight: bold }
+
+.doc-panel-content pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+.doc-panel-content pre.literal-block, .doc-panel-content pre.doctest-block, .doc-panel-content pre.math, .doc-panel-content pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: gray; } /* line numbers */
+.doc-panel-content pre.code, .doc-panel-content code { background-color: #eeeeee }
+.doc-panel-content pre.code .comment, .doc-panel-content code .comment { color: #5C6576 }
+.doc-panel-content pre.code .keyword, .doc-panel-content code .keyword { color: #3B0D06; font-weight: bold }
+.doc-panel-content pre.code .literal.string, .doc-panel-content code .literal.string { color: #0C5404 }
+.doc-panel-content pre.code .name.builtin, .doc-panel-content code .name.builtin { color: #352B84 }
+.doc-panel-content pre.code .deleted, .doc-panel-content code .deleted { background-color: #DEB0A1}
+.doc-panel-content pre.code .inserted, .doc-panel-content code .inserted { background-color: #A3D289}
+
+.doc-panel-content span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+.doc-panel-content span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+.doc-panel-content span.interpreted {
+  font-family: sans-serif }
+
+.doc-panel-content span.option {
+  white-space: nowrap }
+
+.doc-panel-content span.pre {
+  white-space: pre }
+
+.doc-panel-content span.problematic, .doc-panel-content pre.problematic {
+  color: red }
+
+.doc-panel-content span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+.doc-panel-content table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+.doc-panel-content table.docinfo {
+  margin: 2em 4em }
+
+.doc-panel-content table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+.doc-panel-content table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+.doc-panel-content table.docinfo td, .doc-panel-content table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+.doc-panel-content table.docutils th.field-name, .doc-panel-content table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+.doc-panel-content table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+.doc-panel-content table.docutils.booktabs * {
+  border: 0px;
+}
+.doc-panel-content table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+.doc-panel-content h4 tt.docutils, .doc-panel-content h5 tt.docutils, .doc-panel-content h6 tt.docutils {
+  font-size: 100% }
+
+.doc-panel-content ul.auto-toc {
+  list-style-type: none }
+
+

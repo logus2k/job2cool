@@ -1,0 +1,282 @@
+/* GraphRebuildMonitorPanel styles. Scoped under .grm- to avoid collisions. */
+
+.grm-card {
+    background: var(--panel-bg, rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+.grm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 12px;
+}
+
+.grm-k {
+    color: var(--text-secondary);
+}
+
+.grm-v {
+    color: var(--text-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.grm-mono {
+    font-family: var(--font-mono, Consolas, monospace);
+    font-size: 11px;
+}
+
+.grm-phase {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.grm-phase-idle { background: #555; color: #bbb; }
+.grm-phase-starting, .grm-phase-scanning, .grm-phase-recluster_loading { background: #1976d2; }
+.grm-phase-extracting, .grm-phase-adding_doc, .grm-phase-removing_doc { background: #ff8800; color: #111; }
+.grm-phase-sameas, .grm-phase-similar_to, .grm-phase-analytics, .grm-phase-summarizing { background: #7b1fa2; }
+.grm-phase-writing, .grm-phase-caching { background: #00838f; }
+.grm-phase-done { background: #8bc34a; color: #111; }
+.grm-phase-error { background: #e57373; color: #111; }
+
+.grm-progress-outer {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-color);
+    height: 16px;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 8px 0 4px 0;
+}
+
+.grm-progress-inner {
+    height: 100%;
+    background: linear-gradient(90deg, #ff8800, #ffb300);
+    transition: width 0.4s ease;
+    width: 0%;
+}
+
+.grm-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.grm-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    letter-spacing: 0.3px;
+}
+
+.grm-pill-on { background: #8bc34a; color: #111; }
+.grm-pill-off { background: #444; color: #bbb; }
+
+/* Per-format chip row in the Vector RAG block. One chip per format key
+   from /api/rag/index/format_breakdown ("md", "pdf", "docx", ...). */
+.grm-fmt-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-end;
+    max-width: 60%;
+}
+
+.grm-fmt-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 9px;
+    font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.2px;
+    background: rgba(96, 150, 229, 0.18);
+    border: 0.5px solid rgba(96, 150, 229, 0.45);
+    color: var(--text-color);
+}
+
+.grm-fmt-chip[data-fmt="pdf"]  { background: rgba(229,87,87,0.18);  border-color: rgba(229,87,87,0.45); }
+.grm-fmt-chip[data-fmt="docx"] { background: rgba(82,140,229,0.18); border-color: rgba(82,140,229,0.45); }
+.grm-fmt-chip[data-fmt="pptx"] { background: rgba(229,140,68,0.18); border-color: rgba(229,140,68,0.45); }
+.grm-fmt-chip[data-fmt="html"] { background: rgba(120,120,120,0.18); border-color: rgba(120,120,120,0.45); }
+
+/* ── Phase stepper inside the GraphRAG card ───────────────────────────
+   Horizontal dots-and-lines tracker showing the operation's phase
+   sequence. Hover any dot for the station name; the active station's
+   label (plus sub-phase counter when present) is rendered beneath. */
+.grm-stepper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+.grm-stepper-station {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+.grm-stepper-station:last-child { flex: 0 0 auto; }
+.grm-stepper-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid #aaa;
+    background: #fff;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    cursor: default;
+    transition: background 120ms, border-color 120ms, box-shadow 120ms;
+}
+.grm-stepper-dot.done {
+    background: #66bb6a;
+    border-color: #4a8d4d;
+}
+.grm-stepper-dot.current {
+    background: #ffa726;
+    border-color: #c77800;
+    box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.28);
+}
+.grm-stepper-dot.failed {
+    background: #ef5350;
+    border-color: #c62828;
+    box-shadow: 0 0 0 3px rgba(239, 83, 80, 0.28);
+}
+.grm-stepper-line {
+    flex: 1;
+    height: 2px;
+    background: #888;
+    margin: 0 3px;
+    min-width: 6px;
+}
+.grm-stepper-line.done   { background: #66bb6a; }
+.grm-stepper-line.failed { background: #ef5350; }
+
+/* Per-station label below the active dot. The dot-wrap is the
+   positioning context; the label hangs off its bottom and shifts
+   horizontally based on which station owns it so it always points at
+   its own dot. */
+.grm-stepper-dot-wrap {
+    position: relative;
+}
+.grm-stepper-label {
+    position: absolute;
+    top: 100%;
+    margin-top: 6px;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--text-secondary);
+    /* Default: centered on the dot (middle stations). */
+    left: 50%;
+    transform: translateX(-50%);
+}
+.grm-stepper-label.align-left {
+    left: 0;
+    transform: none;
+}
+.grm-stepper-label.align-right {
+    right: 0;
+    left: auto;
+    transform: none;
+}
+
+/* Service-health LED strip — colored pills for each platform service.
+   Backend HealthMonitor probes on a 30s cadence and pushes state
+   changes via Socket.IO `services:health`. Each pill: dot + label +
+   latency. Tooltip on hover shows last error / last ok timestamp. */
+.svc-health-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: #fff9d7;
+    border: 1px solid var(--border-color, #d4cfc0);
+    border-radius: 4px;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;;
+}
+.svc-health-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+    align-items: center;
+}
+.svc-health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-family: var(--font-sans);
+    background: #edffc6;
+    border: 0.5px solid #d4cfc0;
+    cursor: default;
+    user-select: none;
+    white-space: nowrap;
+}
+.svc-health-pill:hover { background: #fff8e6; }
+.svc-health-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #999;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+.svc-health-ok .svc-health-dot {
+    background: #4caf50;
+    box-shadow: 0 0 4px rgba(76, 175, 80, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+.svc-health-fail .svc-health-dot {
+    background: #f44336;
+    box-shadow: 0 0 4px rgba(244, 67, 54, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+.svc-health-unknown .svc-health-dot { background: #999; }
+.svc-health-fail {
+    background: #ffeaea;
+    border-color: #ef9a9a;
+}
+.svc-health-label { color: #1a1a1a; }
+.svc-health-latency {
+    color: #888;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+}
+.svc-health-empty {
+    color: #888;
+    font-size: 11px;
+    font-style: italic;
+    padding: 2px 6px;
+}
+.svc-health-refresh {
+    background: #ffea6e;
+    border: 0.5px solid var(--border-color, #d4cfc0);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    color: #555;
+    height: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.svc-health-refresh:hover { background: #fff8e6; }
+.svc-health-refresh.svc-health-refreshing i {
+    animation: svc-health-spin 0.8s linear infinite;
+}
+@keyframes svc-health-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

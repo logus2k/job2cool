@@ -1,0 +1,227 @@
+/* Debug Panel - right pane inspector */
+
+.debug-panel {
+    height: 100%;
+    overflow-y: auto;
+    font-size: 12px !important;
+    color: #1d1d1d;
+    background: #fefefe;
+    margin: 10px;
+}
+
+/* Sections */
+.debug-section {
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.debug-section-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #444;
+    background: #e0efe5;
+    cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border: 0.5px solid #fcfcfc;
+    border-radius: 3px;
+}
+
+.debug-section-header:hover {
+    background: #ccf1d8;
+    border: 0.5px solid #fcfcfc;
+}
+
+.debug-section-arrow {
+    font-size: 8px;
+    width: 10px;
+    display: inline-block;
+    color: #333333;
+}
+
+.debug-section-body {
+    padding: 2px 0;
+}
+
+/* Placeholder text */
+.debug-placeholder {
+    color: #999;
+    font-style: italic;
+    padding: 8px 12px;
+    font-size: 11px;
+}
+
+/* --- Variables --- */
+
+.debug-scope {
+    margin: 5px;
+}
+
+.debug-scope-header {
+    font-weight: 600;
+    font-size: 10px;
+    color: #666;
+    padding: 3px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.debug-var-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    padding: 1px 8px;
+    line-height: 1.6;
+    font-family: var(--font-mono, 'Consolas', 'Courier New', monospace);
+    font-size: 11px;
+}
+
+.debug-var-row:hover {
+    background: #f0f4ff;
+}
+
+.debug-var-arrow {
+    font-size: 7px;
+    width: 12px;
+    flex-shrink: 0;
+    color: #333333;
+}
+
+.debug-var-arrow-spacer {
+    width: 12px;
+    flex-shrink: 0;
+}
+
+.debug-var-name {
+    color: #0067e7;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.debug-var-sep {
+    color: #888;
+    white-space: pre;
+}
+
+.debug-var-value {
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.debug-var-type {
+    color: #999;
+    font-size: 10px;
+    margin-left: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* --- Call Stack --- */
+
+.debug-frame {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 3px 8px 3px 12px;
+    cursor: pointer;
+    font-family: var(--font-mono, 'Consolas', 'Courier New', monospace);
+    font-size: 11px;
+}
+
+.debug-frame:hover {
+    background: #f0f4ff;
+}
+
+.debug-frame.active {
+    background: #e3ecff;
+    font-weight: 500;
+}
+
+.debug-frame-name {
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.debug-frame-location {
+    color: #888;
+    font-size: 10px;
+    white-space: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* --- Breakpoints --- */
+
+.debug-bp-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px 3px 12px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.debug-bp-row:hover {
+    background: #f0f4ff;
+}
+
+.debug-bp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e53935;
+    flex-shrink: 0;
+}
+
+.debug-bp-checkbox {
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.debug-bp-label {
+    color: #1d1d1d;
+    font-family: var(--font-mono, 'Consolas', 'Courier New', monospace);
+    flex: 1;
+}
+
+.debug-bp-row.disabled .debug-bp-label {
+    color: #aaa;
+    text-decoration: line-through;
+}
+
+.debug-bp-dot.disabled {
+    opacity: 0.3;
+}
+
+.debug-bp-delete {
+    cursor: pointer;
+    margin-left: auto;
+    padding: 0 2px;
+    flex-shrink: 0;
+    visibility: hidden;
+    display: flex;
+    align-items: center;
+    opacity: 0.6;
+}
+
+.debug-bp-row:hover .debug-bp-delete {
+    visibility: visible;
+}
+
+.debug-bp-delete:hover {
+    opacity: 1;
+}

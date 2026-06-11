@@ -1,0 +1,211 @@
+#info-bar {
+    display: none;
+}
+
+/* Centered kernel controls (only flow child, so justify-content: center works) */
+.info-bar-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.info-bar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.info-bar-icon-btn svg {
+    fill: #333333;
+    stroke: #333333;
+}
+
+.info-bar-icon-btn.no-fill svg {
+    fill: none;
+}
+
+.info-bar-icon-btn:hover {
+    background: #c8e6c0;
+    opacity: 0.7;
+}
+
+.info-bar-text-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    color: #333;
+    white-space: nowrap;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.info-bar-text-btn:hover {
+    background: #c8e6c0;
+    color: #202020;
+}
+
+@container (max-width: 580px) {
+    .info-bar-btn-label { display: none; }
+    .info-bar-text-btn { padding: 0 4px; }
+}
+
+/* Clickable kernel/environment status */
+.info-bar-kernel {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: #202020;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.info-bar-kernel:hover {
+    background: #c8e6c0;
+    color: var(--text-primary);
+}
+
+.info-bar-kernel .kernel-status-dot {
+    width: 8px;
+    height: 8px;
+}
+
+/* Kernel status dot */
+.kernel-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.kernel-status-dot.idle {
+    background: var(--accent-green);
+}
+
+.kernel-status-dot.busy {
+    background: var(--accent-green);
+}
+
+.kernel-status-dot.dead {
+    background: var(--accent-red);
+}
+
+.kernel-status-dot.standby {
+    background: var(--text-muted);
+}
+
+.kernel-status-dot.starting {
+    background: var(--accent-orange);
+    animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Kernel picker dropdown */
+.kernel-picker {
+    min-width: 280px;
+    max-width: 400px;
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 99999;
+    overflow: hidden;
+}
+
+.kernel-picker-title {
+    padding: 8px 12px 6px;
+    font-size: 11px;
+    background-color: #ffe39e;
+    color: #333333;
+    letter-spacing: 0.4px;
+    border-bottom: 1px solid var(--border-color, #eee);
+}
+
+.kernel-picker-loading,
+.kernel-picker-empty {
+    padding: 12px;
+    font-size: 12px;
+    color: var(--text-muted, #888);
+    text-align: center;
+}
+
+.kernel-picker-list {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.kernel-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.kernel-picker-item:hover {
+    background: var(--bg-hover, #f0f0f0);
+}
+
+.kernel-picker-item.active {
+    background: #e0f0e0;
+}
+
+.kernel-picker-star {
+    width: 14px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #ffcc00;
+    text-align: center;
+}
+
+.kernel-picker-name {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-primary, #222);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kernel-picker-version {
+    font-size: 11px;
+    color: #1d1d1d;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.kernel-picker-footer {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-color, #eee);
+}
+
+.kernel-picker-footer .explorer-btn {
+    width: 100%;
+}

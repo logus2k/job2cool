@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>noted</title>
+
+	<link rel="icon" href="static/favicon-bold.ico" sizes="any">
+	<link rel="icon" type="image/png" sizes="32x32" href="static/favicon-bold-32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="static/favicon-bold-16.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="static/favicon-bold-180.png">
+	<link rel="icon" type="image/png" sizes="512x512" href="static/favicon-terminal-green-bold-512.png">
+
+    <link rel="stylesheet" href="static/vendor/github.min.css">
+    <link rel="stylesheet" href="static/vendor/katex.min.css">
+    <link rel="stylesheet" href="static/vendor/jspanel/jspanel.min.css">
+    <link rel="stylesheet" href="static/vendor/fontawesome/all.min.css">
+    <link rel="stylesheet" href="static/vendor/xterm/xterm.css">
+    <link rel="stylesheet" href="static/vendor/wunderbaum/wunderbaum.css">
+    <link rel="stylesheet" href="static/vendor/notyf.min.css">
+
+    <link rel="stylesheet" href="static/css/base.css">
+    <link rel="stylesheet" href="static/css/toolbar.css">
+    <link rel="stylesheet" href="static/css/info-bar.css">
+    <link rel="stylesheet" href="static/css/panels.css">
+    <link rel="stylesheet" href="static/css/notebook.css">
+    <link rel="stylesheet" href="static/css/cell.css">
+    <link rel="stylesheet" href="static/css/output.css">
+    <link rel="stylesheet" href="static/css/venv-panel.css">
+    <link rel="stylesheet" href="static/css/explorer-panel.css">
+    <link rel="stylesheet" href="static/css/post-it.css">
+    <link rel="stylesheet" href="static/css/toc.css">
+    <link rel="stylesheet" href="static/css/settings-panel.css">
+    <link rel="stylesheet" href="static/css/chat-panel.css">
+    <link rel="stylesheet" href="static/css/doc-panel.css">
+    <link rel="stylesheet" href="static/css/water-doc.css">
+    <link rel="stylesheet" href="static/css/icon-bar.css">
+    <link rel="stylesheet" href="static/css/sidebar.css">
+    <link rel="stylesheet" href="static/css/tab-bar.css">
+    <link rel="stylesheet" href="static/css/right-panel.css">
+    <link rel="stylesheet" href="static/css/document-viewer.css">
+    <link rel="stylesheet" href="static/css/file-editor.css">
+    <link rel="stylesheet" href="static/css/media-viewer.css">
+    <link rel="stylesheet" href="static/css/git-panel.css">
+    <link rel="stylesheet" href="static/css/menubar.css">
+    <link rel="stylesheet" href="static/css/export-panel.css">
+    <link rel="stylesheet" href="static/css/debug-panel.css">
+    <link rel="stylesheet" href="static/css/graph-rebuild-monitor-panel.css">
+    <link rel="stylesheet" href="static/css/workflow-monitor-panel.css">
+    <link rel="stylesheet" href="static/css/domain-manager.css">
+
+    <!-- Restore wallpaper before paint to prevent flash -->
+    <script>
+    (function() {
+        var s = localStorage.getItem('wallpaper');
+        var d = s ? null : { type: 'image', name: 'natural park', url: 'wallpapers/natural_park.jpg' };
+        if (!d) try {
+            d = JSON.parse(s);
+            var css;
+            if (d.type === 'pattern') {
+                var patterns = {
+                    'Grid': { bc: '#d3d3d32e', bi: 'linear-gradient(rgb(107 107 107 / 14%) 1px, transparent 1px), linear-gradient(90deg, rgba(140, 160, 180, 0.35) 1px, transparent 1px)', bs: '10px 10px' },
+                    'Dots': { bc: '#f0f0f0', bi: 'radial-gradient(circle, #b0b0b0 1px, transparent 1px)', bs: '20px 20px' },
+                    'Diagonal Lines': { bc: '#f5f5f5', bi: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 11px)', bs: 'auto' },
+                    'Blueprint': { bc: '#1a2a3a', bi: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', bs: '100px 100px, 100px 100px, 20px 20px, 20px 20px' },
+                    'Carbon': { bc: '#2c2c2c', bi: 'linear-gradient(27deg, #1a1a1a 5px, transparent 5px), linear-gradient(207deg, #1a1a1a 5px, transparent 5px), linear-gradient(27deg, #222 5px, transparent 5px), linear-gradient(207deg, #222 5px, transparent 5px), linear-gradient(90deg, #1b1b1b 10px, transparent 10px), linear-gradient(#222 25%, #1b1b1b 25%, #1b1b1b 50%, transparent 50%, transparent 75%, #242424 75%, #242424)', bs: '30px 30px' },
+                    'None': { bc: 'transparent', bi: 'none', bs: 'auto' }
+                };
+                var p = patterns[d.name];
+                if (p) css = 'background-color:' + p.bc + ';background-image:' + p.bi + ';background-size:' + p.bs;
+            } else if (d.type === 'image' && d.url) {
+                css = "background-color:#1a1a1a;background-image:url('" + d.url + "');background-size:cover;background-position:center";
+            }
+            if (css) {
+                var st = document.createElement('style');
+                st.textContent = 'html,body{' + css + '}';
+                document.head.appendChild(st);
+            }
+        } catch(e) {}
+    })();
+    </script>
+</head>
+<body>
+    <div id="app">
+        <div id="menubar"></div>
+        <div id="toolbar"></div>
+        <div id="info-bar"></div>
+        <div id="below-bar">
+            <div id="icon-bar"></div>
+            <div id="sidebar-panel"></div>
+            <div id="sidebar-resizer"></div>
+            <div id="content-area">
+                <div id="center-column">
+                    <div id="notebook-container"></div>
+                    <div id="service-tab-container"></div>
+                </div>
+                <div id="notebook-resizer"></div>
+                <div id="right-panel" style="display:none"></div>
+            </div>
+        </div>
+        <div id="status-bar"></div>
+    </div>
+
+    <script src="static/vendor/socket.io.min.js"></script>
+    <script src="static/vendor/marked.min.js"></script>
+    <script src="static/vendor/highlight.min.js"></script>
+    <script src="static/vendor/highlight-python.min.js"></script>
+    <script src="static/vendor/highlight-powershell.min.js"></script>
+    <script src="static/vendor/highlight-dockerfile.min.js"></script>
+    <script src="static/vendor/highlight-nginx.min.js"></script>
+    <script src="static/vendor/jspanel/jspanel.min.js"></script>
+    <script src="static/vendor/jspanel/jspanel.modal.min.js"></script>
+    <script src="static/vendor/katex.min.js"></script>
+    <script src="static/vendor/katex-auto-render.min.js"></script>
+    <script src="static/vendor/wunderbaum/wunderbaum.umd.min.js"></script>
+    <script src="static/vendor/xterm/xterm.min.js"></script>
+    <script src="static/vendor/xterm/addon-fit.min.js"></script>
+    <script src="static/vendor/xterm/addon-webgl.min.js"></script>
+    <script src="static/vendor/notyf.min.js"></script>
+    <script src="static/vendor/echarts.min.js"></script>
+    <script src="static/vendor/dagre.min.js"></script>
+    <!-- Voice Activity Detection (Silero VAD via ONNX Runtime Web).
+         ort.wasm.min.js (UMD) sets window.ort and dynamically imports
+         the .mjs glue + .wasm at runtime — wasmPaths is configured in
+         ChatService.js:startVoice. bundle.min.js (vad-web UMD) needs
+         window.ort to be defined, so this load order matters. -->
+    <script src="static/vendor/onnxruntime-web/ort.wasm.min.js"></script>
+    <script src="static/vendor/vad/bundle.min.js"></script>
+
+    <script type="module" src="static/js/app.js"></script>
+</body>
+</html>

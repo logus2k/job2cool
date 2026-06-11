@@ -1,0 +1,438 @@
+/* jsPanel theme overrides */
+.jsPanel {
+    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+
+.jsPanel .jsPanel-hdr {
+    background: #ffe39e !important;
+    border-bottom: 0.5px solid var(--border-color);
+    border-radius: 4px 4px 0px 0px !important;
+    overflow: hidden;
+}
+
+.jsPanel .jsPanel-titlebar {
+    background: transparent !important;
+}
+
+.jsPanel .jsPanel-headerbar {
+    padding: 0;
+    /* Vendor jsPanel sizes the titlebar to the headerbar (titlebar has
+     * height:100%; overflow:hidden), and the headerbar to its tallest
+     * child. With normal text titles the headerbar is ~28px tall — fine.
+     * But titles that include FA icons with -webkit-text-stroke or
+     * larger glyphs render taller than 28px, get clipped by the
+     * titlebar's overflow:hidden, and look "occluded". Forcing a
+     * minimum height gives those titles room without affecting the
+     * common case. */
+    min-height: 32px;
+}
+
+.jsPanel .jsPanel-title {
+    color: var(--text-primary) !important;
+    font-size: 12px !important;
+    text-transform: none !important;
+    font-variant: normal !important;
+    padding: 6px 20px 3px 1px;
+    /* align-items:center centers the title CONTENT inside the title
+     * element, so an icon + text stay vertically aligned with each
+     * other and with the close button when the headerbar is taller
+     * than the bare text would need. */
+    display: flex;
+    align-items: center;
+}
+
+.jsPanel .jsPanel-controlbar {
+    margin: 4px 1px 3px 3px;
+}
+
+.jsPanel .jsPanel-controlbar .jsPanel-btn {
+    color: #666666 !important;
+    background: transparent !important;
+    -webkit-text-stroke: 1px;
+    paint-order: stroke fill;
+    padding: 0 !important;
+    width: 24px !important;
+    height: 22px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.jsPanel .jsPanel-controlbar .jsPanel-btn:hover {
+    color: var(--text-primary) !important;
+    background: #fff2bcd9 !important;
+    opacity: 0.7;
+    border-radius: var(--radius);
+}
+
+.jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md span:not(.material-icons),
+.jsPanel-controlbar .jsPanel-btn.jsPanel-btn-md svg:not(.svg-inline--fa) {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+    margin: 0px !important;
+}
+
+.jsPanel-depth-3 {
+    box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+}
+
+.jsPanel .jsPanel-content {
+    background: #fff9e3;
+    color: var(--text-primary) !important;
+    overflow-y: auto;
+}
+
+.jsPanel.terminal-panel .jsPanel-content {
+    background: #1e1e20 !important;
+    overflow: hidden !important;
+    padding: 8px !important;
+}
+
+/* Chart artifact viewer (double-click on a chat chart). The chart fills
+ * the panel exactly; ECharts' internal canvas can render 1-2px past the
+ * wrapper bounds, which would otherwise trigger the global content-area
+ * scrollbars. */
+.jsPanel.chart-artifact-panel .jsPanel-content {
+    overflow: hidden !important;
+    background: #ffffff;
+}
+
+/* Panel shared styles */
+.panel-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.panel-error {
+    padding: 16px;
+    color: var(--accent-red);
+    font-size: 13px;
+    text-align: center;
+}
+
+.panel-empty {
+    padding: 24px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.panel-toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.panel-action-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--accent-blue);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.panel-action-btn:hover {
+    opacity: 0.85;
+}
+
+.panel-action-btn.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.panel-action-btn.secondary:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* Panel list items */
+.panel-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.panel-section-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 10px 14px 4px;
+}
+
+.panel-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-list-item:last-child {
+    border-bottom: none;
+}
+
+.panel-list-item:hover {
+    background: var(--bg-hover);
+}
+
+.panel-list-item.active {
+    background: rgba(66, 133, 244, 0.08);
+    border-left: 3px solid var(--accent-blue);
+    padding-left: 11px;
+}
+
+.panel-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.panel-item-name.muted {
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 400;
+}
+
+.panel-item-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Panel footer */
+.panel-footer {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    text-align: center;
+}
+
+.panel-footer-link {
+    font-size: 12px;
+    color: var(--accent-blue);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px 8px;
+}
+
+.panel-footer-link:hover {
+    text-decoration: underline;
+}
+
+/* Tree-style browser panel */
+.panel-tree-chevron {
+    width: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.panel-project-item {
+    font-weight: 500;
+    gap: 4px;
+}
+
+.panel-project-item.expanded {
+    background: var(--bg-secondary);
+}
+
+.panel-notebook-item {
+    padding-left: 34px;
+}
+
+.panel-new-item {
+    border-bottom: none;
+}
+
+/* Modal buttons */
+.modal-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    border: 1px solid var(--border-color, #444);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+.modal-cancel {
+    background: var(--bg-tertiary, #2a2a2a);
+    color: var(--text-secondary, #bbb);
+}
+.modal-cancel:hover {
+    background: var(--bg-hover, #333);
+    color: var(--text-primary, #eee);
+}
+.modal-confirm {
+    background: #e06060;
+    color: #fff;
+    border-color: #c04040;
+}
+.modal-confirm:hover {
+    background: #c84040;
+}
+.jsPanel-ftr {
+    background: var(--bg-secondary, #252526) !important;
+    border-top: 1px solid var(--border-color, #444) !important;
+}
+/* Modal backdrop and panel z-index: backdrop must be below the panel.
+   jsPanel's internal counter can get out of sync, so we force ordering.
+   The _cleanupBackdrops() in modal.js handles removal on close. */
+.jsPanel-modal-backdrop {
+    background: rgba(0, 0, 0, 0.35) !important;
+    z-index: 10001 !important;
+}
+.jsPanel.jsPanel-modal {
+    z-index: 10002 !important;
+}
+
+/* Knowledge Graph density slider - custom-styled <input type="range">.
+ * Native browser thumb extends visually past the track edges at min/max
+ * positions ("the user can never reach full left/right"); this restyle
+ * keeps the thumb FLUSH at the extremes by using a thin track and a
+ * thumb sized to match the track height. */
+.kg-density-slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 6px;
+    background: #d0d0d0;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+.kg-density-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #6096e5;
+    border: 1px solid #4677c0;
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: 0;
+}
+.kg-density-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #6096e5;
+    border: 1px solid #4677c0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.kg-density-slider::-moz-range-track {
+    background: transparent;
+    border: none;
+}
+
+/* Knowledge Graph answer pane - markdown body styling so streamed
+ * answers look like the chat (proper paragraph spacing, list indent,
+ * inline code, headers). */
+.kg-answer-body p {
+    margin: 0 0 8px 0;
+}
+.kg-answer-body p:last-child {
+    margin-bottom: 0;
+}
+.kg-answer-body ul,
+.kg-answer-body ol {
+    padding-left: 22px;
+    margin: 4px 0 10px 0;
+}
+.kg-answer-body li {
+    margin-bottom: 4px;
+}
+.kg-answer-body li > p {
+    margin-bottom: 4px;
+}
+.kg-answer-body strong {
+    color: #1a1a1a;
+}
+.kg-answer-body code {
+    background: #f0f0f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.92em;
+    color: #c7254e;
+}
+.kg-answer-body pre {
+    background: #1e1e1e;
+    color: #f5f5f5;
+    padding: 8px 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 6px 0 10px 0;
+    font-size: 0.92em;
+    line-height: 1.45;
+}
+.kg-answer-body pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+}
+.kg-answer-body h1,
+.kg-answer-body h2,
+.kg-answer-body h3,
+.kg-answer-body h4 {
+    margin: 12px 0 6px 0;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+.kg-answer-body h1 { font-size: 1.15em; }
+.kg-answer-body h2 { font-size: 1.08em; }
+.kg-answer-body h3 { font-size: 1.0em; }
+.kg-answer-body blockquote {
+    border-left: 3px solid #6096e5;
+    padding: 2px 8px;
+    margin: 6px 0;
+    color: #555;
+    background: #fafafa;
+}
+.kg-answer-body a {
+    color: #1565c0;
+    text-decoration: none;
+}
+.kg-answer-body a:hover {
+    text-decoration: underline;
+}
+.kg-answer-body table {
+    border-collapse: collapse;
+    margin: 6px 0;
+}
+.kg-answer-body th,
+.kg-answer-body td {
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    font-size: 0.95em;
+}
+
+/* Resizable splitter for the answer pane */
+.kg-pane-splitter {
+    width: 5px;
+    background: #e0e0e0;
+    cursor: ew-resize;
+    flex-shrink: 0;
+    align-self: stretch;
+    transition: background-color 0.15s;
+}
+.kg-pane-splitter:hover,
+.kg-pane-splitter.dragging {
+    background: #6096e5;
+}

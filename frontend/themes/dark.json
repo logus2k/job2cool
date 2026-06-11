@@ -1,0 +1,45 @@
+{
+    "name": "Dark",
+    "colors": {
+        "scheme": "dark",
+        "background": "#1e1e1e",
+        "pageBg": "#121212",
+        "text": "#d4d4d4",
+        "textMuted": "#808080",
+        "cellBorder": "#333333",
+        "codeBg": "#252526",
+        "outputBg": "#1e1e1e",
+        "prompt": "#569cd6",
+        "resultText": "#9cdcfe",
+        "errorText": "#f48771",
+        "link": "#569cd6"
+    },
+    "cells": {
+        "borders": true,
+        "leftBar": true,
+        "leftBarColors": { "code": "#569cd6", "markdown": "#6a9955", "raw": "#808080" },
+        "numbering": false,
+        "spacing": 0
+    },
+    "code": {
+        "lineNumbers": false,
+        "prompt": true,
+        "copyButton": true,
+        "font": "\"JetBrains Mono\", \"Fira Code\", \"Consolas\", monospace"
+    },
+    "output": {
+        "copyButton": true,
+        "collapsible": false,
+        "maxHeight": 500,
+        "imageShadow": true
+    },
+    "markdown": {
+        "toc": false,
+        "anchorLinks": true
+    },
+    "page": {
+        "maxWidth": "960px",
+        "header": true,
+        "printStyles": true
+    }
+}

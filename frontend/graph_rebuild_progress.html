@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GraphRAG rebuild progress</title>
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --panel: #252526;
+    --border: #3a3a3a;
+    --text: #d4d4d4;
+    --dim: #8a8a8a;
+    --accent: #ff8800;
+    --ok: #8bc34a;
+    --warn: #ffb300;
+    --err: #e57373;
+  }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+    font-size: 13px;
+  }
+  .wrap {
+    max-width: 720px; margin: 40px auto; padding: 0 20px;
+  }
+  h1 {
+    font-size: 18px; font-weight: 500; margin: 0 0 4px 0;
+  }
+  .sub { color: var(--dim); font-size: 11px; margin-bottom: 24px; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; padding: 16px 20px; margin-bottom: 12px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
+  .row .k { color: var(--dim); }
+  .row .v { font-variant-numeric: tabular-nums; }
+
+  .phase {
+    display: inline-block; padding: 3px 10px; border-radius: 3px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .phase.idle { background: #444; color: var(--dim); }
+  .phase.starting, .phase.scanning { background: #1976d2; color: white; }
+  .phase.extracting { background: var(--accent); color: #111; }
+  .phase.sameas, .phase.analytics, .phase.summarizing { background: #7b1fa2; color: white; }
+  .phase.writing { background: #00838f; color: white; }
+  .phase.done { background: var(--ok); color: #111; }
+  .phase.error { background: var(--err); color: #111; }
+
+  .progress-outer {
+    background: #111; border: 1px solid var(--border);
+    height: 18px; border-radius: 2px; overflow: hidden; margin: 8px 0;
+  }
+  .progress-inner {
+    height: 100%; background: linear-gradient(90deg, var(--accent), #ffb300);
+    transition: width 0.4s ease; width: 0%;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--dim);
+  }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    background: #333; color: var(--text); font-size: 10px; margin-right: 6px;
+  }
+  .pill.on { background: var(--ok); color: #111; }
+  .pill.off { background: #444; color: var(--dim); }
+  .error-box { color: var(--err); padding: 8px 12px; background: #3a2020; border-radius: 3px; }
+  .hint { color: var(--dim); font-size: 11px; margin-top: 14px; }
+  .hint code { background: #111; padding: 1px 4px; border-radius: 2px; color: var(--text); }
+  a, a:visited { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GraphRAG rebuild progress</h1>
+  <div class="sub">
+    Polls <code>http://localhost:5523/research/status</code> every 2 s.
+    <span id="poll-state" class="pill on">live</span>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="k">phase</span>
+      <span id="phase" class="phase idle">idle</span>
+    </div>
+    <div class="row">
+      <span class="k">rebuild_in_progress</span>
+      <span id="in-progress" class="v">-</span>
+    </div>
+    <div class="row">
+      <span class="k">started_at</span>
+      <span id="started-at" class="v">-</span>
+    </div>
+    <div class="row">
+      <span class="k">elapsed</span>
+      <span id="elapsed" class="v">-</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="k">chunks extracted</span>
+      <span id="chunks-v" class="v">0 / 0</span>
+    </div>
+    <div class="progress-outer">
+      <div id="progress-bar" class="progress-inner"></div>
+    </div>
+    <div class="progress-label">
+      <span id="progress-pct">0.0%</span>
+      <span id="rate">-</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span class="k">current source</span>
+      <span id="current-doc" class="v" style="font-family:monospace;font-size:11px;text-align:right;overflow:hidden;text-overflow:ellipsis;max-width:55%">-</span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <span class="k">entities accepted</span>
+      <span id="entities" class="v">0</span>
+    </div>
+    <div class="row">
+      <span class="k">markdown docs scanned</span>
+      <span id="md-docs" class="v">0</span>
+    </div>
+    <div class="row">
+      <span class="k">communities</span>
+      <span id="communities" class="v">0 / 0 summarized</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="k">ArcadeDB entities (global)</span>
+      <span id="db-entities" class="v">0</span>
+    </div>
+    <div class="row">
+      <span class="k">ArcadeDB relationships (global)</span>
+      <span id="db-rels" class="v">0</span>
+    </div>
+  </div>
+
+  <div id="last-build" class="card" style="display:none">
+    <strong style="font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.5px">Last completed build</strong>
+    <pre id="last-build-json" style="margin:8px 0 0 0; font-size:11px; color:var(--text); overflow:auto"></pre>
+  </div>
+
+  <div id="error-card" class="card" style="display:none">
+    <div class="error-box" id="error-msg"></div>
+  </div>
+
+  <div class="hint">
+    Serve with <code>npx serve -p 4005</code> from the <code>frontend/</code> folder,
+    then open <code>http://localhost:4005/graph_rebuild_progress.html</code>.<br>
+    This page hits <code>localhost:5523</code> directly — noted-graph is configured with CORS:allow-all.
+  </div>
+</div>
+
+<script>
+(function() {
+  const POLL_MS = 2000;
+  const el = (id) => document.getElementById(id);
+
+  let lastDone = 0;
+  let lastDoneAt = 0;
+
+  function fmtDuration(seconds) {
+    if (!seconds && seconds !== 0) return '-';
+    const s = Math.floor(seconds);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const r = s % 60;
+    if (h > 0) return `${h}h ${m}m ${r}s`;
+    if (m > 0) return `${m}m ${r}s`;
+    return `${r}s`;
+  }
+
+  function applyStatus(data) {
+    const progress = data.progress || {};
+    const phase = progress.phase || 'idle';
+    const phaseEl = el('phase');
+    phaseEl.textContent = phase;
+    phaseEl.className = 'phase ' + phase;
+
+    el('in-progress').textContent = data.rebuild_in_progress ? 'true' : 'false';
+
+    const started = progress.started_at;
+    el('started-at').textContent = started || '-';
+    if (started) {
+      const ms = Date.now() - Date.parse(started);
+      el('elapsed').textContent = fmtDuration(ms / 1000);
+    } else {
+      el('elapsed').textContent = '-';
+    }
+
+    const done = progress.extraction_chunks_done || 0;
+    const total = progress.extraction_chunks_total || 0;
+    el('chunks-v').textContent = `${done} / ${total}`;
+    const pct = total ? (done / total) * 100 : 0;
+    el('progress-bar').style.width = pct.toFixed(1) + '%';
+    el('progress-pct').textContent = pct.toFixed(1) + '%';
+
+    const now = Date.now();
+    if (lastDoneAt && done > lastDone) {
+      const dt = (now - lastDoneAt) / 1000;
+      const d = done - lastDone;
+      const rate = d / dt;
+      const remaining = total - done;
+      if (rate > 0 && remaining > 0) {
+        el('rate').textContent = `${(rate * 60).toFixed(1)} chunks/min · ETA ~ ${fmtDuration(remaining / rate)}`;
+      } else {
+        el('rate').textContent = '';
+      }
+    }
+    lastDone = done;
+    lastDoneAt = now;
+
+    const curDoc = progress.current_doc || '';
+    const curIdx = progress.current_chunk_in_doc;
+    el('current-doc').textContent = curDoc
+      ? (curIdx !== undefined ? `${curDoc}  #${curIdx}` : curDoc)
+      : '-';
+
+    el('entities').textContent = progress.entities_accepted || 0;
+    el('md-docs').textContent = progress.md_docs || 0;
+    el('communities').textContent = (progress.communities_summarized || 0) + ' / ' + (progress.communities_total || 0) + ' summarized';
+
+    const counts = data.global_counts || {};
+    el('db-entities').textContent = counts.entities ?? 0;
+    el('db-rels').textContent = counts.relationships ?? 0;
+
+    if (data.last_build) {
+      el('last-build').style.display = '';
+      el('last-build-json').textContent = JSON.stringify(data.last_build, null, 2);
+    }
+
+    el('error-card').style.display = 'none';
+    el('poll-state').textContent = 'live';
+    el('poll-state').className = 'pill on';
+  }
+
+  function applyError(message) {
+    el('poll-state').textContent = 'offline';
+    el('poll-state').className = 'pill off';
+    el('error-card').style.display = '';
+    el('error-msg').textContent = message;
+  }
+
+  async function tick() {
+    try {
+      const resp = await fetch('http://localhost:5523/research/status', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      applyStatus(data);
+    } catch (e) {
+      applyError('noted-graph unreachable: ' + e.message);
+    }
+  }
+
+  tick();
+  setInterval(tick, POLL_MS);
+})();
+</script>
+</body>
+</html>

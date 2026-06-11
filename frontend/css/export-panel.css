@@ -1,0 +1,148 @@
+/* Export Panel - tabbed options dialog */
+
+.export-panel .jsPanel-content {
+    background: var(--bg-primary, #1e1e1e);
+}
+
+.export-panel .jsPanel-content > :first-child {
+    height: auto;
+}
+
+/* Tabs */
+.export-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color, #444);
+    padding: 0 8px;
+    flex-shrink: 0;
+}
+
+.export-tab {
+    padding: 6px 12px 5px;
+    font-size: 11px;
+    font-family: var(--font-sans);
+    color: var(--text-secondary, #999);
+    background: none;
+    border: 0.5px solid transparent;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    margin-bottom: -1px;
+    white-space: nowrap;
+}
+
+.export-tab:hover {
+    color: var(--text-primary, #eee);
+}
+
+.export-tab.active {
+    background-color: #ffe39e;
+    color: #1a1a1a;
+    border-color: #666666;
+    z-index: 1;
+}
+
+/* Pages */
+.export-pages {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.export-page {
+    padding: 14px 16px;
+}
+
+/* Form elements */
+.export-cb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 12px;
+    color: var(--text-primary, #ccc);
+    cursor: pointer;
+}
+
+.export-cb input[type="checkbox"] {
+    margin: 0;
+}
+
+.export-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.export-field label {
+    font-size: 11px;
+    color: var(--text-muted, #888);
+    font-weight: 500;
+}
+
+.export-field select,
+.export-field input[type="text"],
+.export-field input[type="number"] {
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: var(--font-sans);
+    background: var(--bg-tertiary, #2a2a2a);
+    color: var(--text-primary, #ccc);
+    border: 1px solid var(--border-color, #444);
+    border-radius: 3px;
+    outline: none;
+}
+
+.export-field select:focus,
+.export-field input:focus {
+    border-color: #ffe39e;
+}
+
+.export-field input[type="number"] {
+    width: 60px;
+}
+
+.export-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.export-sep {
+    height: 1px;
+    background: var(--border-color, #444);
+    margin: 10px 0;
+}
+
+/* Footer */
+.export-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-color, #444);
+    flex-shrink: 0;
+}
+
+.export-status {
+    font-size: 11px;
+    color: var(--text-muted, #888);
+    flex: 1;
+}
+
+.export-btn {
+    padding: 5px 20px;
+    font-size: 12px;
+    font-family: var(--font-sans);
+    background: #5ba4e6;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.export-btn:hover {
+    background: #4a90d9;
+}

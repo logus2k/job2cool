@@ -1,0 +1,617 @@
+/* DomainManagerPanel - master-detail layout for Domain + document CRUD.
+   Scoped under .dm- to avoid collisions. The panel reuses the existing
+   `rm-btn`, `grm-card`, `grm-phase-*`, `grm-fmt-chip` utilities from
+   graph-rebuild-monitor-panel.css for consistency with the Monitor. */
+
+/* ── Icon color palette ─────────────────────────────────────────────
+   Mirrors the Explorer context menu palette exactly so the same actions
+   look the same wherever they appear in the app. Tone changes happen in
+   one place. */
+.dm-i-add       { color: #66bb6a; }   /* matches Explorer "New Project"      */
+.dm-i-delete    { color: #ef5350; }   /* matches Explorer "Delete Document"  */
+.dm-i-edit      { color: #81c784; }   /* matches Explorer "Rename..."        */
+.dm-i-tag       { color: #81c784; }   /* matches Explorer "Set Category..."  */
+.dm-i-upload    { color: #78909c; }   /* matches Explorer "Upload Document"  */
+.dm-i-refresh   { color: #90a4ae; }
+.dm-i-rebuild   { color: #ff8800; }   /* matches Explorer "Rebuild Graph"    */
+.dm-i-pin       { color: #9e9e9e; }
+.dm-i-warn      { color: #f9a825; }
+.dm-i-manage    { color: #5e8aaf; }   /* matches Explorer "Manage Domain..." */
+
+.dm-root {
+    display: flex;
+    height: 100%;
+    background-color: #fdfaf3;
+    color: var(--text-color);
+    font-size: 13px;
+    position: relative;
+}
+
+/* ── Left pane ──────────────────────────────────────────────────── */
+
+.dm-left {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+}
+
+.dm-left__head {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.dm-create-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 6px 10px;
+}
+
+.dm-left__list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.dm-list-empty {
+    padding: 16px 14px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-align: center;
+}
+
+.dm-list-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    user-select: none;
+    align-items: flex-start;
+}
+
+.dm-list-row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.dm-list-row.is-selected {
+    background-color: rgba(255, 204, 0, 0.18);
+    border-left-color: #ffcc00;
+}
+
+.dm-list-active {
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.dm-list-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.dm-list-name {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dm-list-sub {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Right pane ─────────────────────────────────────────────────── */
+
+.dm-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dm-right__empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 24px;
+}
+
+.dm-right__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.dm-header {
+    padding: 14px 18px 8px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.dm-header-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.dm-header-slug {
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.dm-header-pin {
+    font-size: 9px;
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+}
+
+.dm-header-desc {
+    flex-basis: 100%;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Tab bar */
+.dm-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.dm-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dm-tab-btn:hover {
+    color: var(--text-color);
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.dm-tab-btn.is-active {
+    color: var(--text-color);
+    border-bottom-color: #ffcc00;
+    background: #fdfaf3;
+}
+
+/* Tab body */
+.dm-tab-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px;
+}
+
+.dm-tab-error {
+    padding: 14px;
+    color: #c62828;
+    background: rgba(198, 40, 40, 0.08);
+    border-radius: 4px;
+}
+
+/* ── Generic tab cards ──────────────────────────────────────────── */
+
+.dm-card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.dm-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.dm-card-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dm-card-body {
+    padding: 12px 14px;
+    font-size: 12px;
+}
+
+.dm-card-actions {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dm-card-note {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.dm-card-loading {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.dm-card-info .dm-card-body {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.dm-card-danger {
+    border-color: rgba(211, 47, 47, 0.4);
+}
+
+.dm-card-danger .dm-card-head {
+    background: rgba(211, 47, 47, 0.06);
+}
+
+.dm-card-danger .dm-card-title {
+    color: #c62828;
+}
+
+.dm-danger-text {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.dm-danger-text code {
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+.dm-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+    font-size: 12px;
+}
+
+.dm-info-row:last-child {
+    border-bottom: none;
+}
+
+.dm-info-row > span:first-child {
+    color: var(--text-secondary);
+}
+
+.dm-mono {
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+}
+
+/* ── Settings tab forms ────────────────────────────────────────── */
+
+.dm-settings .dm-card {
+    max-width: 640px;
+}
+
+.dm-form-row {
+    margin-bottom: 10px;
+}
+
+.dm-form-row label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.dm-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: #ffffff;
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+textarea.dm-input {
+    resize: vertical;
+    min-height: 56px;
+}
+
+.dm-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.dm-form-status {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.dm-btn-primary {
+    background: #ffcc00;
+    color: #1d1d1d;
+    border: none;
+}
+
+.dm-btn-primary:disabled {
+    background: #e6e6e6;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.dm-btn-danger {
+    background: #d32f2f;
+    color: #fff;
+    border: none;
+}
+
+.dm-btn-danger:hover {
+    background: #b71c1c;
+}
+
+/* ── Knowledge tab ──────────────────────────────────────────────── */
+
+.dm-knowledge .dm-card {
+    max-width: 720px;
+}
+
+.dm-recluster-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff8e1;
+    border: 1px solid #ffd54f;
+    color: #5d4e1a;
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.dm-recluster-banner > i {
+    color: #f9a825;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.dm-recluster-text {
+    flex: 1;
+}
+
+.dm-recluster-title {
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.dm-recluster-reason {
+    font-size: 11px;
+    color: #7b6a30;
+    margin-top: 2px;
+}
+
+/* ── Documents tab ──────────────────────────────────────────────── */
+
+.dm-doc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.dm-doc-search {
+    flex: 1;
+    min-width: 180px;
+    max-width: 320px;
+}
+
+.dm-doc-bulk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255, 204, 0, 0.18);
+    padding: 4px 8px;
+    border-radius: 3px;
+}
+
+.dm-doc-refresh {
+    margin-left: auto;
+    padding: 4px 8px;
+}
+
+.dm-doc-table-wrap {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.dm-doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.dm-doc-table thead th {
+    background: rgba(0, 0, 0, 0.04);
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.dm-doc-th-cb {
+    width: 32px;
+}
+
+.dm-doc-th-actions {
+    width: 110px;
+    text-align: right;
+}
+
+.dm-doc-table tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    vertical-align: top;
+}
+
+.dm-doc-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.dm-doc-table tbody tr.is-selected {
+    background: rgba(255, 204, 0, 0.1);
+}
+
+.dm-doc-td-cb {
+    width: 32px;
+}
+
+.dm-doc-td-name {
+    min-width: 160px;
+}
+
+.dm-doc-name {
+    font-weight: 500;
+    color: var(--text-color);
+    word-break: break-word;
+}
+
+.dm-doc-missing {
+    color: #f9a825;
+    font-size: 11px;
+}
+
+.dm-doc-path {
+    font-size: 10px;
+    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary);
+    word-break: break-all;
+    margin-top: 2px;
+}
+
+.dm-doc-mode {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    letter-spacing: 0.3px;
+}
+
+.dm-doc-mode-read_store {
+    background: rgba(67, 160, 71, 0.15);
+    color: #2e7d32;
+}
+
+.dm-doc-mode-read_only {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-secondary);
+}
+
+.dm-doc-td-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.dm-icon-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    margin-left: 2px;
+    font-size: 12px;
+}
+
+.dm-icon-btn:hover {
+    border-color: var(--border-color);
+    color: var(--text-color);
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.dm-icon-btn-danger:hover {
+    color: #d32f2f;
+    border-color: rgba(211, 47, 47, 0.4);
+    background: rgba(211, 47, 47, 0.06);
+}
+
+.dm-doc-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+/* ── Error overlay ──────────────────────────────────────────────── */
+
+.dm-error {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    max-width: 380px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    background: #c62828;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}

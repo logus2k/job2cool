@@ -1,0 +1,249 @@
+/* Media Viewer — displays images, audio, video, and PDFs */
+
+.media-viewer {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.media-viewer-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    border-right: 0.5px solid #333333;
+    border-left: 0.5px solid #333333;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+}
+
+/* Image */
+.media-viewer-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1;
+}
+
+.media-viewer-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Audio */
+.media-viewer-audio-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+}
+
+.media-viewer-audio-container audio {
+    width: 100%;
+    max-width: 500px;
+}
+
+/* Video */
+.media-viewer-video-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1;
+    width: 100%;
+}
+
+.media-viewer-video {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* PDF */
+.media-viewer.media-viewer-pdf {
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    padding-right: 10px;
+    background: #e8e8e8;
+}
+
+.media-viewer.media-viewer-pdf .pdf-page {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    flex-shrink: 0;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.media-viewer.media-viewer-pdf .pdf-page-canvas {
+    display: block;
+    width: 100%;
+}
+
+/* Annotation layer (clickable PDF links) */
+.pdf-annotation-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.pdf-annotation-layer a {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* Citation bbox highlight (Docling-derived chunks). Same transform
+   regime as .pdf-annotation-layer so both track page-width scaling. */
+.pdf-bbox-highlight-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.pdf-bbox-highlight {
+    position: absolute;
+    background: rgb(0 255 139 / 16%);
+    border: 0.5px dashed #559766;
+    border-radius: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 220, 0, 0.10);
+}
+
+@keyframes pdf-bbox-fadein {
+    from { opacity: 0; transform: scale(1.04); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* PDF zoom controls — centered in second bar */
+.pdf-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.pdf-zoom-label {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: #666;
+    min-width: 36px;
+    text-align: center;
+    user-select: none;
+    line-height: 1;
+}
+
+/* Error */
+.media-viewer-error {
+    color: #c0392b;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    padding: 20px;
+}
+
+/* Markdown preview in file editor */
+.markdown-preview {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 24px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: var(--bg-primary);
+}
+
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3,
+.markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
+    margin-top: 1.2em;
+    margin-bottom: 0.4em;
+    color: #111;
+}
+
+.markdown-preview h1 { font-size: 1.6em; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+.markdown-preview h2 { font-size: 1.3em; border-bottom: 1px solid #eee; padding-bottom: 3px; }
+.markdown-preview h3 { font-size: 1.1em; }
+
+.markdown-preview p { margin: 0.6em 0; }
+
+.markdown-preview pre {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px 14px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.markdown-preview code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.markdown-preview pre code {
+    background: none;
+    padding: 0;
+}
+
+.markdown-preview blockquote {
+    border-left: 3px solid #ccc;
+    margin: 0.6em 0;
+    padding: 4px 12px;
+    color: #555;
+}
+
+.markdown-preview table {
+    border-collapse: collapse;
+    margin: 0.6em 0;
+}
+
+.markdown-preview th, .markdown-preview td {
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.markdown-preview th {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.markdown-preview img {
+    max-width: 100%;
+}
+
+.markdown-preview a {
+    color: #2563eb;
+}
+
+/* Scrollbar for media viewer */
+.media-viewer::-webkit-scrollbar-track {
+    margin: 10px 0;
+}
+
+.markdown-preview::-webkit-scrollbar-track {
+    margin: 10px 0;
+}

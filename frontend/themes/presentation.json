@@ -1,0 +1,46 @@
+{
+    "name": "Presentation",
+    "colors": {
+        "scheme": "light",
+        "background": "#ffffff",
+        "pageBg": "#f0f2f5",
+        "text": "#1a1a2e",
+        "textMuted": "#8888aa",
+        "cellBorder": "#e2e4ea",
+        "codeBg": "#f8f9fb",
+        "outputBg": "#ffffff",
+        "prompt": "#4a6fa5",
+        "resultText": "#4a6fa5",
+        "errorText": "#e74c3c",
+        "link": "#4a6fa5"
+    },
+    "cells": {
+        "borders": true,
+        "leftBar": true,
+        "leftBarColors": { "code": "#4a6fa5", "markdown": "#27ae60", "raw": "#95a5a6" },
+        "numbering": true,
+        "spacing": 8
+    },
+    "code": {
+        "lineNumbers": true,
+        "prompt": true,
+        "copyButton": true,
+        "font": "\"JetBrains Mono\", \"Fira Code\", \"Consolas\", monospace",
+        "highlightTheme": "tomorrow"
+    },
+    "output": {
+        "copyButton": true,
+        "collapsible": false,
+        "maxHeight": 400,
+        "imageShadow": true
+    },
+    "markdown": {
+        "toc": false,
+        "anchorLinks": true
+    },
+    "page": {
+        "maxWidth": "1100px",
+        "header": true,
+        "printStyles": true
+    }
+}

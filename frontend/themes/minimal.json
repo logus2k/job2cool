@@ -1,0 +1,44 @@
+{
+    "name": "Minimal",
+    "colors": {
+        "scheme": "light",
+        "background": "#ffffff",
+        "pageBg": "#ffffff",
+        "text": "#333333",
+        "textMuted": "#aaaaaa",
+        "cellBorder": "#f0f0f0",
+        "codeBg": "#fafafa",
+        "outputBg": "#ffffff",
+        "prompt": "#999999",
+        "resultText": "#555555",
+        "errorText": "#cc0000",
+        "link": "#0366d6"
+    },
+    "cells": {
+        "borders": false,
+        "leftBar": false,
+        "numbering": false,
+        "spacing": 4
+    },
+    "code": {
+        "lineNumbers": false,
+        "prompt": false,
+        "copyButton": true,
+        "font": "\"JetBrains Mono\", \"Fira Code\", \"Consolas\", monospace"
+    },
+    "output": {
+        "copyButton": false,
+        "collapsible": false,
+        "maxHeight": 0,
+        "imageShadow": false
+    },
+    "markdown": {
+        "toc": false,
+        "anchorLinks": false
+    },
+    "page": {
+        "maxWidth": "800px",
+        "header": false,
+        "printStyles": true
+    }
+}

@@ -1,0 +1,92 @@
+[
+    {
+        "label": "File",
+        "key": "F",
+        "items": [
+            { "label": "New File...", "command": "file.newFile" },
+            { "label": "New Project...", "command": "file.newProject" },
+            { "type": "separator" },
+            { "label": "Save File", "shortcut": "Ctrl+S", "command": "file.save" },
+            { "type": "separator" },
+            { "label": "Upload File...", "command": "file.upload" },
+            { "type": "separator" },
+            { "label": "Import Notebook...", "command": "file.import" },
+            {
+                "label": "Export Notebook To...",
+                "submenu": [
+                    { "label": "Jupyter Notebook", "command": "file.exportIpynb" },
+                    { "label": "Word Document", "command": "file.exportWord" }
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Edit",
+        "key": "E",
+        "items": [
+            { "label": "Undo", "shortcut": "Ctrl+Z", "command": "edit.undo" },
+            { "type": "separator" },
+            { "label": "Cut Cell", "command": "edit.cutCell", "enabled": "hasNotebook" },
+            { "label": "Copy Cell", "command": "edit.copyCell", "enabled": "hasNotebook" },
+            { "label": "Paste Cell", "command": "edit.pasteCell", "enabled": "hasNotebook" },
+            { "label": "Delete Cell", "command": "edit.deleteCell", "enabled": "hasNotebook" },
+            { "type": "separator" },
+            { "label": "Format Document", "shortcut": "Ctrl+Shift+F", "command": "edit.formatDocument", "enabled": "hasLSP" },
+            { "label": "Organize Imports", "command": "edit.organizeImports", "enabled": "hasLSP" },
+            { "type": "separator" },
+            { "label": "Go to Definition", "shortcut": "F12", "command": "edit.goToDefinition", "enabled": "hasLSPNavigation" },
+            { "label": "Find All References", "shortcut": "Shift+F12", "command": "edit.findReferences", "enabled": "hasLSPNavigation" },
+            { "label": "Rename Symbol", "shortcut": "F2", "command": "edit.renameSymbol", "enabled": "hasLSPNavigation" },
+            { "type": "separator" },
+            { "label": "Go to Cell...", "shortcut": "Ctrl+G", "command": "edit.goToCell", "enabled": "hasNotebook" }
+        ]
+    },
+    {
+        "label": "View",
+        "key": "V",
+        "items": [
+            { "label": "Explorer", "command": "view.explorer" },
+            { "label": "Version Control", "command": "view.sourceControl" },
+            { "label": "Table of Contents", "command": "view.toc" },
+            { "type": "separator" },
+            { "label": "MLflow", "command": "view.mlflow" },
+            { "label": "Airflow", "command": "view.airflow" },
+            { "label": "MinIO", "command": "view.minio" },
+            { "label": "Evidently", "command": "view.evidently" },
+            { "type": "separator" },
+            { "label": "Knowledge Base Monitor", "command": "view.knowledgeBaseMonitor" },
+            { "label": "Workflow Monitor", "command": "view.workflowMonitor" },
+            { "type": "separator" },
+            { "label": "Minimap", "command": "view.minimap", "type": "checkbox", "checked": "minimapEnabled" },
+            { "type": "separator" },
+            { "label": "Settings", "command": "view.settings" }
+        ]
+    },
+    {
+        "label": "Tools",
+        "key": "T",
+        "items": [
+            { "label": "Terminal", "command": "tools.terminal" },
+            { "type": "separator" },
+            { "label": "Knowledge Graph", "command": "view.knowledgeGraph" },
+            { "label": "Knowledge Base Manager", "command": "tools.kbManager" },
+            { "type": "separator" },
+            { "label": "Upload Document...", "command": "tools.uploadDoc" }
+        ]
+    },
+    {
+        "label": "Help",
+        "key": "H",
+        "items": [
+            { "label": "User Manual", "command": "help.manual" },
+            { "label": "Developer Manual", "command": "help.developerManual" },
+            { "label": "Notebook Companion", "command": "help.projectCompanion" },
+            { "label": "Setup and Installation", "command": "help.setup" },
+            { "label": "Technical Architecture", "command": "help.architecture" },
+            { "type": "separator" },
+            { "label": "GitHub", "command": "help.github" },
+            { "type": "separator" },
+            { "label": "About noted", "command": "help.about" }
+        ]
+    }
+]

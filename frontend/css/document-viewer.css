@@ -1,0 +1,370 @@
+/* Document Viewer - renders Markdown and PDF documents in center pane */
+
+.document-viewer-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: #fefefe;
+    margin-right: 5px;
+    overflow-x: hidden;
+}
+
+.document-viewer-wrapper::-webkit-scrollbar-track {
+    margin: 5px 0;
+}
+
+/* Markdown content */
+.document-viewer-markdown {
+    padding: 20px 32px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+/* Buffer edit mode — raw markdown textarea filling the viewer pane */
+.document-viewer-edit {
+    padding: 0;
+    height: 100%;
+    display: flex;
+}
+
+.document-viewer-edit-textarea {
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 24px;
+    border: none;
+    outline: none;
+    resize: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre;
+    overflow: auto;
+    tab-size: 4;
+    text-wrap: auto;
+}
+
+.document-viewer-markdown h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    margin: 0.6em 0 0.4em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.document-viewer-markdown h2 {
+    font-size: 1.4em;
+    font-weight: 600;
+    margin: 0.8em 0 0.3em;
+}
+
+.document-viewer-markdown h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin: 0.6em 0 0.3em;
+}
+
+.document-viewer-markdown h4,
+.document-viewer-markdown h5,
+.document-viewer-markdown h6 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.5em 0 0.2em;
+}
+
+.document-viewer-markdown p {
+    margin: 0.6em 0;
+}
+
+.document-viewer-markdown img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.document-viewer-markdown a {
+    color: #3272c0;
+    text-decoration: none;
+}
+
+.document-viewer-markdown a:hover {
+    text-decoration: underline;
+}
+
+.document-viewer-markdown pre {
+    position: relative;
+    background: #f6f6f6;
+    color: #d4d4d4;
+    padding: 0px;
+    border-radius: 2px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0.8em 0;
+}
+
+.document-viewer-markdown pre .doc-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #f6f8fa;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1;
+}
+
+.document-viewer-markdown pre .doc-copy-btn * {
+    pointer-events: none;
+}
+
+.document-viewer-markdown pre:hover .doc-copy-btn {
+    opacity: 1;
+}
+
+.document-viewer-markdown pre .doc-copy-btn:hover {
+    background: #e1e4e8;
+}
+
+.document-viewer-markdown pre .doc-copy-btn.copied {
+    animation: doc-copy-fade 1.5s ease-out forwards;
+}
+
+@keyframes doc-copy-fade {
+    0%, 80% { opacity: 1; }
+    100% { opacity: 1; }
+}
+
+.document-viewer-markdown .hljs {
+    color: #24292e;
+    background: #f6f6f6;
+}
+
+.document-viewer-markdown code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+}
+
+.document-viewer-markdown :not(pre) > code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+.document-viewer-markdown blockquote {
+    border-left: 3px solid #fdcfb3;
+    margin: 0.8em 0;
+    padding: 0.2em 1em;
+    color: #555;
+    background-color: #fffbf2;
+}
+
+.document-viewer-markdown table {
+    border-collapse: collapse;
+    margin: 0.8em 0;
+    width: 100%;
+}
+
+.document-viewer-markdown th,
+.document-viewer-markdown td {
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    text-align: left;
+}
+
+.document-viewer-markdown th {
+    background: #b9e7ffcf;
+    font-weight: 500;
+}
+
+.document-viewer-markdown ul,
+.document-viewer-markdown ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+}
+
+.document-viewer-markdown li {
+    margin: 0.2em 0;
+}
+
+.document-viewer-markdown hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.2em 0;
+}
+
+/* PDF content */
+.document-viewer-pdf {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: #e9e9e9;
+}
+
+.pdf-page {
+    position: relative;
+    width: 100%;
+    max-width: calc(900px * var(--pdf-zoom, 1));
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.pdf-page canvas {
+    display: block;
+    width: 100% !important;
+    height: auto;
+}
+
+/* Dual-page layout: pages flow two-up, each fixed at half the single
+   width × the zoom multiplier. Wrapper switches to wrap+row layout. */
+.document-viewer-content.document-viewer-pdf.pdf-layout-dual {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 6px;
+}
+
+.document-viewer-content.document-viewer-pdf.pdf-layout-dual .pdf-page {
+    width: calc(450px * var(--pdf-zoom, 1));
+    max-width: calc(50% - 3px);
+    flex: 0 0 auto;
+}
+
+/* Custom layout: pages flow as many per row as the zoom permits. */
+.document-viewer-content.document-viewer-pdf.pdf-layout-custom {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 6px;
+}
+
+.document-viewer-content.document-viewer-pdf.pdf-layout-custom .pdf-page {
+    width: calc(450px * var(--pdf-zoom, 1));
+    max-width: calc(450px * var(--pdf-zoom, 1));
+    flex: 0 0 auto;
+}
+
+/* PDF text layer (for text selection only - the text itself must stay
+   invisible so it doesn't show on top of the canvas as a blurry overlay).
+   Modern pdf.js (v4+) renders this layer with a mix of <span>, <div> and
+   <br> elements depending on page content; older versions used only
+   <span>. We force `color: transparent` on every descendant so no markup
+   variant leaks visible text - a previous regression where the textLayer
+   itself had `opacity: 0.25` produced exactly the "blurry PDF" symptom
+   that's mechanically the same problem. */
+.pdf-page .textLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    line-height: 1;
+    opacity: 1;
+}
+
+.pdf-page .textLayer * {
+    color: transparent;
+}
+
+.pdf-page .textLayer span,
+.pdf-page .textLayer div {
+    position: absolute;
+    white-space: pre;
+    pointer-events: all;
+}
+
+.pdf-page .textLayer ::selection {
+    background: rgba(0, 100, 200, 0.35);
+}
+
+/* PDF annotation layer (links) */
+.pdf-page .annotationLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: top left;
+}
+
+.pdf-page .annotationLayer a {
+    display: block;
+    cursor: pointer;
+}
+
+.pdf-page .annotationLayer a:hover {
+    background: rgba(255, 255, 0, 0.15);
+}
+
+/* Error state */
+.document-viewer-error {
+    padding: 32px;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+}
+
+/* Explorer panel document styles */
+.explorer-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.explorer-doc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.explorer-doc-row:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.explorer-doc-row .explorer-doc-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.explorer-doc-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* File input styling */
+.explorer-file-input {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    padding: 4px 0;
+}
+
+/* Document tree node icons — SVG icons are self-colored */

@@ -1,0 +1,1177 @@
+/* ── Chat Panel ─────────────────────────────────────────────────── */
+
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    font-family: var(--font-sans);
+    /* background-color: #fdfaf3; */
+}
+
+/* Clear button (placed in tab bar) */
+.chat-clear-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--radius);
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.chat-clear-btn:hover {
+    opacity: 1;
+}
+
+/* Token usage bar (below input) */
+.chat-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+    min-height: 16px;
+    background-color: #ffe6bd;
+    border-top: 0.5px solid #dedede;
+}
+
+.chat-title-bar-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-model-select {
+    background-color: transparent;
+    padding: 1px 22px 1px 4px;
+    font-size: 11px;
+    border: 0.5px solid #c8c8c8;
+    border-radius: 3px;
+    color: #555;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    max-width: 200px;
+    outline: none;
+}
+
+.chat-think-label {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #333;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.chat-think-checkbox {
+    width: 11px;
+    height: 11px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #ffcc00;
+}
+
+.chat-token-counter {
+    font-size: 9px;
+    color: #333333 !important;
+    font-family: 'Roboto';
+    text-align: center;
+    flex-shrink: 0;
+    min-height: 12px;
+    letter-spacing: 0.5px;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 15px 25px;
+    margin-right: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+/* Scrollbar */
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.chat-messages:hover::-webkit-scrollbar-thumb {
+    background: #6096e5ad;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #4a7bd0cc;
+}
+
+/* Message bubbles */
+.chat-message {
+    padding: 8px 12px 6px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 90%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.chat-message-user {
+    align-self: flex-end;
+    background-color: #ebfbff;
+    white-space: normal;
+    color: #1d1d1d;
+    border-bottom-right-radius: 3px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+    border: 0.5px solid #aeaeae;
+}
+
+.chat-message-assistant {
+    align-self: flex-start;
+    background-color: #f2fff1cf;
+    color: #1d1d1d;
+    border: 0.5px solid #aeaeae;
+    border-bottom-left-radius: 3px;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+    white-space: normal;
+    position: relative;
+    /* Reserve space at the right for the absolute-positioned action bar
+       (Show graph + Copy All). Without this, short single-line messages
+       have their last word overlapped by the icon. */
+    padding-right: 60px;
+}
+
+/* Workflow lifecycle notice bubbles. Visually distinct from user/assistant
+   so the user can tell them apart at a glance, but readable copy that
+   communicates state + next action. The LLM sees the body text on the
+   next turn (persisted as a `[notice]` user-role message in chat history). */
+.chat-message-system {
+    align-self: stretch;
+    border-radius: 6px;
+    border: 1px solid #d0d0d0;
+    background-color: #fafbfc;
+    color: #2c2c2c;
+    font-size: 12px;
+    padding: 8px 12px;
+    box-shadow: rgba(60, 64, 67, 0.12) 0px 1px 2px 0px;
+    white-space: normal;
+}
+.chat-message-system .chat-system-head {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+    letter-spacing: 0.2px;
+}
+.chat-message-system .chat-system-body {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #444;
+}
+.chat-message-system-completed { border-left: 3px solid #22a06b; }
+.chat-message-system-completed .chat-system-head { color: #1f7a4f; }
+.chat-message-system-failed { border-left: 3px solid #d32f2f; background-color: #fdf6f6; }
+.chat-message-system-failed .chat-system-head { color: #a52424; }
+.chat-message-system-suspended { border-left: 3px solid #e69138; background-color: #fdfaf3; }
+.chat-message-system-suspended .chat-system-head { color: #a25d18; }
+
+/* Top-right per-message action bar: [Show graph icon (lazy)] [Copy All] [Copy answer]. */
+.chat-msg-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    z-index: 1;
+}
+
+.chat-msg-action-btn {
+    background: transparent;
+    border: none;
+    padding: 3px;
+    margin: 0;
+    cursor: pointer;
+    color: #555;
+    border-radius: 3px;
+    line-height: 0;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.chat-msg-action-btn:hover {
+    color: #1d1d1d;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.chat-msg-action-btn i {
+    font-size: 13px;
+}
+
+/* Trace (Show graph) icon: white fill with the same outline color and
+   width as the Copy icon's SVG stroke. `-webkit-text-stroke` strokes the
+   icon glyph; `color` is the fill. Hover deepens the stroke to match the
+   Copy icon's `:hover` color shift. */
+.chat-trace-btn-icon i {
+    color: #ffffff;
+    -webkit-text-stroke: 1.5px #555;
+}
+
+.chat-trace-btn-icon:hover i {
+    -webkit-text-stroke-color: #1d1d1d;
+}
+
+
+/* Action badge on user messages */
+.chat-action-badge {
+    display: inline-block;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+    border-radius: 10px;
+    padding: 1px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+
+/* Code blocks inside user messages */
+.chat-message-user pre {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    overflow-x: auto;
+}
+
+.chat-message-user pre code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.chat-message-user p {
+    margin: 0 0 6px 0;
+}
+
+.chat-message-user p:last-child {
+    margin-bottom: 0;
+}
+
+.chat-message-user table {
+    border-collapse: collapse;
+    margin: 6px 0;
+    font-size: 12px;
+    width: 100%;
+    background-color: #ffffff;
+}
+
+.chat-message-user th,
+.chat-message-user td {
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.chat-message-user th {
+    background-color: #e0f0ff;
+    font-weight: 600;
+}
+
+/* Markdown inside assistant messages */
+.chat-message-assistant p {
+    margin: 0 0 8px 0;
+}
+
+.chat-message-assistant p:last-child {
+    margin-bottom: 0;
+}
+
+.chat-message-assistant h1,
+.chat-message-assistant h2,
+.chat-message-assistant h3,
+.chat-message-assistant h4 {
+    margin: 10px 0 6px 0;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.chat-message-assistant h1 { font-size: 16px; }
+.chat-message-assistant h2 { font-size: 15px; }
+.chat-message-assistant h3 { font-size: 14px; }
+.chat-message-assistant h4 { font-size: 13px; }
+
+.chat-message-assistant ul,
+.chat-message-assistant ol {
+    margin: 4px 0 8px 0;
+    padding-left: 20px;
+}
+
+.chat-message-assistant li {
+    margin-bottom: 2px;
+}
+
+.chat-message-assistant code {
+    background-color: rgba(0, 0, 0, 0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.chat-message-assistant pre {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 6px 0;
+    overflow-x: auto;
+}
+
+.chat-message-assistant pre code {
+    background-color: transparent;
+    padding: 0;
+    color: #24292e;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Copy button on code blocks */
+.chat-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: var(--font-sans);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #f6f8fa;
+    color: #555;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.chat-message-assistant pre:hover .chat-copy-btn {
+    opacity: 1;
+}
+
+.chat-copy-btn:hover {
+    background: #e1e4e8;
+    color: #24292e;
+}
+
+.chat-copy-btn.copied {
+    animation: copy-fade 1.5s ease-out forwards;
+}
+
+@keyframes copy-fade {
+    0%, 80% { opacity: 1; }
+    100% { opacity: 1; }
+}
+
+/* GitHub highlight theme scoped to chat */
+.chat-message-assistant .hljs {
+    color: #24292e;
+    background: #fff;
+    text-wrap-mode: wrap;
+}
+.chat-message-assistant .hljs-doctag,
+.chat-message-assistant .hljs-keyword,
+.chat-message-assistant .hljs-meta .hljs-keyword,
+.chat-message-assistant .hljs-template-tag,
+.chat-message-assistant .hljs-template-variable,
+.chat-message-assistant .hljs-type,
+.chat-message-assistant .hljs-variable.language_ { color: #d73a49; }
+.chat-message-assistant .hljs-title,
+.chat-message-assistant .hljs-title.class_,
+.chat-message-assistant .hljs-title.class_.inherited__,
+.chat-message-assistant .hljs-title.function_ { color: #6f42c1; }
+.chat-message-assistant .hljs-attr,
+.chat-message-assistant .hljs-attribute,
+.chat-message-assistant .hljs-literal,
+.chat-message-assistant .hljs-meta,
+.chat-message-assistant .hljs-number,
+.chat-message-assistant .hljs-operator,
+.chat-message-assistant .hljs-selector-attr,
+.chat-message-assistant .hljs-selector-class,
+.chat-message-assistant .hljs-selector-id,
+.chat-message-assistant .hljs-variable { color: #005cc5; }
+.chat-message-assistant .hljs-meta .hljs-string,
+.chat-message-assistant .hljs-regexp,
+.chat-message-assistant .hljs-string { color: #032f62; }
+.chat-message-assistant .hljs-built_in,
+.chat-message-assistant .hljs-symbol { color: #e36209; }
+.chat-message-assistant .hljs-code,
+.chat-message-assistant .hljs-comment,
+.chat-message-assistant .hljs-formula { color: #6a737d; }
+.chat-message-assistant .hljs-name,
+.chat-message-assistant .hljs-quote,
+.chat-message-assistant .hljs-selector-pseudo,
+.chat-message-assistant .hljs-selector-tag { color: #22863a; }
+.chat-message-assistant .hljs-subst { color: #24292e; }
+.chat-message-assistant .hljs-section { color: #005cc5; font-weight: 700; }
+.chat-message-assistant .hljs-bullet { color: #735c0f; }
+.chat-message-assistant .hljs-emphasis { color: #24292e; font-style: italic; }
+.chat-message-assistant .hljs-strong { color: #24292e; font-weight: 700; }
+.chat-message-assistant .hljs-addition { color: #22863a; background-color: #f0fff4; }
+.chat-message-assistant .hljs-deletion { color: #b31d28; background-color: #ffeef0; }
+
+.chat-message-assistant blockquote {
+    margin: 6px 0;
+    padding: 4px 10px;
+    border-left: 3px solid var(--accent-blue);
+    background-color: rgba(0, 0, 0, 0.03);
+    color: #555;
+}
+
+.chat-message-assistant table {
+    border-collapse: collapse;
+    margin: 6px 0;
+    font-size: 12px;
+    width: 100%;
+    background-color: #ffffff;
+}
+
+.chat-message-assistant thead {
+    background-color: #fff5a3c4;
+}
+
+.chat-message-assistant th,
+.chat-message-assistant td {
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.chat-message-assistant th {
+    background-color: rgba(0, 0, 0, 0.04);
+    font-weight: 600;
+}
+
+.chat-message-assistant strong {
+    font-weight: 600;
+}
+
+.chat-message-assistant a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.chat-message-assistant a:not(.chat-citation):hover {
+    text-decoration: underline;
+}
+
+.chat-message-assistant hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 8px 0;
+}
+
+/* Error messages */
+.chat-message-assistant .chat-error {
+    color: #b71c1c;
+    background-color: #fce4ec;
+    border: 1px solid #ef9a9a;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+/* Thinking / reasoning collapsible */
+.chat-thinking {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+
+.chat-trace-btn {
+    cursor: pointer;
+    color: #1d1d1d;
+    font-style: italic;
+    font-size: 12px;
+    user-select: none;
+    margin-left: 12px;
+    transition: color 0.15s ease;
+}
+
+.chat-trace-btn:hover {
+    color: #555;
+}
+
+.chat-trace-btn i {
+    font-size: 10px;
+    margin-right: 5px;
+}
+
+.chat-thinking summary {
+    cursor: pointer;
+    color: #1d1d1d;
+    user-select: none;
+}
+
+/* Italic only while reasoning is still streaming. Once the first answer
+ * token arrives, ChatPanel removes `chat-thinking-live` from the
+ * details element and the label drops back to upright. */
+.chat-thinking.chat-thinking-live summary {
+    font-style: italic;
+}
+
+/* Add 3px gap between the disclosure-triangle marker and the summary
+ * label text. Browsers don't expose `::marker` margin reliably, so we
+ * pad the first child instead. */
+.chat-thinking-summary-label {
+    margin-left: 3px;
+}
+
+.chat-thinking summary:hover {
+    color: #555;
+}
+
+.chat-thinking-body {
+    margin-top: 2px;
+    padding: 8px 14px;
+    background-color: rgb(253 253 253);
+    border: 0.5px solid #ececec;
+    border-left: 6px solid #90cea5ab;
+    color: #000000;
+    font-size: 11px;
+    line-height: 1.4;
+    border-radius: 0px 5px 5px 0px;
+}
+
+/* Tighten the markdown-rendered structure so the reasoning section
+ * stays compact (it lives in a <details> with limited height). */
+.chat-thinking-body p { margin: 4px 0; }
+.chat-thinking-body ul,
+.chat-thinking-body ol { margin: 4px 0; padding-left: 18px; }
+.chat-thinking-body li { margin: 1px 0; }
+.chat-thinking-body h1,
+.chat-thinking-body h2,
+.chat-thinking-body h3,
+.chat-thinking-body h4 { margin: 6px 0 3px; font-size: 12px; }
+.chat-thinking-body code {
+    background: #f0f0f0;
+    padding: 0 3px;
+    border-radius: 2px;
+    font-size: 10px;
+}
+.chat-thinking-body pre {
+    margin: 4px 0;
+    padding: 4px 6px;
+    background: #f5f5f5;
+    border-radius: 3px;
+    overflow-x: auto;
+}
+.chat-thinking-body pre code { background: transparent; padding: 0; }
+
+.chat-thinking-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-thinking-body::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+}
+
+.chat-thinking-body::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.chat-thinking-body:hover::-webkit-scrollbar-thumb {
+    background: #6096e5ad;
+}
+
+.chat-thinking-body::-webkit-scrollbar-thumb:hover,
+.chat-thinking-body::-webkit-scrollbar-thumb:active {
+    background: #4a7bd0cc;
+}
+
+/* Tool call bar + badges */
+.chat-tool-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.chat-tool-bar:empty {
+    display: none;
+}
+
+/* Tool badge - blue family, matches Explorer Tools accent (#1976d2) */
+.chat-tool-badge {
+    display: inline-block;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    margin: 4px 2px;
+    cursor: help;
+    vertical-align: middle;
+}
+
+.chat-tool-badge:hover {
+    background-color: #bbdefb;
+}
+
+.chat-tool-badge i {
+    margin-right: 4px;
+    font-size: 9px;
+}
+
+/* F6.2: provenance pill inside the chat tool badge for user-authored tools.
+ * Same purple as Explorer's tree pill so the visual language stays consistent. */
+.chat-tool-prov-pill {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 0 5px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #fff;
+    background: #7e57c2;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+}
+
+/* Skill badge - green family, matches Explorer Skills accent (#43a047) */
+.chat-skill-badge {
+    display: inline-block;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    margin: 4px 2px;
+    cursor: help;
+}
+
+.chat-skill-badge:hover {
+    background-color: #c8e6c9;
+}
+
+.chat-skill-badge i {
+    margin-right: 4px;
+    font-size: 9px;
+}
+
+/* Thinking indicator (reuses typing indicator with label) */
+.chat-typing-indicator[data-label]::after {
+    content: attr(data-label);
+    font-size: 11px;
+    color: #333333;
+    font-style: italic;
+    margin-left: 4px;
+}
+
+/* Typing indicator */
+.chat-typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    align-self: flex-start;
+}
+
+.chat-typing-indicator span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #bbb;
+    animation: chat-typing-bounce 1.4s infinite ease-in-out;
+}
+
+.chat-typing-indicator span:nth-child(1) { animation-delay: 0s; background-color: #e53935; }
+.chat-typing-indicator span:nth-child(2) { animation-delay: 0.2s; background-color: #43a047; }
+.chat-typing-indicator span:nth-child(3) { animation-delay: 0.4s; background-color: #1e88e5; }
+
+@keyframes chat-typing-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Input area */
+.chat-input-area {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 8px;
+    background-color: #fff8e9;
+    border-top: 0.5px solid #dedede;
+    flex-shrink: 0;
+}
+
+.chat-input {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    resize: none;
+    overflow-y: auto;
+    max-height: 120px;
+    line-height: 1.4;
+    outline: none;
+    background-color: #ffffff;
+    color: var(--text-primary);
+}
+
+.chat-input:focus {
+    border-color: var(--accent-blue);
+}
+
+.chat-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* STT dictation: while Parakeet (v2) is emitting partials, ChatService
+ * renders a "composing" user bubble whose text updates live. The bubble
+ * is visually IDENTICAL to a committed user message — the live updates
+ * themselves are the cue that something is happening. The
+ * .chat-message--composing class is kept as an internal DOM marker only
+ * (commitComposingUserMessage uses it to find the bubble to promote);
+ * no visual styling is attached to it. */
+
+/* Action buttons */
+.chat-stt-btn,
+.chat-send-btn,
+.chat-tts-btn,
+.chat-voice-settings-btn,
+.chat-attach-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.chat-stt-btn:hover,
+.chat-send-btn:hover,
+.chat-tts-btn:hover,
+.chat-voice-settings-btn:hover,
+.chat-attach-btn:hover {
+    background: #c8e6c0;
+}
+
+/* "+" attachments / new menu — dropdown anchored above the button.
+ * Fixed positioning so it floats over the surrounding layout instead
+ * of pushing it. Compact rows with icon + label + secondary hint. */
+.chat-attach-menu {
+    position: fixed;
+    z-index: 10000;
+    min-width: 220px;
+    padding: 4px;
+    background: #ffffff;
+    border: 1px solid #cfd6db;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+}
+
+.chat-attach-menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    transition: background 0.12s;
+}
+
+.chat-attach-menu-item:hover {
+    background: #fff8e9;
+}
+
+.chat-attach-menu-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+}
+
+.chat-attach-menu-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.chat-attach-menu-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.chat-attach-menu-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+/* Pending image attachment chip — sits ABOVE the input row, makes it
+ * obvious the next send will include an image. Replace-on-pick (only
+ * one attachment at a time).
+ *
+ * Sized to its own content (left-aligned, no full-width stretch) so it
+ * reads as a discrete pill rather than a banner. max-width caps the
+ * filename growth without forcing a fixed width. */
+.chat-attachment-chip {
+    display: inline-flex;
+    align-self: flex-start;
+    width: fit-content;
+    max-width: calc(100% - 16px);
+    align-items: center;
+    gap: 8px;
+    margin: 6px 8px 0;
+    padding: 6px 10px 6px 6px;
+    background: #fff;
+    border: 1px solid #cfd6db;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.chat-attachment-chip-thumb {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: #f0f0f0;
+}
+
+.chat-attachment-chip-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.chat-attachment-chip-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-attachment-chip-size {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+.chat-attachment-chip-remove {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #666);
+    font-size: 18px;
+    line-height: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+}
+
+.chat-attachment-chip-remove:hover {
+    background: #f0e0e0;
+    color: #c62828;
+}
+
+/* Multimodal user message — thumbnail strip rendered above the text
+ * portion of the bubble so the user can see what the model received. */
+.chat-message-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.chat-message-attachment-thumb {
+    max-width: 330px;
+    max-height: 270px;
+    border-radius: 4px;
+    border: 1px solid #cfd6db;
+    object-fit: contain;
+    background: #f0f0f0;
+}
+
+/* Mic + Speaker shared OFF look: light-grey pill background, mid-grey
+ * icon. FontAwesome glyphs (fa-microphone-slash / fa-volume-off) carry
+ * the muted shape on their own; the pill is the second visual channel
+ * so OFF reads at a peripheral glance. */
+.chat-stt-btn,
+.chat-tts-btn,
+.chat-voice-settings-btn {
+    background-color: #ffe6bd;
+    color: #808080;
+    font-size: 16px;
+}
+
+/* Hover overrides for the two toggle buttons so we don't flash the
+ * shared green hover over a red/green active pill. Slight darken on
+ * the cream-peach OFF pill. */
+.chat-stt-btn:hover { background-color: #f5d7a5; }
+.chat-tts-btn:hover { background-color: #f5d7a5; }
+
+/* Voice Settings is NOT a toggle — every click opens the modal. It sits
+ * permanently in an "active-style" pill (matching the Mic/Speaker active
+ * pastel-colored treatment, but in blue) so it reads as a fixed control
+ * rather than something that can be turned off. Icon takes the SAME dark
+ * outline color (#202020) the Mic/Speaker active states use, so the
+ * three pills feel like a coherent family. */
+.chat-voice-settings-btn { background-color: #b3e5fc; color: #202020; }
+.chat-voice-settings-btn:hover { background-color: #81d4fa; }
+
+/* Two-tone icon stack used by the ON state of the mic and speaker
+ * buttons. Lays a "filled" SVG (pastel fill) under a "regular" SVG
+ * (dark outline) so the result mirrors the Send arrow's outline-on-
+ * fill structure. Wrapper sizing matches the previous single-icon
+ * footprint (18x18). */
+.chat-icon-stack {
+    position: relative;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 0;
+}
+.chat-icon-stack > svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 18px;
+    height: 18px;
+}
+
+/* Mic ON: pastel red pill, two-tone icon (pastel red fill + dark
+ * outline — matches the Send arrow's stroke-on-polygon style). */
+.chat-stt-btn.active {
+    background-color: #ffcdd2;
+}
+.chat-stt-btn.active .chat-icon-fill { color: #ee9999; }
+.chat-stt-btn.active .chat-icon-outline { color: #202020; }
+.chat-stt-btn.active:hover { background-color: #ffb3b3; }
+
+/* Mic ON + listening (VAD detected speech): pulse the pill. Cycle
+ * between the resting pastel red and a slightly more saturated red,
+ * with a soft expanding ring — matches the "I'm hearing you" visual
+ * language from phone / video-call apps. */
+.chat-stt-btn.listening {
+    animation: chat-mic-listening-pulse 1s ease-in-out infinite;
+}
+
+@keyframes chat-mic-listening-pulse {
+    0%   { background-color: #ffcdd2; box-shadow: 0 0 0 0 rgba(229, 115, 115, 0.45); }
+    50%  { background-color: #f8bbd0; box-shadow: 0 0 0 4px rgba(229, 115, 115, 0.00); }
+    100% { background-color: #ffcdd2; box-shadow: 0 0 0 0 rgba(229, 115, 115, 0.00); }
+}
+
+/* Speaker ON: pastel green pill, two-tone icon (pastel green fill +
+ * dark outline — same structure as Send and Mic-ON). */
+.chat-tts-btn.active {
+    background-color: #c8e6c9;
+}
+.chat-tts-btn.active .chat-icon-fill { color: #9bd49b; }
+.chat-tts-btn.active .chat-icon-outline { color: #202020; }
+.chat-tts-btn.active:hover { background-color: #a5d6a7; }
+
+/* Citation family icon — small leading file/graph glyph that splits
+ * citations into two visual families (document vs knowledge-graph) so
+ * the family is unmistakable at a glance, while the existing pill hue
+ * continues to carry the graph sub-distinction (entity/edge/community).
+ * inline-flex wrapper keeps icon + pill paired across line wraps. */
+.chat-citation-wrap {
+    display: inline-flex;
+    white-space: nowrap;
+    align-items: center;
+}
+.chat-citation-icon {
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+}
+.chat-citation-wrap.cite-family-doc .chat-citation-icon {
+    color: #2e6e1f;
+}
+.chat-citation-wrap.cite-family-graph .chat-citation-icon {
+    color: #5a809c;
+}
+/* Caption-chunk citation icons. The chat panel async-resolves a chunk
+   citation's `kind` after render and swaps the family class when the
+   chunk is a picture or table caption. Distinct hues so a reader
+   scanning the reply can spot at a glance which claims are grounded
+   in images vs tables vs ordinary prose. */
+.chat-citation-wrap.cite-family-picture .chat-citation-icon {
+    color: #c77800;
+}
+.chat-citation-wrap.cite-family-table .chat-citation-icon {
+    color: #3a7e7e;
+}
+
+/* Citation badges. Rendered by ChatPanel._renderCitations after the
+ * markdown pass; replace `[markdown_chunk:<hex>]` tags with a small
+ * professional pill that opens the source document on click. */
+.chat-citation {
+    display: inline-block;
+    min-width: 14px;
+    padding: 0px;
+    margin: 0px 3px 0px 3px;
+    font-size: 7px;
+    font-weight: 600;
+    line-height: 12px;
+    text-align: center;
+    text-decoration: none;
+    color: #1d1d1d !important;
+    background: #ffffff;
+    border: 0.5px solid #1d1d1d;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: text-top;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.chat-citation:hover {
+    background: #1565c0;
+    color: #ffffff;
+    border-color: #1565c0;
+    text-decoration: none;
+}
+
+.chat-citation:active {
+    background: #0d47a1;
+    border-color: #0d47a1;
+}
+
+/* Per-type citation badge tinting. Default green = chunk; entity blue,
+ * edge orange, community purple. Hover inverts to filled with same hue. */
+.chat-citation.cite-entity   { background: #e3f0fb; border-color: #5a809c; color: #0d47a1; }
+.chat-citation.cite-entity:hover    { background: #1565c0; color: #ffffff; border-color: #1565c0; }
+.chat-citation.cite-edge     { background: #fff1d9; border-color: #b8862b; color: #8d5800; }
+.chat-citation.cite-edge:hover      { background: #b8862b; color: #ffffff; border-color: #b8862b; }
+.chat-citation.cite-community { background: #f1e6fb; border-color: #7e57c2; color: #4527a0; }
+.chat-citation.cite-community:hover { background: #7e57c2; color: #ffffff; border-color: #7e57c2; }
+
+/* In-chat ECharts chart frame + hover-revealed action buttons (Copy / Save).
+ * The frame is the positioned parent; ECharts initialises on the inner
+ * .chat-message-chart div. Action buttons fade in on frame hover. */
+.chat-message-chart-frame {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    margin: 8px 0;
+    background: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: zoom-in;
+    overflow: hidden;
+}
+/* Floating-viewer variant (jsPanel artifact). Drops the inline-only
+ * border / margin / fixed height / zoom cursor; ECharts fills the
+ * panel content area. Action overlay + hover styling are inherited. */
+.chat-message-chart-frame--floating {
+    height: 100%;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    cursor: default;
+}
+.chat-message-chart {
+    width: 100%;
+    height: 100%;
+}
+.chat-message-chart-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+.chat-message-chart-frame:hover .chat-message-chart-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+.chat-chart-action {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.92);
+    border: none;
+    border-radius: 4px;
+    color: #1565c0;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.chat-chart-action:hover {
+    background: #ffffff;
+    color: #0d47a1;
+}
+.chat-chart-action:active {
+    background: #f0f0f0;
+}
+.chat-chart-action i,
+.chat-chart-action svg {
+    pointer-events: none;
+}

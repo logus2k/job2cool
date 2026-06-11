@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screen Capture Demo</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    button { padding: 10px 16px; font-size: 16px; cursor: pointer; }
+    img { margin-top: 20px; max-width: 100%; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+  <button id="captureBtn">Capture Screen</button>
+  <br/>
+  <img id="result" alt="Screenshot will appear here" />
+
+  <script>
+    const btn = document.getElementById('captureBtn');
+    const img = document.getElementById('result');
+
+    btn.onclick = async () => {
+      try {
+        // Request screen
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true
+        });
+
+        const track = stream.getVideoTracks()[0];
+        const imageCapture = new ImageCapture(track);
+
+        // Grab a frame
+        const bitmap = await imageCapture.grabFrame();
+
+        // Draw to canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(bitmap, 0, 0);
+
+        // Convert to image
+        img.src = canvas.toDataURL('image/png');
+
+        // Stop stream immediately (optional but recommended)
+        track.stop();
+
+      } catch (err) {
+        console.error('Capture failed:', err);
+      }
+    };
+  </script>
+
+</body>
+</html>

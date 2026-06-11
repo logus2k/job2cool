@@ -1,0 +1,104 @@
+/* Settings panel wrapper — hosted in the left sidebar */
+.settings-panel-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: var(--bg-primary);
+}
+
+/* Settings content */
+.settings-panel-content {
+    padding: 10px 12px;
+}
+
+/* Section heading + divider */
+.settings-section-heading {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+    margin-top: 18px;
+}
+
+.settings-section-heading:first-child {
+    margin-top: 0;
+}
+
+.settings-section-hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 6px 0 8px;
+}
+
+/* Toggle / select rows */
+.settings-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.settings-toggle-row label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.settings-toggle {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
+}
+
+.settings-theme-select {
+    font-size: 12px;
+    padding: 2px 6px;
+    min-width: 120px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-secondary, #fff);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* Wallpaper grid */
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.wallpaper-card {
+    cursor: pointer;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wallpaper-card:hover {
+    border-color: var(--accent-blue);
+}
+
+.wallpaper-card.active {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+.wallpaper-swatch {
+    width: 100%;
+    height: 60px;
+}
+
+.wallpaper-label {
+    padding: 4px 6px;
+    font-size: 10px;
+    text-align: center;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

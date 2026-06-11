@@ -1,0 +1,29 @@
+# job2cool — HR assistant. Joins noted's shared external network to reuse
+# agent_server / noted-rag / noted-graph / noted-tools / noted in place.
+# COPY-ONLY: nothing in noted or cv is modified. See documents/project_plan.md.
+services:
+  job2cool-backend:
+    build: ./backend
+    container_name: job2cool-backend
+    ports:
+      - "4920:4920"
+    environment:
+      AGENT_SERVER_URL: "http://agent_server:7701"
+      NOTED_RAG_URL: "http://noted-rag:8200"
+      NOTED_GRAPH_URL: "http://noted-graph:5523"
+      NOTED_TOOLS_URL: "http://noted-tools:7702"
+      NOTED_BACKEND_URL: "http://noted:8123"
+      JOB2COOL_GEMMA_MODEL: "gemma-4"
+      JOB2COOL_DPO_MODEL: "ma2-360m-dpo-b01"
+      JOB2COOL_DOMAINS: "jobs_onboard_devops,ai_and_jobs,prod_mng,sw_arch"
+    volumes:
+      # Live-mount the frontend so the shell can be iterated without rebuilds.
+      - ./frontend:/app/frontend:ro
+    restart: unless-stopped
+    networks:
+      - noted-network
+
+networks:
+  # Created by the noted stack; job2cool joins it to reach the shared services.
+  noted-network:
+    external: true

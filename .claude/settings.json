@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /home/logus/env/assets/cv && find . -type f -not -path '*/node_modules/*' -not -path '*/__pycache__/*' -not -path '*/.git/*' -not -path '*/.venv*/*' -not -path '*/dist/*' -not -path '*/build/*' | head -100)",
+      "Read(//home/logus/env/assets/cv/**)",
+      "Bash(find /home/logus/env/assets/noted -type f -name \"*.py\" | head -30)",
+      "Read(//home/logus/env/assets/noted/**)",
+      "Bash(find /home/logus/env/assets/agent_server -name \"docker-compose*.yml\" 2>/dev/null)",
+      "Read(//home/logus/env/assets/agent_server/**)"
+    ]
+  }
+}
