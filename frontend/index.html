@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="static/widget/cv-chat.css">
 <style>
   :root{ --bg:#f6f7fb; --panel:#fff; --ink:#1e2330; --muted:#6b7280;
-    --primary:#6366f1; --primary-d:#4f46e5; --primary-soft:#eef2ff;
+    --primary:#ffe19b; --primary-d:#8a6a12; --primary-soft:#fff6df;
     --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
@@ -38,7 +38,7 @@
   .doctool .ttl{font-weight:700;font-size:13.5px;flex:1}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
   .seg button{border:0;background:#fff;padding:.25rem .6rem;font-size:12px;cursor:pointer;color:var(--muted)}
-  .seg button.on{background:var(--primary);color:#fff}
+  .seg button.on{background:var(--primary);color:var(--ink)}
   .iconbtn{border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;width:28px;height:26px;
            display:inline-flex;align-items:center;justify-content:center;color:var(--muted);padding:0}
   .iconbtn:hover{color:var(--primary-d);border-color:var(--primary)}
@@ -68,10 +68,23 @@
   .modal .muted{color:var(--muted);font-size:11.5px}
   .modal .foot{display:flex;justify-content:flex-end;gap:.5rem;margin-top:.6rem}
   .modal .foot button{border:0;border-radius:9px;padding:.5rem 1rem;font-weight:600;cursor:pointer}
-  .modal .foot .ok{background:var(--primary);color:#fff}
+  .modal .foot .ok{background:var(--primary);color:var(--ink)}
   .modal .foot .cancel{background:#eef0f5;color:var(--ink)}
   /* job2cool: open the Assistant from the top-bar button, not a floating launcher */
   .cvchat-launcher{display:none !important;}
+  /* PDF export: print only the active document in place (no separate tab) */
+  #printarea{display:none}
+  @media print{
+    body > *:not(#printarea){display:none !important}
+    .cvchat-panel{display:none !important}
+    #printarea{display:block !important;margin:0;padding:0;color:#1e2330;font:13px/1.55 system-ui,sans-serif}
+    #printarea h1{font-size:21px;margin:0 0 .8rem}
+    #printarea h2{font-size:16px;margin:1rem 0 .4rem}
+    #printarea h3{font-size:13.5px;margin:.8rem 0 .3rem}
+    #printarea ul{margin:.3rem 0 .3rem 1.1rem}
+    #printarea em{color:#666}
+    @page{margin:1.6cm}
+  }
   /* Assistant panel width: ~1/3 of the screen on wide displays, growing to ~1/2
      on smaller ones (600px target, clamped between 33vw and 50vw). Mobile falls
      back to full width via cv-chat.css's own media query. The resizer still
@@ -91,6 +104,7 @@
 <div class="docpane" id="docpane"></div>
 
 <div class="toast" id="toast"></div>
+<div id="printarea"></div>
 <div class="modal-bg" id="modalbg">
   <div class="modal">
     <h3>Settings</h3>
@@ -124,12 +138,14 @@ function shownFor(title){
   return title;
 }
 function copyMD(name){navigator.clipboard.writeText(doc.content[name]||'').then(()=>toast('Markdown copied')).catch(()=>toast('Copy failed'));}
-function exportPDF(name){const w=window.open('','_blank');if(!w){toast('Allow pop-ups to export PDF');return;}
-  w.document.write(`<!doctype html><html><head><title>${esc(name)}</title><style>
-    body{font:14px/1.55 system-ui,sans-serif;max-width:780px;margin:2rem auto;padding:0 1rem;color:#1e2330}
-    h1{font-size:22px}h2{font-size:17px;color:#4f46e5}h3{font-size:14px}em{color:#666}ul{margin-left:1.1rem}
-    </style></head><body>${md2html(doc.content[name]||'')}</body></html>`);
-  w.document.close();w.focus();setTimeout(()=>w.print(),350);}
+function exportPDF(name){
+  // Print the document in place (no extra tab) -> browser Save-as-PDF, like cv.
+  const pa=$('#printarea');pa.innerHTML=md2html(doc.content[name]||'');
+  const prev=document.title;document.title=name;            // sensible filename
+  function after(){document.title=prev;pa.innerHTML='';window.removeEventListener('afterprint',after);}
+  window.addEventListener('afterprint',after);
+  window.print();
+}
 
 function render(){
   const tb=$('#tabbar');tb.innerHTML='';

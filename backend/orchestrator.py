@@ -102,17 +102,6 @@ SECTIONS = [
 ]
 _SECTION_BY_KEY = {s["key"]: s for s in SECTIONS}
 
-# Cues that scope a request to specific deliverable(s); otherwise full package.
-_CUES = {
-    "offer": ["job offer", "job description", "offer letter", "write an offer",
-              "create a job", "draft an offer", " jd"],
-    "interview": ["interview", "technical question", "screening question"],
-    "onboarding": ["onboard", "30-60-90", "30/60/90", "ramp-up", "ramp up"],
-    "culture": ["culture", "team fit", "cultural"],
-}
-_FULL_CUES = ["package", "full", "everything", "complete pack", "hiring pack",
-              "whole", "all of", "entire"]
-
 INTRO_SYSTEM = (
     "You are Diana, the HR Assistant. Given a plain-language hiring need, you "
     "assemble the requested hiring deliverables (job offer, technical interviews, "
@@ -128,16 +117,37 @@ SECTION_SYSTEM = (
     "concrete, professional and concise. Output Markdown only.")
 
 
-def _requested_sections(need: str) -> list[str]:
-    """Which deliverables the request wants. A generic role need → full package;
-    a request that names specific deliverable(s) → only those."""
-    txt = " " + (need or "").lower() + " "
-    if any(f in txt for f in _FULL_CUES):
-        return [s["key"] for s in SECTIONS]
-    hit = [k for k, cues in _CUES.items() if any(c in txt for c in cues)]
-    if hit and len(hit) < len(SECTIONS):
-        return [s["key"] for s in SECTIONS if s["key"] in hit]  # keep canonical order
-    return [s["key"] for s in SECTIONS]
+async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]:
+    """Which deliverables the request wants — classified by the LLM so phrasing
+    like 'job description' maps to just the offer, while a generic hiring need or
+    an explicit 'full package' maps to all four. Robust to substrings that broke
+    the old keyword heuristic (e.g. 'full-stack'). Falls back to all on error."""
+    keys = [s["key"] for s in SECTIONS]
+    try:
+        out = await services.llm_complete(
+            client, services.GEMMA_MODEL,
+            [{"role": "system", "content":
+              "You classify a hiring request by which deliverables it asks for."},
+             {"role": "user", "content":
+              "Deliverables and their keywords:\n"
+              "- offer: a job offer / job description / job posting\n"
+              "- interview: technical interview questions or plan\n"
+              "- onboarding: an onboarding plan (30-60-90)\n"
+              "- culture: a cultural & team-fit assessment\n\n"
+              "Which deliverable(s) does the request below ask for? If it asks "
+              "for a full/complete hiring package, OR is a general hiring need "
+              "that does not name a specific deliverable, answer exactly: all\n"
+              "Otherwise answer ONLY the matching keyword(s), comma-separated "
+              "(e.g. 'offer' or 'offer, interview'). No other words.\n\n"
+              f"Request: {need}\n\nAnswer:"}],
+            max_tokens=24, temperature=0.0, think=False, timeout=30)
+        out = (out or "").strip().lower()
+        if "all" in out:
+            return keys
+        hit = [k for k in keys if k in out]
+        return hit or keys
+    except Exception:
+        return keys
 
 
 async def _role_label(client: httpx.AsyncClient, need: str) -> str:
@@ -173,8 +183,9 @@ async def run_chat(message: str, history: list[dict],
         role = await _role_label(client, need)
         domain = await services.resolve_onboard_domain(client, need)
         domains = [domain]
-        requested = _requested_sections(need)
+        requested = await _requested_sections(client, need)
         secs = [_SECTION_BY_KEY[k] for k in requested]
+        names = ", ".join(s["title"] for s in secs)
         offer_both = ("offer" in requested) and use_ma2 and use_gemma_offer
 
         # Buffers (= tabs) are created lazily, one per requested deliverable,
@@ -187,7 +198,10 @@ async def run_chat(message: str, history: list[dict],
             async for delta in services.llm_stream(
                     client, services.GEMMA_MODEL,
                     [{"role": "system", "content": INTRO_SYSTEM},
-                     {"role": "user", "content": need}],
+                     {"role": "user", "content":
+                      f"{need}\n\n(You are generating ONLY these deliverables: "
+                      f"{names}. Confirm exactly these in your reply — do not "
+                      f"promise a full package unless all four are listed.)"}],
                     max_tokens=INTRO_MAX, temperature=0.5):
                 yield _sse({"delta": delta})
         except Exception:
@@ -195,11 +209,13 @@ async def run_chat(message: str, history: list[dict],
 
         # Brief spoken summary — the avatar speaks the <voice> only, not the
         # whole answer (cv pattern). Stripped from the visible text by cv-chat.
-        names = ", ".join(s["title"] for s in secs)
-        what = "package" if len(secs) > 1 else secs[0]["title"].lower()
-        yield _sse({"delta":
-            f"\n\n<voice>Sure. I'm preparing the {role} {what} now — {names}. "
-            f"I'll write it into the document for you.</voice>"})
+        if len(secs) == 1:
+            voice = (f"Sure. I'm preparing the {secs[0]['title'].lower()} for a "
+                     f"{role} now. I'll write it into the document for you.")
+        else:
+            voice = (f"Sure. I'm preparing the {role} hiring package now: {names}. "
+                     f"I'll write it into the document for you.")
+        yield _sse({"delta": f"\n\n<voice>{voice}</voice>"})
 
         yield _sse({"delta": f"\n\n_Role: **{role}** · grounding in `{domain}`._\n"
                              f"_Generating ({0}/{len(secs)})…_\n"})
