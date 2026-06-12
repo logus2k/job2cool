@@ -6,7 +6,9 @@
       "Bash(find /home/logus/env/assets/noted -type f -name \"*.py\" | head -30)",
       "Read(//home/logus/env/assets/noted/**)",
       "Bash(find /home/logus/env/assets/agent_server -name \"docker-compose*.yml\" 2>/dev/null)",
-      "Read(//home/logus/env/assets/agent_server/**)"
+      "Read(//home/logus/env/assets/agent_server/**)",
+      "Bash(curl -s -X POST http://localhost:4920/api/score_answer -H 'Content-Type: application/json' -d '{\"turn_id\":\"__TRACKED_VAR__\"}' --max-time 120)",
+      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\"}' --max-time 280)"
     ]
   }
 }

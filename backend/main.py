@@ -45,11 +45,20 @@ import services
 JUDGE_MODEL = os.getenv("JOB2COOL_JUDGE",
                         os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4"))
 JUDGE_SYSTEM = (
-    "You are a strict judge of a RAG answer. Given QUESTION, EVIDENCE and ANSWER, "
-    "output ONLY a JSON object (no prose, no code fence) of the form "
+    "You are a strict judge of an HR assistant's RAG output. You receive these "
+    "clearly-labelled sections: USER QUERY (what the user asked); EVIDENCE "
+    "(passages retrieved from the company knowledge base); DIANA'S THINKING (her "
+    "private reasoning for this turn — context only); WORKSPACE DOCUMENTS (the "
+    "actual hiring deliverables Diana wrote into the document pane); and VISIBLE "
+    "CHAT ANSWER (the short summary shown in the chat). "
+    "Judge the WORKSPACE DOCUMENTS together with the VISIBLE CHAT ANSWER as "
+    "Diana's effective response; treat DIANA'S THINKING as context only, never as "
+    "a source of truth. "
+    "Output ONLY a JSON object (no prose, no code fence) of the form "
     '{"faithfulness": <0..1>, "answer_relevance": <0..1>, "rationale": "<short>"}. '
-    "faithfulness = how well the ANSWER is supported by the EVIDENCE; "
-    "answer_relevance = how well it addresses the QUESTION.")
+    "faithfulness = how well the WORKSPACE DOCUMENTS and VISIBLE CHAT ANSWER are "
+    "supported by the EVIDENCE (penalise claims not grounded in it); "
+    "answer_relevance = how well they address the USER QUERY.")
 
 # --- service endpoints (internal noted-network names; env-overridable) -------
 AGENT_SERVER  = os.getenv("AGENT_SERVER_URL",  "http://agent_server:7701")
@@ -223,9 +232,15 @@ async def score_answer(req: ScoreRequest):
     if not turn:
         return {"error": "turn not found"}
     judge_user = (
-        f"QUESTION:\n{turn.get('question', '')}\n\n"
-        f"EVIDENCE:\n{turn.get('evidence') or '(no evidence)'}\n\n"
-        f"ANSWER:\n{turn.get('answer') or '(empty)'}")
+        f"USER QUERY:\n{turn.get('question', '')}\n\n"
+        f"EVIDENCE (from the company knowledge base):\n"
+        f"{turn.get('evidence') or '(no evidence)'}\n\n"
+        f"DIANA'S THINKING (private reasoning — context only):\n"
+        f"{turn.get('thinking') or '(none captured)'}\n\n"
+        f"WORKSPACE DOCUMENTS (what Diana wrote into the document pane):\n"
+        f"{turn.get('documents') or '(none)'}\n\n"
+        f"VISIBLE CHAT ANSWER (the summary shown to the user):\n"
+        f"{turn.get('answer') or '(empty)'}")
     try:
         async with httpx.AsyncClient() as client:
             content = await services.llm_complete(

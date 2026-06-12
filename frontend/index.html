@@ -9,11 +9,39 @@
 <link rel="stylesheet" href="static/widget/cv-chat.css">
 <style>
   :root{ --bg:#f6f7fb; --panel:#fff; --ink:#1e2330; --muted:#6b7280;
-    --primary:#ffe19b; --primary-d:#8a6a12; --primary-soft:#fff6df;
+    --primary:#ffe19b; --primary-d:#8a6a12; --primary-soft:#ffe19b;
     --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
-  body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);
+       display:flex;height:100vh;overflow:hidden}
+  /* ---- left nav rail ---- */
+  .sidenav{width:236px;flex:none;background:var(--panel);border-right:1px solid var(--line);
+           display:flex;flex-direction:column;padding:.9rem .7rem .7rem}
+  .sidenav .brand{display:flex;align-items:center;gap:.55rem;padding:.1rem .4rem .9rem}
+  .sidenav .brand img{height:42px;width:auto;display:block}
+  .sidenav .brand b{font-size:19px;letter-spacing:-.2px}
+  .newreq{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;border:1px solid var(--primary);
+          background:var(--primary-soft);color:var(--primary-d);font-weight:700;font-size:13.5px;
+          padding:.6rem .7rem;border-radius:10px;cursor:pointer;margin-bottom:.8rem}
+  .newreq:hover{background:var(--primary)}
+  .navlist{display:flex;flex-direction:column;gap:.12rem}
+  .navitem{display:flex;align-items:center;gap:.65rem;padding:.55rem .65rem;border-radius:9px;cursor:pointer;
+           color:#3a4150;font-size:13.5px;font-weight:600;border:1px solid transparent;text-decoration:none}
+  .navitem svg{width:17px;height:17px;flex:none;color:var(--muted)}
+  .navitem:hover{background:#f5f6fa}
+  .navitem.active{background:var(--primary-soft);color:var(--primary-d);border-color:#f0e2b0}
+  .navitem.active svg{color:var(--primary-d)}
+  .navitem .soon{margin-left:auto;font-size:9.5px;font-weight:700;color:#b9920f;background:#fff7df;
+                 border:1px solid #f0e2b0;border-radius:6px;padding:0 4px}
+  .navspace{flex:1}
+  .sidenav .profile{display:flex;align-items:center;gap:.55rem;padding:.55rem .5rem;border-top:1px solid var(--line);margin-top:.4rem}
+  .sidenav .profile .av{width:32px;height:32px;border-radius:50%;flex:none;
+                        background:linear-gradient(135deg,var(--primary),#e9c45f)}
+  .sidenav .profile .who{min-width:0}
+  .sidenav .profile .who b{display:block;font-size:13px;line-height:1.2}
+  .sidenav .profile .who span{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
   header{display:flex;align-items:center;gap:.7rem;padding:.5rem 1.3rem;min-height:72px;background:var(--panel);
          border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
   .logo{height:56px;width:auto;display:block;border-radius:6px}
@@ -26,15 +54,64 @@
   .hbtn{border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;padding:.5rem .9rem;
         color:var(--muted);font-size:16px;display:inline-flex;align-items:center;gap:.4rem}
   .hbtn:hover{border-color:var(--primary);color:var(--primary-d)}
+  .hbtn.primary{background:var(--primary);border-color:var(--primary);color:var(--ink);font-weight:600;font-size:13px}
+  .hbtn.primary:hover{background:#ffd779}
+  .hbtn:disabled{opacity:.45;cursor:not-allowed}
+  .hbtn:disabled:hover{border-color:var(--line);color:var(--muted)}
+
+  /* ---- workspace top bar (persistent above the tabs) ---- */
+  .wsbar{display:flex;align-items:center;gap:.6rem;padding:.7rem 1.3rem;min-height:64px;background:var(--panel);
+         border-bottom:1px solid var(--line)}
+  .wsbar .wstitle{display:flex;align-items:center;gap:.55rem;min-width:0}
+  .wsbar .wstitle b{font-size:18px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wsbar .spacer{flex:1}
+
+  /* ---- All-Documents overview ---- */
+  .overview{max-width:1080px;margin:0 auto;padding:.3rem .2rem 2rem}
+  .ov-sub{color:var(--muted);font-size:13px;margin:.1rem 0 1.1rem}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(218px,1fr));gap:1rem}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.05rem 1.05rem 1rem;
+        box-shadow:var(--shadow);display:flex;flex-direction:column;gap:.55rem}
+  .card .ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+            background:var(--primary-soft);color:var(--primary-d)}
+  .card .ic svg{width:21px;height:21px}
+  .card h4{margin:0;font-size:14.5px}
+  .card p{margin:0;color:var(--muted);font-size:12px;line-height:1.45;flex:1}
+  .card .st{font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:.3rem}
+  .card .st.ok{color:var(--ok)}
+  .card .st.gen{color:var(--primary-d)}
+  .card .open{border:1px solid var(--line);background:#fff;border-radius:9px;padding:.5rem;font-weight:600;
+              font-size:12.5px;cursor:pointer;color:var(--ink);transition:.12s}
+  .card .open:hover:not(:disabled){border-color:var(--primary);background:var(--primary-soft);color:var(--primary-d)}
+  .card .open:disabled{opacity:.5;cursor:default}
+  .progwrap{margin-top:1.4rem;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.05rem 1.2rem}
+  .progwrap h4{margin:0 0 .8rem;font-size:14px}
+  .steps{display:flex;flex-direction:column;gap:.55rem}
+  .step{display:flex;align-items:center;gap:.65rem;font-size:13px;color:var(--muted)}
+  .step .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;
+             display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+  .step.done{color:var(--ink)}
+  .step.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+  .step.active{color:var(--primary-d);font-weight:600}
+  .step.active .dot{border-color:var(--primary-d);box-shadow:0 0 0 3px var(--primary-soft)}
+  .ov-banner{margin-top:1.2rem;text-align:center;padding:1rem;border:1px dashed #bfe3cf;background:#f3fbf6;
+             border-radius:14px;color:var(--ok);font-weight:600;font-size:13.5px}
+  .ov-empty{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;text-align:center;color:var(--muted)}
+  .ov-empty .big{width:60px;height:60px;border-radius:16px;margin:0 auto 1rem;display:flex;align-items:center;
+                 justify-content:center;background:var(--primary-soft);color:var(--primary-d)}
+  .ov-empty .big svg{width:30px;height:30px}
+  .ov-empty h3{margin:0 0 .4rem;color:var(--ink);font-size:17px}
 
   .tabbar{display:flex;gap:.2rem;padding:.4rem .6rem 0;background:var(--panel);border-bottom:1px solid var(--line);overflow:auto}
   .tab{padding:.5rem .9rem;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
        color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap}
   .tab.active{background:var(--bg);color:var(--ink);border-color:var(--line)}
   .tab.busy::after{content:" •";color:var(--primary)}
-  .docpane{display:flex;align-items:stretch;height:calc(100vh - 112px)}
+  .docpane{display:flex;align-items:stretch;flex:1;min-height:0}
   .doc-col{flex:1;min-width:0;overflow:auto;padding:1.2rem}
   .pdf-col{flex:1;min-width:0;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--bg)}
+  .pdf-col[hidden]{display:none}   /* author display:flex would otherwise defeat [hidden] -> stray separator */
   .pdf-head{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;border-bottom:1px solid var(--line);background:#fff;font:600 12.5px system-ui}
   .pdf-head .src{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
   .pdf-head a{color:var(--primary-d);text-decoration:none;font-weight:600;font-size:12px}
@@ -43,6 +120,8 @@
   .cite{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin:0 2px;
         border-radius:8px;background:var(--primary-soft);color:var(--primary-d);font-size:11px;font-weight:700;cursor:pointer;vertical-align:1px}
   .cite:hover{background:var(--primary);color:var(--ink)}
+  .cite.ref{background:#eef0f5;color:#6b7280;cursor:default}
+  .cite.ref:hover{background:#e6e8ef;color:#6b7280}
   .docwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-width:920px;margin:0 auto}
   .doctool{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-bottom:1px solid var(--line);background:#fbfbfe}
   .doctool .ttl{font-weight:700;font-size:13.5px;flex:1}
@@ -103,17 +182,43 @@
 </style>
 </head>
 <body>
-<header>
-  <img class="logo" src="static/images/job2cool_logo_small.png" alt="job2cool" /><b>job2cool</b>
-  <span class="spacer"></span>
-  <button class="hbtn" id="assistantOpen" title="Open the Assistant chat">💬 Assistant</button>
-  <button class="hbtn" id="gear" title="Settings">⚙ Settings</button>
-</header>
-
-<div class="tabbar" id="tabbar"></div>
-<div class="docpane" id="docpane">
-  <div class="doc-col" id="doccol"></div>
-  <div class="pdf-col" id="pdfcol" hidden></div>
+<nav class="sidenav">
+  <div class="brand"><img src="static/images/job2cool_logo_small.png" alt=""/><b>job2cool</b></div>
+  <button class="newreq" id="newReq">＋ New Request</button>
+  <div class="navlist" id="navlist">
+    <a class="navitem" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Home<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="assistant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg>AI Assistant</a>
+    <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>My Workspace</a>
+    <a class="navitem" data-nav="templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Templates<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="documents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Documents<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="candidates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.2a3.2 3.2 0 0 1 0 6M20.5 20a5 5 0 0 0-3.5-4.8"/></svg>Candidates<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="company"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>Company Profile<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</a>
+  </div>
+  <div class="navspace"></div>
+  <a class="navitem" data-nav="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></svg>Help &amp; Support<span class="soon">soon</span></a>
+  <div class="profile"><div class="av"></div><div class="who"><b>HR Manager</b><span>hr@company.com</span></div></div>
+</nav>
+<div class="main">
+  <div class="wsbar">
+    <div class="wstitle">
+      <b>Hiring Package</b>
+    </div>
+    <div class="spacer"></div>
+    <button class="hbtn" id="shareBtn" title="Share">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg>
+      <span style="font-size:13px">Share</span>
+    </button>
+    <button class="hbtn primary" id="exportAllBtn" title="Export all documents">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
+      Export All
+    </button>
+  </div>
+  <div class="tabbar" id="tabbar"></div>
+  <div class="docpane" id="docpane">
+    <div class="doc-col" id="doccol"></div>
+    <div class="pdf-col" id="pdfcol" hidden></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -141,10 +246,26 @@ const PDF_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 const COPY_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
 // deliverable tabs (created on demand from buffer events)
+const ALL='All Documents';
 const MAIN=['Job Offer','Technical Interviews','Onboarding Plan','Cultural & Team Fit'];
 const ORDER=Object.fromEntries(MAIN.map((t,i)=>[t,i]));
-const doc={order:[],content:{},active:null,offerView:'gemma'};
+const doc={order:[],content:{},active:ALL,offerView:'gemma'};
 const isPending=c=>!c||/_Generating…_|_Pending…_/.test(c);
+
+// per-deliverable overview-card metadata (icon + one-line description)
+const ICONS={
+  'Job Offer':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+  'Onboarding Plan':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 20V8l7-4 7 4v12"/><path d="M9 20v-5h6v5"/><path d="M12 4v4"/></svg>',
+  'Technical Interviews':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg>',
+  'Cultural & Team Fit':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.3a3 3 0 0 1 0 5.4M20.5 19a5 5 0 0 0-3.2-4.6"/></svg>'
+};
+const DESC={
+  'Job Offer':'Comprehensive job description with responsibilities, requirements and compensation.',
+  'Onboarding Plan':'Structured 30-60-90 day plan with goals, milestones and resources.',
+  'Technical Interviews':'Technical interview set with curated questions and assessment guidelines.',
+  'Cultural & Team Fit':'Assessment framework for cultural fit and team alignment.'
+};
+const DOC_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 
 function shownFor(title){
   if(title==='Job Offer'&&doc.offerView==='ma2'&&doc.content['Job Offer (MA2)']!=null) return 'Job Offer (MA2)';
@@ -161,15 +282,24 @@ function exportPDF(name){
 }
 
 let _citeN=0;
-function citeBadges(md){return (md||'').replace(/\[markdown_chunk:([0-9a-f]+)\]/g,(_,hx)=>{_citeN++;return `<span class="cite" data-hex="${hx}">${_citeN}</span>`;});}
+function citeBadges(md){
+  let s=(md||'').replace(/\[markdown_chunk:([0-9a-f]+)\]/g,(_,hx)=>{_citeN++;return `<span class="cite" data-hex="${hx}">${_citeN}</span>`;});
+  // graph-structure citations: the doc pane resolves PDF chunks, not graph nodes —
+  // show [E:]/[R:] as subtle, non-clickable grounding markers (not raw text).
+  s=s.replace(/\[E:([^\]]+)\]/g,(_,id)=>`<span class="cite ref" title="entity: ${esc(id)}">E</span>`);
+  s=s.replace(/\[R:([^\]]+)\]/g,(_,r)=>`<span class="cite ref" title="relationship: ${esc(r)}">R</span>`);
+  return s;
+}
 
 function render(){
   const tb=$('#tabbar');tb.innerHTML='';
-  doc.order.forEach(title=>{const t=document.createElement('div');
-    t.className='tab'+(doc.active===title?' active':'')+(isPending(doc.content[title])?' busy':'');
+  [ALL,...doc.order].forEach(title=>{const t=document.createElement('div');
+    const busy=title!==ALL&&isPending(doc.content[title]);
+    t.className='tab'+(doc.active===title?' active':'')+(busy?' busy':'');
     t.textContent=title;t.onclick=()=>{doc.active=title;closePdf();render();};tb.appendChild(t);});
+  updateWsBar();
+  if(doc.active===ALL||!doc.active){renderOverview();return;}
   const col=$('#doccol');
-  if(!doc.active){col.innerHTML='';return;}
   const showName=shownFor(doc.active);
   const content=doc.content[showName]||'';
   const pending=isPending(content);
@@ -188,8 +318,69 @@ function render(){
   col.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
 }
 
+// "All Documents" overview: deliverable cards + generation-progress stepper.
+function renderOverview(){
+  const col=$('#doccol');const items=doc.order;
+  if(!items.length){
+    col.innerHTML=`<div class="ov-empty">
+      <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg></div>
+      <h3>No documents yet</h3>
+      <p>Tell Diana what you are hiring for and your tailored hiring package will appear here.</p>
+      <button class="hbtn primary" style="margin:.6rem auto 0" onclick="openAssistant()">Open the Assistant</button>
+    </div>`;
+    return;
+  }
+  const allDone=items.every(n=>!isPending(doc.content[n]));
+  const cards=items.map(name=>{
+    const pend=isPending(doc.content[name]);
+    return `<div class="card">
+      <div class="ic">${ICONS[name]||DOC_ICON}</div>
+      <h4>${esc(name)}</h4>
+      <p>${esc(DESC[name]||'')}</p>
+      <div class="st ${pend?'gen':'ok'}">${pend?'● Generating…':'✓ Completed'}</div>
+      <button class="open" data-open="${esc(name)}" ${pend?'disabled':''}>Open Document</button>
+    </div>`;}).join('');
+  const steps=[{label:'Analyzing requirements',done:true,active:false}]
+    .concat(items.map(n=>{const p=isPending(doc.content[n]);return {label:'Generating '+n,done:!p,active:p};}));
+  const stepsHtml=steps.map(s=>`<div class="step ${s.done?'done':(s.active?'active':'')}">
+      <span class="dot">${s.done?'✓':''}</span>${esc(s.label)}</div>`).join('');
+  col.innerHTML=`<div class="overview">
+    <div class="ov-sub">${allDone?'All documents generated and ready to use.':'Generating your hiring package — documents appear as Diana completes them.'}</div>
+    <div class="cards">${cards}</div>
+    <div class="progwrap"><h4>Generation Progress</h4><div class="steps">${stepsHtml}</div></div>
+    ${allDone?'<div class="ov-banner">✓ All documents have been generated successfully!</div>':''}
+  </div>`;
+  col.querySelectorAll('.open').forEach(b=>b.onclick=()=>{doc.active=b.dataset.open;closePdf();render();});
+}
+
+// workspace top bar: status pill + enable/disable Share / Export All
+function updateWsBar(){
+  const items=doc.order;
+  const ea=$('#exportAllBtn'),sh=$('#shareBtn');
+  const ready=items.some(n=>!isPending(doc.content[n]));
+  if(ea)ea.disabled=!ready; if(sh)sh.disabled=!ready;
+}
+// Export All: print every completed deliverable (one per page) -> Save as PDF.
+function exportAll(){
+  const names=doc.order.filter(n=>!isPending(doc.content[n]));
+  if(!names.length){toast('Nothing to export yet');return;}
+  const html=names.map(n=>md2html(doc.content[shownFor(n)]||doc.content[n]||''))
+                  .join('<div style="page-break-after:always"></div>');
+  const pa=$('#printarea');pa.innerHTML=html;
+  const prev=document.title;document.title='Hiring Package';
+  function after(){document.title=prev;pa.innerHTML='';window.removeEventListener('afterprint',after);}
+  window.addEventListener('afterprint',after);window.print();
+}
+// Share: copy the whole package as Markdown to the clipboard.
+function shareAll(){
+  const names=doc.order.filter(n=>!isPending(doc.content[n]));
+  if(!names.length){toast('Nothing to share yet');return;}
+  const md=names.map(n=>`# ${n}\n\n${doc.content[shownFor(n)]||doc.content[n]||''}`).join('\n\n---\n\n');
+  navigator.clipboard.writeText(md).then(()=>toast('Hiring package copied to clipboard')).catch(()=>toast('Copy failed'));
+}
+
 // citation in a document section -> resolve -> open the PDF in the split pane
-$('#doccol').addEventListener('click',e=>{const c=e.target.closest('.cite');if(c)resolveCite(c.dataset.hex);});
+$('#doccol').addEventListener('click',e=>{const c=e.target.closest('.cite');if(c&&c.dataset.hex)resolveCite(c.dataset.hex);});
 async function resolveCite(hx){
   try{const d=await(await fetch('api/citation/'+encodeURIComponent(hx))).json();
     if(d&&d.source_path)window.JOB2COOL_OPEN_PDF(d); else toast('Source not available');
@@ -209,7 +400,7 @@ window.JOB2COOL_OPEN_PDF=function(data){
 function closePdf(){const col=$('#pdfcol');col.hidden=true;col.innerHTML='';$('#docpane').classList.remove('split');}
 
 // reset tabs at the start of a new turn (hook called by cv-chat on send)
-window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=null;doc.offerView='gemma';render();};
+window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';render();};
 
 // live document via buffer SSE -> tabs
 (function(){const es=new EventSource('api/buffers/events/stream');
@@ -221,25 +412,34 @@ window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=null;
     if(!doc.order.includes(name)){                    // new deliverable -> tab + focus
       doc.order.push(name);doc.order.sort((a,b)=>ORDER[a]-ORDER[b]);
       doc.active=name;render();
-    }else if(doc.active===name){render();}
+    }else if(doc.active===name||doc.active===ALL){render();}  // refresh doc or the live overview
   }catch(e){}};})();
 
 // settings -> window.JOB2COOL_CONFIG (read by the patched cv-chat)
 window.JOB2COOL_CONFIG={offer_sources:['ma2','gemma','rag']};
-$('#gear').onclick=()=>{const s=window.JOB2COOL_CONFIG.offer_sources;
+function openSettings(){const s=window.JOB2COOL_CONFIG.offer_sources;
   $('#cfg-ma2').checked=s.includes('ma2');$('#cfg-gemma').checked=s.includes('gemma');$('#cfg-rag').checked=s.includes('rag');
-  $('#modalbg').classList.add('show');};
+  $('#modalbg').classList.add('show');}
 $('#cfg-cancel').onclick=()=>$('#modalbg').classList.remove('show');
 $('#modalbg').onclick=e=>{if(e.target.id==='modalbg')$('#modalbg').classList.remove('show');};
 $('#cfg-save').onclick=()=>{const s=[];if($('#cfg-ma2').checked)s.push('ma2');if($('#cfg-gemma').checked)s.push('gemma');if($('#cfg-rag').checked)s.push('rag');
   if(!s.length){toast('Select at least one source');return;}window.JOB2COOL_CONFIG.offer_sources=s;$('#modalbg').classList.remove('show');toast('Settings saved');};
 
-// open the whole Assistant chat panel from the top bar (the cv-chat floating
-// launcher is hidden via CSS; we trigger it programmatically from here)
+// open the Assistant chat panel (cv-chat launcher is hidden; trigger it here)
 function openAssistant(){
   if(!document.body.classList.contains('cvchat-open')){const l=document.querySelector('.cvchat-launcher');if(l)l.click();}
 }
-$('#assistantOpen').onclick=openAssistant;
+// left-nav wiring: live items act; placeholders toast. "My Workspace" is the view.
+document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',e=>{
+  e.preventDefault();const k=n.dataset.nav;
+  if(k==='assistant')return openAssistant();
+  if(k==='settings')return openSettings();
+  if(k==='workspace')return;
+  toast(n.textContent.replace('soon','').trim()+' — coming soon');
+}));
+$('#newReq').onclick=()=>{if(window.JOB2COOL_NEW_TURN)window.JOB2COOL_NEW_TURN();openAssistant();};
+$('#exportAllBtn').onclick=exportAll;
+$('#shareBtn').onclick=shareAll;
 
 render();
 </script>
