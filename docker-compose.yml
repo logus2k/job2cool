@@ -22,8 +22,12 @@ services:
     restart: unless-stopped
     networks:
       - noted-network
+      - logus2k_network
 
 networks:
   # Created by the noted stack; job2cool joins it to reach the shared services.
   noted-network:
+    external: true
+  # Created by the agent stack; hosts stt_server / tts_server / avatar_server.
+  logus2k_network:
     external: true

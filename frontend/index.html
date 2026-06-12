@@ -4,254 +4,204 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>job2cool — HR Assistant</title>
+<link rel="stylesheet" href="static/widget/vendor/jspanel/jspanel.min.css">
+<link rel="stylesheet" href="static/widget/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="static/widget/cv-chat.css">
 <style>
-  :root{
-    --bg:#f6f7fb; --panel:#fff; --ink:#1e2330; --muted:#6b7280;
+  :root{ --bg:#f6f7fb; --panel:#fff; --ink:#1e2330; --muted:#6b7280;
     --primary:#6366f1; --primary-d:#4f46e5; --primary-soft:#eef2ff;
-    --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06);
-    --chatw:760px;
-  }
+    --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
-  body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-       color:var(--ink);background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
-  header{display:flex;align-items:center;gap:.6rem;padding:.6rem 1.1rem;
-         background:var(--panel);border-bottom:1px solid var(--line);flex:none}
-  .logo{width:26px;height:26px;border-radius:7px;
-        background:linear-gradient(135deg,var(--primary),#8b5cf6)}
-  header b{font-size:16px;letter-spacing:-.2px}
+  body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  header{display:flex;align-items:center;gap:.7rem;padding:.5rem 1.3rem;min-height:72px;background:var(--panel);
+         border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .logo{height:56px;width:auto;display:block;border-radius:6px}
+  header b{font-size:22px;letter-spacing:-.2px}
   header .sub{color:var(--muted);font-size:12.5px}
   header .spacer{flex:1}
   .pill{font-size:11.5px;font-weight:600;padding:.2rem .55rem;border-radius:20px}
   .pill.ai{background:var(--primary-soft);color:var(--primary-d)}
   .pill.done{background:#e7f6ee;color:var(--ok)}
-  main{flex:1;display:flex;min-height:0}
+  .hbtn{border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;padding:.5rem .9rem;
+        color:var(--muted);font-size:16px;display:inline-flex;align-items:center;gap:.4rem}
+  .hbtn:hover{border-color:var(--primary);color:var(--primary-d)}
 
-  /* ---- document area (tabs + mosaic) ---- */
-  .docarea{flex:1;min-width:0;display:flex;flex-direction:column}
-  .tabbar{display:flex;gap:.2rem;padding:.4rem .6rem 0;background:var(--panel);
-          border-bottom:1px solid var(--line);flex:none;overflow:auto}
-  .tab{display:flex;align-items:center;gap:.4rem;padding:.45rem .8rem;cursor:pointer;
-       border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
+  .tabbar{display:flex;gap:.2rem;padding:.4rem .6rem 0;background:var(--panel);border-bottom:1px solid var(--line);overflow:auto}
+  .tab{padding:.5rem .9rem;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
        color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap}
   .tab.active{background:var(--bg);color:var(--ink);border-color:var(--line)}
-  .tab .x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0}
-  .scroll{flex:1;overflow:auto;padding:1rem}
-  .mosaic{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-content:start}
-  .single{display:block}
-
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-         box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:200px;overflow:hidden}
-  .single .panel{min-height:60vh}
-  .panel-head{display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;
-              border-bottom:1px solid var(--line);background:#fbfbfe}
-  .panel-head .ttl{font-weight:700;font-size:13.5px;flex:1}
-  .iconbtn{border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;
-           width:26px;height:24px;display:inline-flex;align-items:center;justify-content:center;
-           color:var(--muted);padding:0}
+  .tab.busy::after{content:" •";color:var(--primary)}
+  .docpane{padding:1.2rem}
+  .docwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-width:920px;margin:0 auto}
+  .doctool{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-bottom:1px solid var(--line);background:#fbfbfe}
+  .doctool .ttl{font-weight:700;font-size:13.5px;flex:1}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:0;background:#fff;padding:.25rem .6rem;font-size:12px;cursor:pointer;color:var(--muted)}
+  .seg button.on{background:var(--primary);color:#fff}
+  .iconbtn{border:1px solid var(--line);background:#fff;border-radius:7px;cursor:pointer;width:28px;height:26px;
+           display:inline-flex;align-items:center;justify-content:center;color:var(--muted);padding:0}
   .iconbtn:hover{color:var(--primary-d);border-color:var(--primary)}
   .iconbtn svg{width:13px;height:13px}
-  .panel-body{padding:.9rem 1.1rem;overflow:auto;flex:1}
-  .panel-body.pending{color:var(--muted);font-style:italic}
-  .panel-body h1{font-size:18px;margin:.1rem 0 .7rem}
-  .panel-body h2{font-size:15px;margin:1rem 0 .4rem;color:var(--primary-d)}
-  .panel-body h3{font-size:13.5px;margin:.8rem 0 .3rem}
-  .panel-body ul{margin:.3rem 0 .3rem 1.1rem;padding:0}
-  .panel-body em{color:var(--muted)}
+  .docbody{padding:1.1rem 1.4rem;min-height:50vh}
+  .docbody.pending{color:var(--muted);font-style:italic}
+  .docbody h1{font-size:19px;margin:.1rem 0 .8rem}
+  .docbody h2{font-size:15px;margin:1.1rem 0 .4rem;color:var(--primary-d)}
+  .docbody h3{font-size:13.5px;margin:.9rem 0 .3rem}
+  .docbody ul{margin:.3rem 0 .3rem 1.1rem;padding:0}
+  .docbody em{color:var(--muted)}
+  .empty{max-width:920px;margin:3rem auto;color:var(--muted);text-align:center}
 
-  /* ---- resizer + chat ---- */
-  .resizer{width:6px;cursor:col-resize;background:transparent;flex:none;position:relative}
-  .resizer::after{content:"";position:absolute;inset:0 2px;background:var(--line);border-radius:3px}
-  .resizer:hover::after{background:var(--primary)}
-  .chat{width:var(--chatw);flex:none;border-left:1px solid var(--line);background:var(--panel);
-        display:flex;flex-direction:column;min-width:0}
-  .chat-head{display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;
-             border-bottom:1px solid var(--line);font-weight:600;flex:none}
-  .chat-head .dot{width:9px;height:9px;border-radius:50%;background:var(--primary)}
-  .chat-head .spacer{flex:1}
-  .msgs{flex:1;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.8rem}
-  .msg{max-width:94%}
-  .msg.user{align-self:flex-end}
-  .bubble{padding:.6rem .8rem;border-radius:12px;white-space:pre-wrap;word-wrap:break-word}
-  .msg.user .bubble{background:var(--primary);color:#fff;border-bottom-right-radius:3px}
-  .msg.bot .bubble{background:#f3f4f8;border-bottom-left-radius:3px}
-  .think{margin:.2rem 0 .4rem;font-size:12.5px}
-  .think summary{cursor:pointer;color:var(--muted);user-select:none}
-  .think .body{margin-top:.3rem;padding:.5rem .6rem;background:#fafafe;
-               border:1px dashed var(--line);border-radius:8px;color:#555;white-space:pre-wrap}
-  .inbar{display:flex;gap:.5rem;padding:.7rem;border-top:1px solid var(--line);flex:none}
-  .inbar textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:10px;
-                  padding:.55rem .7rem;font:inherit;outline:none;height:44px;max-height:140px}
-  .inbar textarea:focus{border-color:var(--primary)}
-  .inbar button{border:0;background:var(--primary);color:#fff;border-radius:10px;
-                padding:0 1.1rem;font-weight:600;cursor:pointer}
-  .inbar button:disabled{opacity:.5;cursor:default}
-  .hint{color:var(--muted);font-size:12px;padding:0 1rem .5rem}
-
-  body.chat-collapsed .chat,body.chat-collapsed .resizer{display:none}
-  #reopen{display:none;position:fixed;right:14px;bottom:14px;z-index:30;border:0;
-          background:var(--primary);color:#fff;border-radius:50%;width:48px;height:48px;
-          font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(79,70,229,.4)}
-  body.chat-collapsed #reopen{display:block}
-
-  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;
-         background:#1e2330;color:#fff;padding:.5rem .9rem;border-radius:8px;font-size:13px;
-         opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9000;background:#1e2330;color:#fff;
+         padding:.5rem .9rem;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
   .toast.show{opacity:.95}
-
-  @media(max-width:1180px){ .mosaic{grid-template-columns:1fr} }
-  @media(max-width:900px){ :root{--chatw:340px} }
+  .modal-bg{position:fixed;inset:0;background:rgba(20,24,40,.35);z-index:9500;display:none;align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(20,24,40,.3);width:420px;max-width:92vw;padding:1.2rem 1.3rem}
+  .modal h3{margin:0 0 .2rem;font-size:16px}
+  .modal .desc{color:var(--muted);font-size:12.5px;margin-bottom:1rem}
+  .modal h4{margin:0 0 .5rem;font-size:13.5px}
+  .modal label{display:flex;align-items:center;gap:.55rem;padding:.45rem .55rem;border:1px solid var(--line);
+               border-radius:9px;margin-bottom:.4rem;cursor:pointer;font-size:13.5px}
+  .modal label:hover{border-color:var(--primary)}
+  .modal label input{accent-color:var(--primary);width:16px;height:16px}
+  .modal .muted{color:var(--muted);font-size:11.5px}
+  .modal .foot{display:flex;justify-content:flex-end;gap:.5rem;margin-top:.6rem}
+  .modal .foot button{border:0;border-radius:9px;padding:.5rem 1rem;font-weight:600;cursor:pointer}
+  .modal .foot .ok{background:var(--primary);color:#fff}
+  .modal .foot .cancel{background:#eef0f5;color:var(--ink)}
+  /* job2cool: open the Assistant from the top-bar button, not a floating launcher */
+  .cvchat-launcher{display:none !important;}
+  /* Assistant panel width: ~1/3 of the screen on wide displays, growing to ~1/2
+     on smaller ones (600px target, clamped between 33vw and 50vw). Mobile falls
+     back to full width via cv-chat.css's own media query. The resizer still
+     overrides this (it sets the var inline). */
+  :root{ --cvchat-panel-w: clamp(33vw, 600px, 50vw); }
 </style>
 </head>
 <body>
 <header>
-  <span class="logo"></span><b>job2cool</b>
-  <span class="sub">HR Assistant</span>
+  <img class="logo" src="static/images/job2cool_logo_small.png" alt="job2cool" /><b>job2cool</b>
   <span class="spacer"></span>
-  <span class="pill ai">AI Generated</span>
-  <span class="pill done" id="donepill" hidden>Completed</span>
+  <button class="hbtn" id="assistantOpen" title="Open the Assistant chat">💬 Assistant</button>
+  <button class="hbtn" id="gear" title="Settings">⚙ Settings</button>
 </header>
 
-<main>
-  <section class="docarea">
-    <div class="tabbar" id="tabbar"></div>
-    <div class="scroll"><div class="mosaic" id="mosaic"></div></div>
-  </section>
-  <div class="resizer" id="resizer" title="Drag to resize the Assistant"></div>
-  <aside class="chat">
-    <div class="chat-head"><span class="dot"></span> AI Assistant <span class="spacer"></span>
-      <button class="iconbtn" id="collapse" title="Collapse Assistant">⟩</button></div>
-    <div class="msgs" id="msgs"></div>
-    <div class="hint" id="hint">Try: “I need a software developer who knows Java and likes to work in an Agile environment.”</div>
-    <div class="inbar">
-      <textarea id="input" placeholder="Describe the hiring need…"></textarea>
-      <button id="send">Send</button>
-    </div>
-  </aside>
-</main>
-<button id="reopen" title="Open Assistant">💬</button>
+<div class="tabbar" id="tabbar"></div>
+<div class="docpane" id="docpane"></div>
+
 <div class="toast" id="toast"></div>
+<div class="modal-bg" id="modalbg">
+  <div class="modal">
+    <h3>Settings</h3>
+    <div class="desc">Configure how the hiring package is generated.</div>
+    <h4>Job Offer Generation</h4>
+    <div class="muted" style="margin-bottom:.5rem">Select one or more sources used to produce the job offer.</div>
+    <label><input type="checkbox" id="cfg-ma2" value="ma2" checked> MA2 DPO Q8 <span class="muted">— specialist offer model</span></label>
+    <label><input type="checkbox" id="cfg-gemma" value="gemma" checked> Gemma 4 E4B Q4 <span class="muted">— refine &amp; compose</span></label>
+    <label><input type="checkbox" id="cfg-rag" value="rag" checked> RAG <span class="muted">— ground in the knowledge base</span></label>
+    <div class="foot"><button class="cancel" id="cfg-cancel">Cancel</button><button class="ok" id="cfg-save">Save</button></div>
+  </div>
+</div>
 
 <script src="static/vendor_j2c/marked.min.js"></script>
 <script>
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s);
 const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const md2html=m=>window.marked?marked.parse(m||''):esc(m);
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1600);}
 const PDF_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
 const COPY_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-const EXP_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
 
-// ---- deliverables / panel model -------------------------------------------
-const DELIVERABLES=[
-  {key:'offer',title:'Job Offer'},
-  {key:'interview',title:'Technical Interviews'},
-  {key:'onboarding',title:'Onboarding Plan'},
-  {key:'culture',title:'Cultural & Team Fit'},
-];
-const byTitle=Object.fromEntries(DELIVERABLES.map(d=>[d.title,d]));
-const state={content:{}, expanded:new Set(), active:'workspace'};
-DELIVERABLES.forEach(d=>state.content[d.title]='');
+// deliverable tabs (created on demand from buffer events)
+const MAIN=['Job Offer','Technical Interviews','Onboarding Plan','Cultural & Team Fit'];
+const ORDER=Object.fromEntries(MAIN.map((t,i)=>[t,i]));
+const doc={order:[],content:{},active:null,offerView:'gemma'};
+const isPending=c=>!c||/_Generating…_|_Pending…_/.test(c);
 
-function copyMD(title){navigator.clipboard.writeText(state.content[title]||'').then(()=>toast('Markdown copied')).catch(()=>toast('Copy failed'));}
-function exportPDF(title){
-  const w=window.open('','_blank');
-  if(!w){toast('Allow pop-ups to export PDF');return;}
-  w.document.write(`<!doctype html><html><head><title>${esc(title)}</title><style>
+function shownFor(title){
+  if(title==='Job Offer'&&doc.offerView==='ma2'&&doc.content['Job Offer (MA2)']!=null) return 'Job Offer (MA2)';
+  return title;
+}
+function copyMD(name){navigator.clipboard.writeText(doc.content[name]||'').then(()=>toast('Markdown copied')).catch(()=>toast('Copy failed'));}
+function exportPDF(name){const w=window.open('','_blank');if(!w){toast('Allow pop-ups to export PDF');return;}
+  w.document.write(`<!doctype html><html><head><title>${esc(name)}</title><style>
     body{font:14px/1.55 system-ui,sans-serif;max-width:780px;margin:2rem auto;padding:0 1rem;color:#1e2330}
     h1{font-size:22px}h2{font-size:17px;color:#4f46e5}h3{font-size:14px}em{color:#666}ul{margin-left:1.1rem}
-    </style></head><body>${md2html(state.content[title]||'')}</body></html>`);
-  w.document.close();w.focus();setTimeout(()=>w.print(),350);
-}
-
-function panelEl(title){
-  const d=document.createElement('div');d.className='panel';
-  const content=state.content[title]||'';
-  const pending=!content||/_Pending…_|_Generating…_/.test(content);
-  d.innerHTML=`<div class="panel-head">
-      <span class="ttl">${esc(title)}</span>
-      <button class="iconbtn act-copy" title="Copy Markdown">${COPY_ICON}</button>
-      <button class="iconbtn act-pdf" title="Export to PDF">${PDF_ICON}</button>
-      <button class="iconbtn act-exp" title="Expand to its own tab">${EXP_ICON}</button>
-    </div>
-    <div class="panel-body${pending?' pending':''}">${pending?'Pending…':md2html(content)}</div>`;
-  d.querySelector('.act-copy').onclick=()=>copyMD(title);
-  d.querySelector('.act-pdf').onclick=()=>exportPDF(title);
-  d.querySelector('.act-exp').onclick=()=>{ if(state.expanded.has(title)){state.expanded.delete(title);} else {state.expanded.add(title);state.active=title;} render(); };
-  return d;
-}
+    </style></head><body>${md2html(doc.content[name]||'')}</body></html>`);
+  w.document.close();w.focus();setTimeout(()=>w.print(),350);}
 
 function render(){
-  // tabs
   const tb=$('#tabbar');tb.innerHTML='';
-  const mkTab=(key,label,closable)=>{
-    const t=document.createElement('div');t.className='tab'+(state.active===key?' active':'');
-    t.innerHTML=`<span>${esc(label)}</span>`;
-    t.querySelector('span').onclick=()=>{state.active=key;render();};
-    if(closable){const x=document.createElement('button');x.className='x';x.textContent='×';
-      x.title='Collapse back to mosaic';x.onclick=e=>{e.stopPropagation();state.expanded.delete(key);if(state.active===key)state.active='workspace';render();};t.appendChild(x);}
-    tb.appendChild(t);
-  };
-  mkTab('workspace','Workspace',false);
-  [...state.expanded].forEach(title=>mkTab(title,title,true));
-
-  // body
-  const host=$('#mosaic');host.className=(state.active==='workspace')?'mosaic':'single';host.innerHTML='';
-  if(state.active==='workspace'){
-    DELIVERABLES.filter(d=>!state.expanded.has(d.title)).forEach(d=>host.appendChild(panelEl(d.title)));
-    if(!host.children.length){const e=document.createElement('div');e.style.color='#6b7280';e.textContent='All panels are expanded into tabs.';host.appendChild(e);}
-  } else {
-    host.appendChild(panelEl(state.active));
-  }
+  doc.order.forEach(title=>{const t=document.createElement('div');
+    t.className='tab'+(doc.active===title?' active':'')+(isPending(doc.content[title])?' busy':'');
+    t.textContent=title;t.onclick=()=>{doc.active=title;render();};tb.appendChild(t);});
+  const pane=$('#docpane');
+  if(!doc.active){pane.innerHTML='';return;}
+  const showName=shownFor(doc.active);
+  const content=doc.content[showName]||'';
+  const pending=isPending(content);
+  const hasMa2=doc.active==='Job Offer'&&doc.content['Job Offer (MA2)']!=null;
+  const seg=hasMa2?`<span class="seg">
+      <button class="${doc.offerView==='gemma'?'on':''}" data-v="gemma">Gemma</button>
+      <button class="${doc.offerView==='ma2'?'on':''}" data-v="ma2">MA2</button></span>`:'';
+  pane.innerHTML=`<div class="docwrap">
+      <div class="doctool"><span class="ttl">${esc(doc.active)}</span>${seg}
+        <button class="iconbtn" id="t-copy" title="Copy Markdown">${COPY_ICON}</button>
+        <button class="iconbtn" id="t-pdf" title="Export to PDF">${PDF_ICON}</button></div>
+      <div class="docbody${pending?' pending':''}">${pending?'Generating…':md2html(content)}</div></div>`;
+  pane.querySelector('#t-copy').onclick=()=>copyMD(showName);
+  pane.querySelector('#t-pdf').onclick=()=>exportPDF(showName);
+  pane.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
 }
 
-// ---- live document via buffer SSE -----------------------------------------
-(function subscribeDoc(){
-  const es=new EventSource('api/buffers/events/stream');
+// reset tabs at the start of a new turn (hook called by cv-chat on send)
+window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=null;doc.offerView='gemma';render();};
+
+// live document via buffer SSE -> tabs
+(function(){const es=new EventSource('api/buffers/events/stream');
   es.onmessage=ev=>{try{const p=JSON.parse(ev.data);
-    if(p&&p.type==='doc_changed'&&p.doc){const d=byTitle[p.doc.name];
-      if(d){state.content[p.doc.name]=p.doc.content||'';render();}}
-  }catch(e){}};
-})();
+    if(!(p&&p.type==='doc_changed'&&p.doc))return;
+    const name=p.doc.name;doc.content[name]=p.doc.content||'';
+    if(name==='Job Offer (MA2)'){ if(doc.active==='Job Offer')render(); return; }
+    if(!(name in ORDER))return;                       // ignore unknown buffers
+    if(!doc.order.includes(name)){                    // new deliverable -> tab + focus
+      doc.order.push(name);doc.order.sort((a,b)=>ORDER[a]-ORDER[b]);
+      doc.active=name;render();
+    }else if(doc.active===name){render();}
+  }catch(e){}};})();
 
-// ---- chat ------------------------------------------------------------------
-const msgs=$('#msgs'),input=$('#input'),sendBtn=$('#send');
-function addMsg(role){const m=document.createElement('div');m.className='msg '+role;
-  const b=document.createElement('div');b.className='bubble';m.appendChild(b);msgs.appendChild(m);msgs.scrollTop=msgs.scrollHeight;return m;}
-function splitThink(t){const closed=[...t.matchAll(/<think>([\s\S]*?)<\/think>/g)].map(m=>m[1]).join('\n');
-  const open=t.match(/<think>([\s\S]*)$/);const live=open&&!/<\/think>/.test(open[1])?open[1]:'';
-  const answer=t.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<think>[\s\S]*$/,'').trim();
-  return{think:(closed+'\n'+live).trim(),answer};}
-function renderBot(m,raw){const{think,answer}=splitThink(raw);let h='';
-  if(think)h+=`<details class="think"><summary>Thinking</summary><div class="body">${esc(think)}</div></details>`;
-  h+=`<div class="bubble">${md2html(answer||'…')}</div>`;m.innerHTML=h;msgs.scrollTop=msgs.scrollHeight;}
-async function send(){const text=input.value.trim();if(!text)return;
-  input.value='';sendBtn.disabled=true;$('#hint').style.display='none';$('#donepill').hidden=true;
-  // reset panels for a fresh package
-  DELIVERABLES.forEach(d=>state.content[d.title]='');state.expanded.clear();state.active='workspace';render();
-  addMsg('user').querySelector('.bubble').textContent=text;
-  const bot=addMsg('bot');bot.innerHTML='<div class="bubble">…</div>';let raw='';
-  try{const resp=await fetch('api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:[]})});
-    const reader=resp.body.getReader(),dec=new TextDecoder();let buf='';
-    while(true){const{value,done}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});
-      let nl;while((nl=buf.indexOf('\n'))>=0){const line=buf.slice(0,nl).trim();buf=buf.slice(nl+1);
-        if(!line.startsWith('data:'))continue;const p=line.slice(5).trim();if(p==='[DONE]')continue;
-        try{const o=JSON.parse(p);if(o.delta){raw+=o.delta;renderBot(bot,raw);}if(o.meta){$('#donepill').hidden=false;}}catch(e){}}}
-  }catch(e){renderBot(bot,raw+'\n\n_(error: '+e+')_');}
-  finally{sendBtn.disabled=false;input.focus();}}
-sendBtn.onclick=send;
-input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+// settings -> window.JOB2COOL_CONFIG (read by the patched cv-chat)
+window.JOB2COOL_CONFIG={offer_sources:['ma2','gemma','rag']};
+$('#gear').onclick=()=>{const s=window.JOB2COOL_CONFIG.offer_sources;
+  $('#cfg-ma2').checked=s.includes('ma2');$('#cfg-gemma').checked=s.includes('gemma');$('#cfg-rag').checked=s.includes('rag');
+  $('#modalbg').classList.add('show');};
+$('#cfg-cancel').onclick=()=>$('#modalbg').classList.remove('show');
+$('#modalbg').onclick=e=>{if(e.target.id==='modalbg')$('#modalbg').classList.remove('show');};
+$('#cfg-save').onclick=()=>{const s=[];if($('#cfg-ma2').checked)s.push('ma2');if($('#cfg-gemma').checked)s.push('gemma');if($('#cfg-rag').checked)s.push('rag');
+  if(!s.length){toast('Select at least one source');return;}window.JOB2COOL_CONFIG.offer_sources=s;$('#modalbg').classList.remove('show');toast('Settings saved');};
 
-// ---- resizer + collapse ----------------------------------------------------
-(function(){const rz=$('#resizer');let drag=false;
-  rz.addEventListener('mousedown',e=>{drag=true;document.body.style.userSelect='none';e.preventDefault();});
-  window.addEventListener('mousemove',e=>{if(!drag)return;const w=Math.min(Math.max(window.innerWidth-e.clientX,300),Math.min(1100,window.innerWidth-360));
-    document.documentElement.style.setProperty('--chatw',w+'px');});
-  window.addEventListener('mouseup',()=>{drag=false;document.body.style.userSelect='';});})();
-$('#collapse').onclick=()=>document.body.classList.add('chat-collapsed');
-$('#reopen').onclick=()=>document.body.classList.remove('chat-collapsed');
+// open the whole Assistant chat panel from the top bar (the cv-chat floating
+// launcher is hidden via CSS; we trigger it programmatically from here)
+function openAssistant(){
+  if(!document.body.classList.contains('cvchat-open')){const l=document.querySelector('.cvchat-launcher');if(l)l.click();}
+}
+$('#assistantOpen').onclick=openAssistant;
 
 render();
 </script>
+
+<!-- citation -> PDF + bbox highlight -->
+<script src="static/js2c/pdfcite.js"></script>
+<!-- cv-chat Assistant (chat + STT/TTS/avatar + Thinking/Graph/Score/citations) -->
+<script src="static/widget/vendor/onnxruntime-web/ort.wasm.min.js"></script>
+<script src="static/widget/vendor/vad/bundle.min.js"></script>
+<script src="static/widget/vendor/socket.io.min.js"></script>
+<script src="static/widget/vendor/jspanel/jspanel.min.js"></script>
+<script src="static/widget/vendor/marked.min.js"></script>
+<script src="static/widget/vendor/highlight/highlight.min.js"></script>
+<script src="static/widget/vendor/katex/katex.min.js"></script>
+<script src="static/widget/vendor/katex/katex-auto-render.min.js"></script>
+<script src="static/widget/cv-chat.js" defer></script>
 </body>
 </html>

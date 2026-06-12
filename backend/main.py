@@ -27,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 
 import httpx
@@ -36,7 +37,19 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import buffers
+import cache
 import orchestrator
+import services
+
+# Judge with gemma-4 + explicit JSON (the cv_rag_judge preset's grammar 400s here).
+JUDGE_MODEL = os.getenv("JOB2COOL_JUDGE",
+                        os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4"))
+JUDGE_SYSTEM = (
+    "You are a strict judge of a RAG answer. Given QUESTION, EVIDENCE and ANSWER, "
+    "output ONLY a JSON object (no prose, no code fence) of the form "
+    '{"faithfulness": <0..1>, "answer_relevance": <0..1>, "rationale": "<short>"}. '
+    "faithfulness = how well the ANSWER is supported by the EVIDENCE; "
+    "answer_relevance = how well it addresses the QUESTION.")
 
 # --- service endpoints (internal noted-network names; env-overridable) -------
 AGENT_SERVER  = os.getenv("AGENT_SERVER_URL",  "http://agent_server:7701")
@@ -104,13 +117,14 @@ async def health():
 class ChatRequest(BaseModel):
     message: str = ""
     history: list = []
+    config: dict = {}   # e.g. {"offer_sources": ["ma2","gemma","rag"]}
 
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
     """HR-pack turn — streams cv-contract SSE while writing the live document."""
     return StreamingResponse(
-        orchestrator.run_chat(req.message, req.history or []),
+        orchestrator.run_chat(req.message, req.history or [], req.config or {}),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
@@ -136,11 +150,49 @@ async def buffer_save(buffer_id: str):
     return {"ok": True, "buffer_id": buffer_id, "name": buf.name}
 
 
-# cv-contract endpoints the Assistant calls — minimal stubs, fleshed out in S3.
+# cv-contract endpoints the Assistant calls (citation / graph / score).
 @app.get("/api/citation/{tag}")
 async def citation(tag: str):
-    return JSONResponse({"kind": "chunk", "title": "Source", "fields": [],
-                         "body": "", "section_path": ""})
+    """Resolve a clicked [markdown_chunk:<hex>] tag to navigable provenance:
+    source_path + section + body text, and — when noted-graph indexes the chunk —
+    page_no + bbox + regions so the viewer can open the PDF and highlight it."""
+    raw = tag.strip().strip("[]").strip()
+    hx = raw.split(":", 1)[1] if raw.startswith("markdown_chunk:") else raw
+    cached = cache.get_chunk(hx) or {}
+
+    turn = cache.last_turn() or {}
+    domains = turn.get("domains") or JOB2COOL_DOMAINS
+    region_hit = None
+    async with httpx.AsyncClient() as client:
+        region_hit = await services.resolve_chunk_regions(client, hx, domains)
+
+    src = (region_hit or {}).get("source_path") or cached.get("source_path") or ""
+    section = ((region_hit or {}).get("section_path")
+               or cached.get("section_path") or "")
+    body = ((region_hit or {}).get("snippet")
+            or cached.get("text") or "")
+    domain_id = ((region_hit or {}).get("domain_id")
+                 or cached.get("kb_id") or "")
+    regions = (region_hit or {}).get("regions") or []
+
+    if not src and not body:
+        return JSONResponse({"kind": "chunk", "title": "Source", "fields": [],
+                             "body": "(source not found)", "section_path": "",
+                             "source_path": "", "domain_id": "", "regions": []})
+    fields = []
+    if src:
+        fields.append(["Document", src])
+    if section:
+        fields.append(["Section", section])
+    if regions:
+        fields.append(["Page", str(regions[0].get("page_no", ""))])
+    return JSONResponse({
+        "kind": "chunk", "title": "Source passage", "fields": fields,
+        "body": body, "section_path": section,
+        "source_path": src, "domain_id": domain_id,
+        "page_no": (regions[0].get("page_no") if regions else None),
+        "regions": regions,
+    })
 
 
 class GraphTraceRequest(BaseModel):
@@ -151,7 +203,13 @@ class GraphTraceRequest(BaseModel):
 
 @app.post("/api/graph_trace")
 async def graph_trace(req: GraphTraceRequest):
-    return {"seeds": [], "entities": [], "edges": []}
+    """Return the most recent turn's merged knowledge-graph (entities/edges)."""
+    turn = cache.last_turn()
+    if not turn:
+        return {"seeds": [], "entities": [], "edges": []}
+    return {"seeds": req.entity_ids or [],
+            "entities": turn.get("entities") or [],
+            "edges": turn.get("edges") or []}
 
 
 class ScoreRequest(BaseModel):
@@ -160,7 +218,31 @@ class ScoreRequest(BaseModel):
 
 @app.post("/api/score_answer")
 async def score_answer(req: ScoreRequest):
-    return {"error": "scoring not enabled yet"}
+    """RAGAS-style judge over the cached (question, evidence, answer)."""
+    turn = cache.get_turn(req.turn_id)
+    if not turn:
+        return {"error": "turn not found"}
+    judge_user = (
+        f"QUESTION:\n{turn.get('question', '')}\n\n"
+        f"EVIDENCE:\n{turn.get('evidence') or '(no evidence)'}\n\n"
+        f"ANSWER:\n{turn.get('answer') or '(empty)'}")
+    try:
+        async with httpx.AsyncClient() as client:
+            content = await services.llm_complete(
+                client, JUDGE_MODEL,
+                [{"role": "system", "content": JUDGE_SYSTEM},
+                 {"role": "user", "content": judge_user}],
+                max_tokens=300, temperature=0.1, timeout=60, think=False)
+        m = re.search(r"\{[\s\S]*\}", content)
+        if not m:
+            return {"error": "judge returned no JSON", "raw": content[:200]}
+        v = json.loads(m.group(0))
+        return {"turn_id": req.turn_id,
+                "faithfulness": float(v.get("faithfulness") or 0.0),
+                "answer_relevance": float(v.get("answer_relevance") or 0.0),
+                "rationale": str(v.get("rationale") or "")[:280]}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}
 
 
 # --- reverse proxy: shell's read-only KB/Explorer/Document APIs -> noted ------

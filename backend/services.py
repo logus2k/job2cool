@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 from typing import Any, AsyncIterator
+from urllib.parse import quote
 
 import httpx
 
@@ -32,14 +33,17 @@ QUERY_REWRITER = os.getenv("JOB2COOL_QUERY_REWRITER", "cv_query_rewriter")
 # --- LLM ---------------------------------------------------------------------
 async def llm_complete(client: httpx.AsyncClient, model: str,
                        messages: list[dict], *, max_tokens: int = 1200,
-                       temperature: float = 0.4, timeout: float = 180) -> str:
-    """Non-streaming completion -> assistant content (reasoning stripped)."""
+                       temperature: float = 0.4, timeout: float = 180,
+                       think: bool = True) -> str:
+    """Non-streaming completion -> assistant content (reasoning stripped).
+    Pass think=False for utility passes (classification, summaries) so the model
+    doesn't spend its whole budget inside <think> and return empty content."""
+    body: dict = {"model": model, "messages": messages, "stream": False,
+                  "max_tokens": max_tokens, "temperature": temperature}
+    if not think:
+        body["chat_template_kwargs"] = {"enable_thinking": False}
     r = await client.post(
-        f"{AGENT_SERVER}/v1/chat/completions",
-        json={"model": model, "messages": messages, "stream": False,
-              "max_tokens": max_tokens, "temperature": temperature},
-        timeout=timeout,
-    )
+        f"{AGENT_SERVER}/v1/chat/completions", json=body, timeout=timeout)
     r.raise_for_status()
     data = r.json()
     content = ((data.get("choices") or [{}])[0]
@@ -89,7 +93,8 @@ async def formulate_query(client: httpx.AsyncClient, text: str) -> str:
     try:
         q = await llm_complete(client, QUERY_REWRITER,
                                [{"role": "user", "content": text}],
-                               max_tokens=48, temperature=0.1, timeout=30)
+                               max_tokens=48, temperature=0.1, timeout=30,
+                               think=False)
         q = (q or "").strip().strip('"').strip("'").splitlines()[0].strip()
         return q or text
     except Exception:
@@ -110,6 +115,28 @@ async def search_multi(client: httpx.AsyncClient, query: str,
         return r.json().get("chunks") or []
     except Exception:
         return []
+
+
+async def resolve_chunk_regions(client: httpx.AsyncClient, hx: str,
+                                domains: list[str]) -> dict | None:
+    """Resolve a [markdown_chunk:hex] to its PDF provenance (source_path +
+    page_no + bbox + regions) via noted-graph's per-domain /chunk lookup —
+    the data the viewer needs to open the PDF and draw the bbox highlight.
+    Fans out across the turn's domains; first hit wins. None if unresolved
+    (e.g. a dense-corpus-only chunk that noted-graph doesn't index)."""
+    tag = f"markdown_chunk:{hx}"
+    for d in domains:
+        try:
+            r = await client.get(
+                f"{NOTED_GRAPH}/research/{d}/chunk/{quote(tag, safe=':')}",
+                timeout=5)
+            if r.status_code == 200:
+                j = r.json() or {}
+                j["domain_id"] = d
+                return j
+        except Exception:
+            continue
+    return None
 
 
 async def graph_retrieve(client: httpx.AsyncClient, question: str,
@@ -164,7 +191,7 @@ async def classify_role_family(client: httpx.AsyncClient, need: str) -> str:
             [{"role": "user", "content":
               f"Classify this hiring need into exactly ONE of these role "
               f"families: {options}. Reply with ONLY the keyword.\n\n{need}"}],
-            max_tokens=8, temperature=0.0, timeout=30)
+            max_tokens=8, temperature=0.0, timeout=30, think=False)
         word = "".join(ch for ch in (out or "").lower() if ch.isalnum() or ch == "_")
         for fam in ONBOARD_FAMILIES:
             if fam in word:

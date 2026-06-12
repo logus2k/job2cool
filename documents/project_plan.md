@@ -287,11 +287,28 @@ creating the rest). All four sections currently ground on the resolved
 onboarding domain; **per-section domains for offer/interview/culture come later**
 (owner will provide), at which point domain selection becomes section-aware.
 
-**Remaining:** S3 (richer cv Assistant: Graph/Score/avatar + citation→PDF bbox
-bridge), S6 (full corporate theme: card-grid, per-doc edit/PDF, Explorer
-flat-nav, diagrams), S7 (STT/TTS/avatar proxy + deploy). Two frontend tracks:
-**(A)** the working minimal UI (shipped); **(B)** the richer noted-shell +
-cv-widget host (`shell.html`, needs browser iteration).
+**Also done since:** role-aware onboarding domain selection; per-deliverable
+buffers + **2-col mosaic** (tabs, expand-to-tab/collapse, responsive, per-panel
+Copy+PDF); resizable 2× Assistant; **citations in chat** (deterministic
+`[markdown_chunk:hex]` badges) + `/api/citation` resolver (text + Open-PDF link);
+`/api/graph_trace` (per-turn graph) + `/api/score_answer` (gemma JSON judge) +
+in-chat **Graph/Score** buttons; **Settings panel** (gear) with **Job Offer
+Generation** knobs (MA2 DPO / Gemma / RAG, multi-select) honored by the backend;
+`think=False` on utility passes (fixes empty utility output).
+
+**STT/TTS/avatar (item):** services found — `stt_server:2700`, `tts_server:7700`,
+`avatar_server:7800` on **`logus2k_network`**. job2cool-backend now joins that
+network (reachable ✓). Remaining: an **nginx facade** routing `/stt`,`/tts`,
+`/avatar` (WebSocket) to those services + everything else to job2cool-backend
+(same-origin, cv pattern), and **porting cv's audio/avatar client** (VAD mic
+capture, Kokoro TTS playback, MSE/fMP4 avatar) into the chat input bar. Needs a
+browser + mic + GPU to verify.
+
+**Remaining:** STT/TTS/avatar (nginx + client port); citation→**PDF bbox** (needs
+region resolve via noted-graph; currently citation→popover+Open-PDF); S6 theme
+polish (Explorer flat-nav, diagrams); deploy. Two frontend tracks: **(A)** the
+working mosaic UI (shipped, `index.html`); **(B)** the richer noted-shell +
+cv-widget host (`shell.html`).
 
 Run: `cd job2cool && docker compose up -d --build`, open `http://localhost:4920`.
 

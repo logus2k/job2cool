@@ -1,0 +1,1284 @@
+/* cv-chat.css - Conversational CV chat widget.
+ *
+ * A side-panel chat widget injected into the static CV page by build.py.
+ * When open it docks to the right edge, full height; the CV page reflows
+ * into the space beside it (body.cvchat-open). Everything is namespaced
+ * under .cvchat- so it cannot collide with styles.css. The widget DOM is
+ * built by cv-chat.js. */
+
+:root { --cvchat-panel-w: 1260px; }
+
+/* In-page citation highlight (CSS Custom Highlight API). */
+::highlight(cvchat-cite) {
+    background-color: #fde68a;
+    color: #1a1a1a;
+}
+
+.cvchat-root {
+    --cv-accent: #0e7490;
+    --cv-accent-deep: #0c5e6e;
+    --cv-accent-soft: #ecfeff;
+    --cv-text: #0f172a;
+    --cv-text-soft: #334155;
+    --cv-text-mute: #64748b;
+    --cv-border: #e2e8f0;
+    --cv-bg-soft: #f6f7f9;
+    --cv-user: #0e7490;
+    --cv-radius: 12px;
+
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--cv-text);
+}
+
+/* Smooth reflow of the CV page when the panel opens/closes. */
+body { transition: padding-right 0.18s ease; }
+
+/* ---------- launcher (closed state) ---------- */
+
+/* The launcher is inlined into the CV body by cv-chat.js, inserted right
+   after <header class="cv-header"> and before the first <section>. It
+   right-aligns within the CV column and flows naturally with the document
+   so print/PDF exclude it via the @media print rule at the bottom. */
+.cvchat-launcher {
+    /* Block element pushed to the right edge of the CV column via
+       margin-left: auto. width: max-content keeps the badge tight around
+       its content (portrait + label) so the auto-margin actually has room
+       to push. This sits in its OWN row between the header and the first
+       section, so the Summary heading stays on a fresh row below. */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    margin: 8px 0 18px auto;
+    width: max-content;
+    max-width: 100%;
+    padding: 10px 14px 10px 10px;
+    border: none;
+    border-radius: 18px;
+    background: #ffe19b;
+    color: #1d1d1d;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(12, 94, 110, 0.32);
+    transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.cvchat-launcher:hover {
+    background: #f5c860;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(120, 80, 0, 0.32);
+}
+
+.cvchat-launcher > span {
+    max-width: 200px;
+    font-size: 13.5px;
+}
+
+/* Diana portrait inside the launcher. ~64px circle, sized to read at
+   inline-row scale rather than the older 100px floating-badge size. */
+.cvchat-launcher-img {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    display: block;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    background: #fff;
+}
+
+/* Phones: shrink portrait + cap text so the badge fits the narrow column. */
+@media (max-width: 600px) {
+    .cvchat-launcher {
+        gap: 10px;
+        padding: 6px 12px 6px 6px;
+        border-radius: 14px;
+    }
+    .cvchat-launcher-img {
+        width: 48px;
+        height: 48px;
+        border-width: 1.5px;
+    }
+    .cvchat-launcher > span {
+        max-width: 180px;
+        font-size: 12px;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+body.cvchat-open .cvchat-launcher { display: none; }
+
+/* Hidden in print/PDF — the launcher is an interactive widget, has no
+   meaning on paper, and would just leave a yellow badge on the printout.
+   The pdf-button in styles.css already triggers window.print() and the
+   styles.css @media print block hides the pdf-button itself; this hides
+   the launcher to match. */
+@media print {
+    .cvchat-launcher { display: none !important; }
+}
+
+/* ---------- panel (docked side panel) ---------- */
+
+.cvchat-panel {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(var(--cvchat-panel-w), 100vw);
+    z-index: 2147483000;
+    flex-direction: column;
+    border-left: 1px solid var(--cv-border);
+    box-shadow: -8px 0 32px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+}
+
+body.cvchat-open .cvchat-panel {
+    display: flex;
+    animation: cvchat-slide-in 0.18s ease;
+}
+
+@keyframes cvchat-slide-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+
+/* On wide screens the CV page reflows beside the panel; below the
+   breakpoint the panel overlays the page instead. The .pdf-button no
+   longer needs a chat-open offset - .page is its own scroll container
+   now, so the button stays anchored to .page's right edge regardless
+   of body padding-right. */
+@media (min-width: 860px) {
+    body.cvchat-open { padding-right: min(var(--cvchat-panel-w), 100vw); }
+}
+
+/* ---------- resize handle (drag the panel's inner edge) ---------- */
+
+.cvchat-resize {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 7px;
+    cursor: ew-resize;
+    z-index: 5;
+    touch-action: none;
+}
+.cvchat-resize::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: background 0.12s ease;
+}
+.cvchat-resize:hover::before,
+body.cvchat-resizing .cvchat-resize::before {
+    background: var(--cv-accent);
+}
+/* While dragging: kill the reflow transition so the CV page tracks the
+   drag 1:1, and suppress text selection. */
+body.cvchat-resizing {
+    transition: none;
+    user-select: none;
+    cursor: ew-resize;
+}
+
+/* ---------- header ---------- */
+
+.cvchat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: #ffe19b;
+    color: #313131;
+    flex: none;
+}
+
+.cvchat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    flex: none;
+    overflow: hidden;
+}
+.cvchat-avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.cvchat-titles {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    flex: 1;
+    min-width: 0;
+}
+
+.cvchat-titles strong { font-size: 14px; font-weight: 600; }
+.cvchat-titles small {
+    font-size: 11.5px;
+    opacity: 0.9;
+}
+
+.cvchat-close {
+    border: none;
+    background: transparent;
+    color: #5c5c5c;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    line-height: 0;
+    opacity: 0.85;
+}
+.cvchat-close:hover { background: rgba(255, 255, 255, 0.16); opacity: 1; }
+.cvchat-close svg {
+    width: 18px;
+    height: 14px;
+}
+
+/* ---------- messages ---------- */
+
+/* Outer wrapper that gives the chat messages a 5px right inset.
+   The scrollbar lives on .cvchat-messages (inside this wrapper), so
+   the bar appears 5px in from the panel's right edge. CSS for
+   ::-webkit-scrollbar has no margin-right, so the wrapper does it. */
+.cvchat-messages-wrap {
+    flex: 1;
+    min-height: 0;
+    padding-right: 5px;
+    display: flex;
+    flex-direction: column;
+    background: #fffef7;
+}
+
+.cvchat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fffef7;
+    scroll-behavior: smooth;
+}
+
+/* Slim scrollbar inside the chat messages area - same pattern as
+   the CV page's .page-scroll, but the bar lives INSIDE the
+   container's right padding instead of in a separate gutter. */
+.cvchat-messages::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.cvchat-messages::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+.cvchat-messages::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.18s ease;
+}
+.cvchat-messages:hover::-webkit-scrollbar-thumb,
+.cvchat-messages:has(*:hover)::-webkit-scrollbar-thumb {
+    background: rgba(96, 150, 229, 0.60);
+}
+.cvchat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(72, 145, 255, 0.60);
+    cursor: pointer;
+}
+
+.cvchat-msg { display: flex; }
+.cvchat-msg-user { justify-content: flex-end; }
+.cvchat-msg-assistant { justify-content: flex-start; }
+
+.cvchat-bubble {
+    position: relative;
+    max-width: 84%;
+    padding: 9px 12px;
+    border-radius: 14px;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Copy button in the top-right corner of assistant bubbles. Hidden
+   until hover, mirrors noted's notebook-viewer affordance. */
+.cvchat-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #888;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+    z-index: 2;
+}
+.cvchat-msg-assistant .cvchat-bubble:hover .cvchat-copy-btn { opacity: 1; }
+.cvchat-copy-btn:hover { background: #c8e6c0; }
+
+.cvchat-msg-user .cvchat-bubble {
+    background: #e9ffea;
+    color: #010101;
+    border-bottom-right-radius: 4px;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+}
+
+.cvchat-msg-assistant .cvchat-bubble {
+    background: #fff;
+    color: var(--cv-text);
+    border: 1px solid var(--cv-border);
+    border-bottom-left-radius: 4px;
+    padding: 10px 10px 15px 15px;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 0.5px 0.5px, rgba(9, 30, 66, 0.13) 0px 0px 0.5px 0.5px;
+}
+
+/* Restore bullets inside assistant bubbles. The CV's global reset
+   (styles.css L22: `ul { padding:0; list-style:none }`) strips them
+   for the main page; Diana's markdown answers need them back. */
+.cvchat-msg-assistant .cvchat-bubble ul,
+.cvchat-msg-assistant .cvchat-bubble ol {
+    margin: 6px 0 8px;
+    padding-left: 22px;
+}
+.cvchat-msg-assistant .cvchat-bubble ul { list-style: disc; }
+.cvchat-msg-assistant .cvchat-bubble ol { list-style: decimal; }
+.cvchat-msg-assistant .cvchat-bubble li { margin-bottom: 4px; }
+
+/* When the avatar is docked into an assistant bubble, the bubble becomes
+   a flex row: [avatar stage 320px] [text content fills the rest]. The
+   .cvchat-bubble-content wrapper is always present so addMessage targets
+   stay valid whether the avatar is docked or not. */
+.cvchat-bubble-content { min-width: 0; }
+.cvchat-bubble.cvchat-has-avatar {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 100%;
+}
+.cvchat-bubble.cvchat-has-avatar > .cvchat-bubble-content {
+    flex: 1;
+    min-width: 0;
+    margin-right: 20px;
+}
+.cvchat-bubble.cvchat-has-avatar > .cvchat-avatar-stage {
+    flex: none;
+    align-self: flex-start;
+    width: 160px;
+    /* Match Diana's source-image ratio (536x688) so the stage starts
+       at the right height and Diana isn't letterboxed during
+       Connecting. The cvchat-stage-ratio-known class overrides this
+       with the live video's true ratio once loadedmetadata fires. */
+    aspect-ratio: 536 / 688;
+    height: auto;
+    margin-right: 5px;
+    margin-top: 5px;
+    border-radius: 9px;
+    overflow: hidden;
+    background-color: #ffffff;
+    /* Pin Diana to the top of the chat messages area while there is
+       still bubble height below her, so she stays fully visible
+       while the user scrolls through long answers. Sticky respects
+       the bubble's bottom edge - she scrolls out with the bubble
+       once it's nearly past, never extending beyond. */
+    position: sticky;
+    top: 0;
+}
+.cvchat-bubble.cvchat-has-avatar > .cvchat-avatar-stage.cvchat-stage-ratio-known {
+    aspect-ratio: var(--cv-stage-ratio, 536 / 688);
+}
+/* While docked, the assistant bubble can grow wider to give the text a
+   readable column next to the 160px avatar. */
+.cvchat-msg-assistant:has(> .cvchat-bubble.cvchat-has-avatar) .cvchat-bubble {
+    max-width: 96%;
+}
+
+.cvchat-bubble p { margin: 0 0 8px; }
+.cvchat-bubble p:last-child { margin-bottom: 0; }
+.cvchat-bubble ul, .cvchat-bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+.cvchat-bubble li { margin: 2px 0; }
+/* Final-answer headings inside an assistant bubble. The reasoning
+   block (.cvchat-think) overrides this below with a smaller size. */
+.cvchat-bubble h1, .cvchat-bubble h2, .cvchat-bubble h3,
+.cvchat-bubble h4, .cvchat-bubble h5, .cvchat-bubble h6 {
+    margin: 6px 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+}
+/* Inside the Thinking body, the model uses `# Title` to mark each
+   reasoning phase. Those headings should sit slightly smaller than the
+   answer-body headings since the whole Thinking section is set in 11px. */
+.cvchat-bubble .cvchat-think-body h1 {
+    font-size: 13px;
+}
+.cvchat-bubble .cvchat-think h1, .cvchat-bubble .cvchat-think h2,
+.cvchat-bubble .cvchat-think h3, .cvchat-bubble .cvchat-think h4,
+.cvchat-bubble .cvchat-think h5, .cvchat-bubble .cvchat-think h6 {
+    font-size: 12px;
+}
+.cvchat-bubble code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: rgba(15, 23, 42, 0.06);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+.cvchat-msg-user .cvchat-bubble code { background: rgba(255, 255, 255, 0.2); }
+.cvchat-bubble pre {
+    background: rgba(15, 23, 42, 0.06);
+    padding: 8px 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 6px 0;
+}
+.cvchat-bubble pre code { background: none; padding: 0; }
+
+/* Tables — GFM tables now flow through marked.js. Scoped to assistant
+   bubbles so the user's text input isn't affected. */
+.cvchat-msg-assistant .cvchat-bubble table {
+    border-collapse: collapse;
+    margin: 6px 0;
+    font-size: 12px;
+    width: 100%;
+    background: #fff;
+}
+.cvchat-msg-assistant .cvchat-bubble thead {
+    background: #ffedaffa;
+}
+.cvchat-msg-assistant .cvchat-bubble th,
+.cvchat-msg-assistant .cvchat-bubble td {
+    border: 1px solid var(--cv-border);
+    padding: 4px 8px;
+    text-align: left;
+}
+.cvchat-msg-assistant .cvchat-bubble th {
+    background: rgba(0, 0, 0, 0.04);
+    font-weight: 600;
+}
+
+/* highlight.js GitHub theme, scoped to assistant bubbles. Mirrors noted's
+   chat-panel.css token palette so code blocks read identically across the
+   two products. */
+.cvchat-msg-assistant .cvchat-bubble .hljs {
+    color: #24292e;
+    background: #fff;
+    text-wrap-mode: wrap;
+}
+.cvchat-msg-assistant .cvchat-bubble .hljs-doctag,
+.cvchat-msg-assistant .cvchat-bubble .hljs-keyword,
+.cvchat-msg-assistant .cvchat-bubble .hljs-meta .hljs-keyword,
+.cvchat-msg-assistant .cvchat-bubble .hljs-template-tag,
+.cvchat-msg-assistant .cvchat-bubble .hljs-template-variable,
+.cvchat-msg-assistant .cvchat-bubble .hljs-type,
+.cvchat-msg-assistant .cvchat-bubble .hljs-variable.language_ { color: #d73a49; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-title,
+.cvchat-msg-assistant .cvchat-bubble .hljs-title.class_,
+.cvchat-msg-assistant .cvchat-bubble .hljs-title.class_.inherited__,
+.cvchat-msg-assistant .cvchat-bubble .hljs-title.function_ { color: #6f42c1; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-attr,
+.cvchat-msg-assistant .cvchat-bubble .hljs-attribute,
+.cvchat-msg-assistant .cvchat-bubble .hljs-literal,
+.cvchat-msg-assistant .cvchat-bubble .hljs-meta,
+.cvchat-msg-assistant .cvchat-bubble .hljs-number,
+.cvchat-msg-assistant .cvchat-bubble .hljs-operator,
+.cvchat-msg-assistant .cvchat-bubble .hljs-selector-attr,
+.cvchat-msg-assistant .cvchat-bubble .hljs-selector-class,
+.cvchat-msg-assistant .cvchat-bubble .hljs-selector-id,
+.cvchat-msg-assistant .cvchat-bubble .hljs-variable { color: #005cc5; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-meta .hljs-string,
+.cvchat-msg-assistant .cvchat-bubble .hljs-regexp,
+.cvchat-msg-assistant .cvchat-bubble .hljs-string { color: #032f62; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-built_in,
+.cvchat-msg-assistant .cvchat-bubble .hljs-symbol { color: #e36209; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-code,
+.cvchat-msg-assistant .cvchat-bubble .hljs-comment,
+.cvchat-msg-assistant .cvchat-bubble .hljs-formula { color: #6a737d; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-name,
+.cvchat-msg-assistant .cvchat-bubble .hljs-quote,
+.cvchat-msg-assistant .cvchat-bubble .hljs-selector-pseudo,
+.cvchat-msg-assistant .cvchat-bubble .hljs-selector-tag { color: #22863a; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-subst { color: #24292e; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-section { color: #005cc5; font-weight: 700; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-bullet { color: #735c0f; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-emphasis { color: #24292e; font-style: italic; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-strong { color: #24292e; font-weight: 700; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-addition { color: #22863a; background-color: #f0fff4; }
+.cvchat-msg-assistant .cvchat-bubble .hljs-deletion { color: #b31d28; background-color: #ffeef0; }
+
+/* When hljs takes over a <pre>, give it a white background to contrast
+   with the assistant bubble fill (and to make the GitHub palette readable). */
+.cvchat-msg-assistant .cvchat-bubble pre:has(> code.hljs) {
+    background: #ffffff;
+    border: 0.5px solid #c9c9c9;
+}
+
+.cvchat-bubble a:not(.cvchat-cite) {
+    color: var(--cv-accent);
+    text-decoration: underline;
+}
+.cvchat-msg-user .cvchat-bubble a { color: #fff; }
+
+/* typing indicator */
+.cvchat-typing { display: inline-flex; gap: 4px; padding: 2px 0; }
+.cvchat-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cv-text-mute);
+    animation: cvchat-blink 1.2s infinite ease-in-out;
+}
+.cvchat-typing span:nth-child(2) { animation-delay: 0.18s; }
+.cvchat-typing span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes cvchat-blink {
+    0%, 80%, 100% { opacity: 0.25; }
+    40% { opacity: 1; }
+}
+
+.cvchat-error {
+    align-self: center;
+    font-size: 12px;
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+/* ---------- reasoning (thinking) + graph toggles ---------- */
+
+/* Toggle label row - Thinking on the left, Graph on the right.
+   The corresponding bodies (.cvchat-think-body / .cvchat-graph-body)
+   live as separate siblings AFTER this row, so expanding either body
+   never disturbs the other label - they stay side by side at all
+   times. Mimics native <details> visually (caret + hover) without
+   inheriting <details>'s "summary and body must be one block" rule. */
+.cvchat-toggles {
+    display: flex;
+    column-gap: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.cvchat-toggle {
+    background: none;
+    border: 0;
+    padding: 5px 0 3px 0;
+    margin: 0;
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: #787878;
+    user-select: none;
+    line-height: 1;
+}
+/* Underline only the label text (not the caret). The label sits inside
+   a span so border-bottom is bounded by the text width. Pre-allocate
+   the underline as a transparent border so opening a toggle doesn't
+   reflow the label row. */
+.cvchat-toggle-label {
+    display: inline-block;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 3px;
+    transition: border-color 0.12s ease;
+}
+.cvchat-toggle.is-open .cvchat-toggle-label,
+.cvchat-toggle:hover .cvchat-toggle-label { border-bottom-color: #4891ff99; }
+.cvchat-toggle::before {
+    content: "\25B8";
+    display: inline-block;
+    margin-right: 2px;
+    font-size: 15px;
+    line-height: 11px;
+    vertical-align: -2px;
+    color: #787878;
+    transition: transform 0.12s ease;
+}
+.cvchat-toggle.is-open::before { content: "\25BE"; }
+
+/* Score inline body - same drop-down pattern as Thinking and Graph.
+   Sectioned breakdown of cheap signals, judge scores, performance,
+   and retrieval counts; each metric has the current turn's value
+   alongside the session running average plus a one-line hint. */
+.cvchat-score-body {
+    padding: 8px 12px 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--cv-text-soft);
+}
+
+/* Big composite up top - the at-a-glance number for this turn. */
+.cvchat-score-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 2px;
+}
+.cvchat-score-head-key {
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #4c82cf;
+    margin: 10px 0 4px;
+}
+.cvchat-score-head-vals {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    font-variant-numeric: tabular-nums;
+}
+.cvchat-score-head-val {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cv-text);
+}
+.cvchat-score-head-val.is-good { color: #2e6e1f; }
+.cvchat-score-head-val.is-mid  { color: #8d5800; }
+.cvchat-score-head-val.is-poor { color: #b91c1c; }
+.cvchat-score-head-avg {
+    font-size: 10.5px;
+    color: var(--cv-text-mute);
+    font-weight: 500;
+}
+.cvchat-score-head-hint {
+    margin-top: 2px;
+    color: var(--cv-text-mute);
+    font-style: italic;
+    font-size: 10.5px;
+    margin-bottom: 8px;
+}
+
+/* Section group header (Quality / Retrieval structure / Performance). */
+.cvchat-score-group {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #4c82cf;
+    margin: 10px 0 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--cv-border);
+}
+.cvchat-score-group:first-of-type { padding-top: 8px; }
+
+.cvchat-score-section {
+    margin-bottom: 6px;
+}
+.cvchat-score-section:last-child {
+    margin-bottom: 0px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--cv-border);
+}
+
+.cvchat-score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-left: 8px;
+}
+.cvchat-score-key {
+    color: var(--cv-text);
+    font-weight: 600;
+}
+.cvchat-score-vals {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    font-variant-numeric: tabular-nums;
+}
+.cvchat-score-val {
+    color: var(--cv-text);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+.cvchat-score-avg {
+    color: var(--cv-text-mute);
+    font-size: 10.5px;
+    font-weight: 500;
+}
+.cvchat-score-hint {
+    margin-top: 2px;
+    color: var(--cv-text-mute);
+    font-style: italic;
+    font-size: 10.5px;
+    margin-left: 8px;
+}
+.cvchat-score-rationale {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--cv-border);
+    font-size: 11px;
+    color: var(--cv-text-soft);
+    font-style: italic;
+}
+.cvchat-score-rationale strong {
+    font-style: normal;
+    color: var(--cv-text);
+    font-weight: 600;
+}
+
+.cvchat-think-body {
+    padding: 4px 10px 8px 10px;
+    color: var(--cv-text-soft);
+    font-size: 11px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--cv-border);
+}
+.cvchat-think-body p:last-child { margin-bottom: 0; }
+
+/* Live status line shown while the model is still thinking. Mirrors
+   `.cvchat-think > summary` exactly (same caret, padding, font size,
+   weight and colour) so the preview text lands at the same X/Y as
+   the final "Thinking" label once the section closes. */
+.cvchat-think-status {
+    padding: 5px 0;
+    color: var(--cv-text-mute);
+    font-size: 11px;
+    font-weight: 600;
+}
+.cvchat-think-status::before {
+    content: "\25B8  ";
+    color: var(--cv-text-mute);
+}
+/* The dynamic preview itself is italic + softly pulsing so the user
+   can tell it's a live placeholder rather than the final label. */
+.cvchat-think-preview {
+    font-weight: normal;
+    font-style: italic;
+    color: var(--cv-text-soft);
+    animation: cvchat-think-pulse 1.6s ease-in-out infinite;
+}
+@keyframes cvchat-think-pulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
+.cvchat-graph-body {
+    padding: 0;
+    background: #ffffff;
+    margin-bottom: 10px;
+}
+
+/* Flex stage: [canvas host] [legend column]. Stage height is fixed
+   so the 3D scene has a predictable aspect ratio. The canvas host
+   takes the remaining width; the legend column is fixed-width. */
+.cvchat-graph-3d {
+    width: 100%;
+    height: 420px;
+    display: flex;
+    align-items: stretch;
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+}
+.cvchat-graph-canvas-host {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+    cursor: grab;
+}
+.cvchat-graph-canvas-host:active { cursor: grabbing; }
+.cvchat-graph-canvas-host > canvas {
+    display: block;
+    /* No width/height here: renderer.setSize(w, h, true) sets both
+       the framebuffer and the canvas CSS dims to the host's exact
+       size, so the browser never has to scale the canvas. Forcing
+       width: 100% would override setSize's CSS dims and re-introduce
+       sub-pixel stretching that shows up as blur. */
+}
+
+/* Legend column - one row per entity type with a colored swatch +
+   label + count. Click toggles visibility of that type's nodes in
+   the 3D scene. Off-state is dimmed (low opacity) so users can see
+   which types they've hidden. */
+.cvchat-graph-legend {
+    flex: 0 0 140px;
+    border-left: 1px solid var(--cv-border);
+    padding: 8px 8px 8px 10px;
+    overflow-y: auto;
+    background: #ffffff;
+    font-size: 11px;
+}
+.cvchat-graph-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--cv-text-soft);
+    transition: background 0.12s ease, opacity 0.12s ease;
+}
+.cvchat-graph-legend-item:hover {
+    background: var(--cv-bg-soft);
+}
+.cvchat-graph-legend-item:not(.is-on) {
+    opacity: 0.4;
+}
+.cvchat-graph-legend-item:not(.is-on) .cvchat-graph-legend-swatch {
+    background: transparent !important;
+    border: 1.5px dashed var(--cv-text-mute);
+}
+.cvchat-graph-legend-swatch {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+/* Text swatch (used by the Node/Edge labels toggles instead of a
+   color circle). Same outer footprint as a color swatch so rows
+   stay aligned. */
+.cvchat-graph-legend-swatch-text {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0;
+    width: 14px;
+    height: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--cv-text-mute);
+    line-height: 1;
+}
+.cvchat-graph-legend-item:not(.is-on) .cvchat-graph-legend-swatch-text {
+    color: var(--cv-text-mute);
+}
+
+/* Separator between the type rows and the label-toggle rows. */
+.cvchat-graph-legend-sep {
+    height: 1px;
+    background: var(--cv-border);
+    margin: 6px 4px;
+}
+.cvchat-graph-legend-label {
+    flex: 1;
+    text-transform: capitalize;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cvchat-graph-loading,
+.cvchat-graph-error {
+    padding: 30px 12px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--cv-text-mute);
+    font-style: italic;
+}
+.cvchat-graph-error { color: #b91c1c; font-style: normal; }
+
+/* ---------- citations ---------- */
+
+/* Each citation badge is wrapped together with a family icon
+   (document vs graph) so a reader can tell at a glance which kind of
+   source the number refers to. Mirrors noted's `chat-citation-wrap`
+   styling (same flex layout, same icon hues, same nowrap behavior). */
+.cvchat-cite-wrap {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+.cvchat-cite-icon {
+    font-size: 11px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+.cvchat-cite-icon svg { display: block; }
+.cvchat-cite-family-doc   .cvchat-cite-icon { color: #2e6e1f; }
+.cvchat-cite-family-graph .cvchat-cite-icon { color: #5a809c; }
+
+.cvchat-cite {
+    display: inline-block;
+    min-width: 15px;
+    height: 15px;
+    margin: 0 2px;
+    padding: 0px 3px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+    vertical-align: 1px;
+    border-radius: 8px;
+    border: 1px solid;
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.cvchat-cite-chunk     { background: #eaf6e7; border-color: #2e6e1f; color: #245a18; }
+.cvchat-cite-chunk:hover     { background: #2e6e1f; color: #fff; }
+.cvchat-cite-entity    { background: #e3f0fb; border-color: #5a809c; color: #0d47a1; }
+.cvchat-cite-entity:hover    { background: #1565c0; color: #fff; border-color: #1565c0; }
+.cvchat-cite-edge      { background: #fff1d9; border-color: #b8862b; color: #8d5800; }
+.cvchat-cite-edge:hover      { background: #b8862b; color: #fff; }
+.cvchat-cite-community { background: #f1e6fb; border-color: #7e57c2; color: #4527a0; }
+.cvchat-cite-community:hover { background: #7e57c2; color: #fff; }
+
+/* ---------- citation popover ---------- */
+
+.cvchat-popover {
+    position: absolute;
+    z-index: 10;
+    max-width: 300px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--cv-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.24);
+    padding: 10px 12px;
+    font-size: 12.5px;
+    color: var(--cv-text-soft);
+}
+.cvchat-popover[hidden] { display: none; }
+.cvchat-popover-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--cv-text);
+}
+.cvchat-popover-close {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--cv-text-mute);
+    padding: 2px 4px;
+}
+.cvchat-popover-close:hover { color: var(--cv-text); }
+.cvchat-popover dl { margin: 0; }
+.cvchat-popover dt {
+    font-weight: 600;
+    color: var(--cv-text-mute);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 6px;
+}
+.cvchat-popover dd { margin: 1px 0 0; }
+.cvchat-popover .cvchat-popover-text { white-space: pre-wrap; }
+
+/* ---------- input bar ---------- */
+
+.cvchat-inputbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 10px 20px 5px 20px;
+    border-top: 1px solid var(--cv-border);
+    background: #fff;
+    flex: none;
+}
+
+.cvchat-input {
+    flex: 1;
+    resize: none;
+    border: 1px solid var(--cv-border);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--cv-text);
+    max-height: 110px;
+    outline: none;
+    scrollbar-width: none;
+}
+.cvchat-input:focus { border-color: var(--cv-accent); }
+
+.cvchat-iconbtn {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 0.5px solid #b8b8b8;
+    background: #fff;
+    color: var(--cv-text-soft);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+    border-style: outset;
+}
+.cvchat-iconbtn:hover { background: var(--cv-bg-soft); }
+.cvchat-iconbtn svg { width: 17px; height: 17px; }
+.cvchat-iconbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cvchat-send {
+    background: #5aa098;
+    border-color: var(--cv-accent);
+    color: #fff;
+}
+.cvchat-send:hover { background: var(--cv-accent-deep); border-color: var(--cv-accent-deep); }
+.cvchat-send:disabled { background: var(--cv-accent); border-color: var(--cv-accent); }
+
+/* mic active (capturing) */
+.cvchat-mic.active {
+    background: #ffcdd2;
+    border-color: #ef9a9a;
+    color: #b71c1c;
+    border-style: inset;
+}
+/* mic active + speech detected */
+.cvchat-mic.listening {
+    animation: cvchat-mic-pulse 1s ease-in-out infinite;
+}
+@keyframes cvchat-mic-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(229, 115, 115, 0.5); }
+    70%  { box-shadow: 0 0 0 7px rgba(229, 115, 115, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(229, 115, 115, 0); }
+}
+
+/* speaker active (TTS on) */
+.cvchat-speaker.active {
+    background: #c8e6c9;
+    border-color: #a5d6a7;
+    color: #1b5e20;
+    border-style: inset;
+}
+.cvchat-speaker.speaking {
+    animation: cvchat-mic-pulse 1s ease-in-out infinite;
+}
+
+/* avatar button active (panel open + connected) */
+.cvchat-avatar-btn.active {
+    background: #ffecb3;
+    border-color: #ffd970;
+    color: #7a5400;
+    border-style: inset;
+}
+
+/* Stage = the area that holds the video and the status overlay. The
+   panel content area is set to this directly (no padding, no margins). */
+.cvchat-avatar-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+/* Video fits the panel without cropping. The panel is locked to the
+   video's aspect ratio (see adjustAvatarPanelAspect + the resize
+   callback), so 'contain' produces no visible letterboxing - if the
+   panel ratio briefly drifts, the image stays whole instead of being
+   cropped. */
+.cvchat-avatar-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    border-radius: 8px;
+}
+.cvchat-avatar-status {
+    position: absolute;
+    left: 50%;
+    bottom: 5px;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    font-size: 8px;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 153, 51, 0.9);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 999px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 6;                            /* above the transparent drag layer */
+    transition: opacity 0.2s ease;
+}
+/* Connected = muted "terminal green" (vs the orange not-ready states). */
+.cvchat-avatar-status.cvchat-avatar-status-connected {
+    color: rgba(60, 192, 106, 0.92);
+}
+.cvchat-avatar-status[hidden] { display: none; }
+
+/* Dock/undock toggle button. Lives inside the stage so it travels with
+   it across dock/undock transitions. Reveals on hover of the stage to
+   stay out of the way of the image; sits to the left of jsPanel's
+   close X when undocked. !important throughout because the element is
+   a <button> and we want to defeat UA defaults (padding, font-size,
+   line-height) that would otherwise inflate it above 14px and make it
+   visually heavier than the close X. */
+/* Both stage buttons (dock toggle + close X) share the same look and
+   coordinate system - they sit absolutely-positioned inside the
+   avatar stage so they never collide with each other. !important
+   defeats UA <button> defaults (padding/font/line-height) that would
+   otherwise inflate the circles past their intended 14px. */
+.cvchat-stage-btn {
+    position: absolute !important;
+    top: 6px !important;
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 0 !important;
+    font: inherit !important;
+    font-size: 0 !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    outline: none !important;
+    opacity: 0;
+    transition: opacity 0.18s ease, background 0.15s ease;
+    z-index: 11;
+    pointer-events: auto !important;
+}
+.cvchat-avatar-stage:hover .cvchat-stage-btn { opacity: 1; }
+.cvchat-stage-btn:hover { background: rgba(0, 0, 0, 0.85) !important; }
+.cvchat-stage-btn svg {
+    width: 10px !important;
+    height: 10px !important;
+    display: block !important;
+    stroke-width: 2.4 !important;
+    flex: none !important;
+    overflow: visible;
+}
+
+/* Undocked layout: close on the far right, dock 10px to its left.
+   Total span: close [right:6..20] + 10px gap + dock [right:30..44].
+   Click areas don't overlap. */
+.cvchat-close-btn { right: 6px !important; }
+.cvchat-dock-btn { right: 25px !important; }
+
+/* Docked layout keeps both buttons in their default positions: the
+   close button still works (calls setMode('silent') to drop avatar
+   mode entirely). */
+
+/* ----- jsPanel overrides for the avatar panel ----- */
+
+/* Above the chat panel (z-index 2147483000). */
+.jsPanel#cvchat-avatar-panel { z-index: 2147483001 !important; }
+
+/* The whole panel is a drag handle (handled in JS); show the grab cursor
+   over the panel body so users know they can pick it up anywhere. */
+.jsPanel#cvchat-avatar-panel { cursor: grab; }
+.jsPanel#cvchat-avatar-panel:active { cursor: grabbing; }
+
+/* Collapse the header chrome - we don't want any visible title bar, and
+   the close button is positioned absolute below, so the header itself
+   can be a 0-height element. */
+.jsPanel#cvchat-avatar-panel .jsPanel-hdr {
+    height: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+/* Don't display:none the headerbar - jsPanel nests .jsPanel-controlbar
+   (which holds the close button) inside it, so hiding the headerbar
+   hides the close too. Just make the headerbar visually invisible. */
+.jsPanel#cvchat-avatar-panel .jsPanel-headerbar {
+    background: transparent !important;
+    border: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+.jsPanel#cvchat-avatar-panel .jsPanel-titlebar,
+.jsPanel#cvchat-avatar-panel .jsPanel-title,
+.jsPanel#cvchat-avatar-panel .jsPanel-headerlogo {
+    display: none !important;
+}
+
+/* jsPanel's native close X is disabled (addCloseControl: 0) - we use
+   our own .cvchat-close-btn inside the stage instead, so the dock
+   and close buttons share the same coordinate system. */
+
+/* Content fills the entire panel - no padding, no header offset.
+   Rounded on all four corners so the video (which has its own 8px
+   radius) sits inside a matching frame. */
+.jsPanel#cvchat-avatar-panel .jsPanel-content {
+    padding: 0 !important;
+    background: #000 !important;
+    overflow: hidden;
+    top: 0 !important;
+    border-radius: 10px !important;
+}
+
+.cvchat-hint {
+    font-size: 10.5px;
+    color: #5d5d5d;
+    text-align: center;
+    padding: 5px 10px 5px;
+    background: #ffefdb;
+}
+
+/* ---------- mobile ---------- */
+
+@media (max-width: 480px) {
+    .cvchat-panel { width: 100vw; }
+    .cvchat-launcher { right: 12px; bottom: 12px; }
+    .cvchat-resize { display: none; }
+}
+
+@media print {
+    .cvchat-launcher,
+    .cvchat-panel { display: none !important; }
+    body.cvchat-open { padding-right: 0 !important; }
+}
