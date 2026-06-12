@@ -36,59 +36,76 @@
     return _pdfjs;
   }
 
-  // Render the cited PDF page(s) + bbox into `body` (a scroll container).
+  // Render the cited page(s) into `body`, sized to fit its current width.
+  async function renderPages(body, doc, data) {
+    var regions = (data.regions || []).filter(function (r) { return r && r.page_no; });
+    var byPage = {};
+    regions.forEach(function (r) { (byPage[r.page_no] = byPage[r.page_no] || []).push(r.bbox); });
+    var pages = Object.keys(byPage).map(Number).sort(function (a, b) { return a - b; });
+    if (!pages.length) pages = [data.page_no || 1];
+
+    body.innerHTML = '';
+    var first = null;
+    for (var i = 0; i < pages.length; i++) {
+      var pageNo = pages[i];
+      if (pageNo < 1 || pageNo > doc.numPages) continue;
+      var page = await doc.getPage(pageNo);
+      var nat = page.getViewport({ scale: 1 });
+      var targetW = Math.min(1000, Math.max(220, body.clientWidth - 28));
+      var vp = page.getViewport({ scale: targetW / nat.width });
+      var dpr = window.devicePixelRatio || 1;
+
+      var wrap = document.createElement('div'); wrap.className = 'j2c-page';
+      wrap.style.width = vp.width + 'px'; wrap.style.height = vp.height + 'px';
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.floor(vp.width * dpr); canvas.height = Math.floor(vp.height * dpr);
+      canvas.style.width = vp.width + 'px'; canvas.style.height = vp.height + 'px';
+      wrap.appendChild(canvas);
+      var tag = document.createElement('div'); tag.className = 'j2c-pageno'; tag.textContent = 'p.' + pageNo; wrap.appendChild(tag);
+      body.appendChild(wrap);
+      if (!first) first = wrap;
+
+      var ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+      (byPage[pageNo] || []).forEach(function (bbox) {
+        if (!bbox || bbox.length !== 4) return;
+        var rect = vp.convertToViewportRectangle(bbox);
+        var left = Math.min(rect[0], rect[2]), top = Math.min(rect[1], rect[3]);
+        var hl = document.createElement('div'); hl.className = 'j2c-bbox';
+        hl.style.left = left + 'px'; hl.style.top = top + 'px';
+        hl.style.width = Math.abs(rect[2] - rect[0]) + 'px'; hl.style.height = Math.abs(rect[3] - rect[1]) + 'px';
+        wrap.appendChild(hl);
+      });
+    }
+    if (first) first.scrollIntoView({ block: 'start' });
+    if (!body.children.length) body.innerHTML = '<div class="j2c-pdf-msg">Could not locate the cited page.</div>';
+  }
+
+  // Load the PDF, render into `body`, and re-fit pages when its width changes.
   window.JOB2COOL_RENDER_PDF = async function (body, data) {
     if (!body) return;
+    if (body._ro) { try { body._ro.disconnect(); } catch (e) {} body._ro = null; }
     body.innerHTML = '<div class="j2c-pdf-msg">Loading PDF…</div>';
-    var src = data.source_path || '';
-    var regions = (data.regions || []).filter(function (r) { return r && r.page_no; });
-    var url = pdfUrl(data.domain_id, src);
+    var url = pdfUrl(data.domain_id, data.source_path || '');
     try {
       var pdfjs = await ipdf();
       pdfjs.GlobalWorkerOptions.workerSrc = asset(WORKER);
       var doc = await pdfjs.getDocument({ url: url, wasmUrl: asset(WASM) }).promise;
+      await renderPages(body, doc, data);
 
-      var byPage = {};
-      regions.forEach(function (r) { (byPage[r.page_no] = byPage[r.page_no] || []).push(r.bbox); });
-      var pages = Object.keys(byPage).map(Number).sort(function (a, b) { return a - b; });
-      if (!pages.length) pages = [data.page_no || 1];
-
-      body.innerHTML = '';
-      var first = null;
-      for (var i = 0; i < pages.length; i++) {
-        var pageNo = pages[i];
-        if (pageNo < 1 || pageNo > doc.numPages) continue;
-        var page = await doc.getPage(pageNo);
-        var nat = page.getViewport({ scale: 1 });
-        var targetW = Math.min(820, Math.max(280, body.clientWidth - 28));
-        var vp = page.getViewport({ scale: targetW / nat.width });
-        var dpr = window.devicePixelRatio || 1;
-
-        var wrap = document.createElement('div'); wrap.className = 'j2c-page';
-        wrap.style.width = vp.width + 'px'; wrap.style.height = vp.height + 'px';
-        var canvas = document.createElement('canvas');
-        canvas.width = Math.floor(vp.width * dpr); canvas.height = Math.floor(vp.height * dpr);
-        canvas.style.width = vp.width + 'px'; canvas.style.height = vp.height + 'px';
-        wrap.appendChild(canvas);
-        var tag = document.createElement('div'); tag.className = 'j2c-pageno'; tag.textContent = 'p.' + pageNo; wrap.appendChild(tag);
-        body.appendChild(wrap);
-        if (!first) first = wrap;
-
-        var ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
-        await page.render({ canvasContext: ctx, viewport: vp }).promise;
-
-        byPage[pageNo].forEach(function (bbox) {
-          if (!bbox || bbox.length !== 4) return;
-          var rect = vp.convertToViewportRectangle(bbox);
-          var left = Math.min(rect[0], rect[2]), top = Math.min(rect[1], rect[3]);
-          var hl = document.createElement('div'); hl.className = 'j2c-bbox';
-          hl.style.left = left + 'px'; hl.style.top = top + 'px';
-          hl.style.width = Math.abs(rect[2] - rect[0]) + 'px'; hl.style.height = Math.abs(rect[3] - rect[1]) + 'px';
-          wrap.appendChild(hl);
-        });
-      }
-      if (first) first.scrollIntoView({ block: 'start' });
-      if (!body.children.length) body.innerHTML = '<div class="j2c-pdf-msg">Could not locate the cited page.</div>';
+      // Auto-adjust page width when the container's available area changes.
+      var lastW = body.clientWidth, busy = false, t = null;
+      body._ro = new ResizeObserver(function () {
+        var w = body.clientWidth;
+        if (!w || Math.abs(w - lastW) < 8) return;
+        lastW = w; clearTimeout(t);
+        t = setTimeout(function () {
+          if (busy) return; busy = true;
+          renderPages(body, doc, data).catch(function () {}).then(function () { busy = false; });
+        }, 140);
+      });
+      body._ro.observe(body);
     } catch (e) {
       body.innerHTML = '<div class="j2c-pdf-msg">Could not render the PDF (' + esc(String(e && e.message || e)) + '). Use “Open full PDF”.</div>';
     }

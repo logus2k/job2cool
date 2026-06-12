@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any, AsyncIterator
 
 import httpx
@@ -58,6 +59,20 @@ def _evidence_block(ev: dict, limit: int = 6) -> str:
 def _sources_footer(ev: dict) -> str:
     srcs = ev.get("sources") or []
     return ("\n\n_Sources: " + ", ".join(sorted(set(srcs))) + "_") if srcs else ""
+
+
+def _cited_sources(ev: dict) -> str:
+    """A clickable Sources line for a section: the section's graph excerpts as
+    [markdown_chunk:hex] tags (resolvable to a PDF + bbox). Falls back to plain
+    filenames when the section has no resolvable excerpts."""
+    hexes: list[str] = []
+    for x in (ev.get("excerpts") or [])[:4]:
+        hx = cache.put_chunk(x)
+        if hx and hx not in hexes:
+            hexes.append(hx)
+    if hexes:
+        return "\n\n**Sources:** " + " ".join(f"[markdown_chunk:{h}]" for h in hexes)
+    return _sources_footer(ev)
 
 
 # --- deliverables ------------------------------------------------------------
@@ -151,17 +166,66 @@ async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]
 
 
 async def _role_label(client: httpx.AsyncClient, need: str) -> str:
+    """Return the job role title, or "" when the request (with conversation
+    context already folded in) names NO concrete position — so the caller asks
+    which role instead of inventing one."""
     try:
         lbl = await services.llm_complete(
             client, services.GEMMA_MODEL,
             [{"role": "user", "content":
-              f"In 2-5 words, name the job role in this hiring need. Reply with "
-              f"ONLY the role title, nothing else:\n\n{need}"}],
-            max_tokens=16, temperature=0.1, timeout=30, think=False)
+              "Identify the job position in this hiring request. If a concrete "
+              "role is named, reply with ONLY its title (2-5 words). If the "
+              "request does NOT name a specific job position, reply with exactly: "
+              f"NONE\n\nRequest: {need}"}],
+            max_tokens=16, temperature=0.0, timeout=30, think=False)
         lbl = (lbl or "").strip().strip('"').splitlines()[0].strip()
-        return lbl or "New Role"
+        if not lbl or lbl.strip(" .!\"'").upper() == "NONE":
+            return ""
+        return lbl
     except Exception:
-        return "New Role"
+        return ""
+
+
+def _strip_blocks(text: str) -> str:
+    t = re.sub(r"<(think|voice)>[\s\S]*?</\1>", "", str(text or ""))
+    t = re.sub(r"\[(markdown_chunk:[0-9a-f]+|E:[^\]]+|R:[^\]]+|C\d+)\]", "", t)
+    return t.strip()
+
+
+async def _resolve_need(client: httpx.AsyncClient, history: list[dict],
+                        message: str) -> str:
+    """Make the latest message self-contained using the conversation, so a
+    follow-up like 'also find interview questions' inherits the role and skills
+    from earlier turns. This is the context that cv keeps and job2cool was
+    dropping. Falls back to the raw message."""
+    turns = [h for h in (history or []) if isinstance(h, dict) and h.get("content")]
+    if not turns:
+        return message
+    lines: list[str] = []
+    for m in turns[-6:]:
+        who = "User" if m.get("role") == "user" else "Diana"
+        txt = _strip_blocks(m.get("content"))
+        if txt:
+            lines.append(f"{who}: {txt[:400]}")
+    if not lines:
+        return message
+    convo = "\n".join(lines)
+    try:
+        out = await services.llm_complete(
+            client, services.GEMMA_MODEL,
+            [{"role": "system", "content":
+              "You rewrite the user's latest message in an HR hiring chat into "
+              "ONE self-contained request, resolving references to earlier turns "
+              "(carry over the role title and its required skills)."},
+             {"role": "user", "content":
+              f"Conversation so far:\n{convo}\n\nLatest user message: {message}\n\n"
+              "Rewrite the latest message as one self-contained sentence that "
+              "includes the relevant role and skills from the conversation. "
+              "Reply with ONLY the rewritten request."}],
+            max_tokens=80, temperature=0.1, think=False, timeout=30)
+        return (out or "").strip().strip('"') or message
+    except Exception:
+        return message
 
 
 async def run_chat(message: str, history: list[dict],
@@ -179,8 +243,27 @@ async def run_chat(message: str, history: list[dict],
         return
 
     async with httpx.AsyncClient() as client:
+        # 0) Resolve the message against the conversation (memory/context) ---
+        need = await _resolve_need(client, history, need)
+
         # 1) Role + domain + requested deliverables --------------------------
         role = await _role_label(client, need)
+        if not role:
+            # No identifiable position (in this message or the conversation) ->
+            # ASK which role, do not invent one or generate anything.
+            ask = ("Happy to help. Which job position are you hiring for? "
+                   "Tell me the role and any key skills, and I'll prepare it.")
+            yield _sse({"delta": ask})
+            yield _sse({"delta": "\n\n<voice>Sure. Which job position are you "
+                                 "hiring for? Tell me the role and I'll prepare "
+                                 "it for you.</voice>"})
+            yield _sse({"meta": {
+                "turn_id": hashlib.sha1(need.encode()).hexdigest()[:12],
+                "buffers": [], "deliverables": [], "role": "", "domain": "",
+                "retrieved_chunks": 0, "retrieved_entities": 0,
+                "retrieved_edges": 0, "avg_similarity": 0.0}})
+            yield "data: [DONE]\n\n"
+            return
         domain = await services.resolve_onboard_domain(client, need)
         domains = [domain]
         requested = await _requested_sections(client, need)
@@ -292,7 +375,7 @@ async def run_chat(message: str, history: list[dict],
                      {"role": "user", "content": "\n\n".join(user_parts)}],
                     max_tokens=SECTION_MAX, temperature=0.4, timeout=300)
 
-            body = f"# {sec['title']}\n\n{section_md.strip()}{_sources_footer(ev)}"
+            body = f"# {sec['title']}\n\n{section_md.strip()}{_cited_sources(ev)}"
             buffers.replace(buf.buffer_id, body)
             yield _sse({"delta": f" ✓ _( {i}/{len(secs)} )_"})
 

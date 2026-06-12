@@ -32,7 +32,17 @@
        color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap}
   .tab.active{background:var(--bg);color:var(--ink);border-color:var(--line)}
   .tab.busy::after{content:" •";color:var(--primary)}
-  .docpane{padding:1.2rem}
+  .docpane{display:flex;align-items:stretch;height:calc(100vh - 112px)}
+  .doc-col{flex:1;min-width:0;overflow:auto;padding:1.2rem}
+  .pdf-col{flex:1;min-width:0;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--bg)}
+  .pdf-head{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;border-bottom:1px solid var(--line);background:#fff;font:600 12.5px system-ui}
+  .pdf-head .src{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+  .pdf-head a{color:var(--primary-d);text-decoration:none;font-weight:600;font-size:12px}
+  .pdf-head button{border:0;background:#eef0f5;border-radius:7px;width:26px;height:24px;cursor:pointer;font-size:15px}
+  .pdf-body{flex:1;overflow:auto;padding:1rem}
+  .cite{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin:0 2px;
+        border-radius:8px;background:var(--primary-soft);color:var(--primary-d);font-size:11px;font-weight:700;cursor:pointer;vertical-align:1px}
+  .cite:hover{background:var(--primary);color:var(--ink)}
   .docwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-width:920px;margin:0 auto}
   .doctool{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-bottom:1px solid var(--line);background:#fbfbfe}
   .doctool .ttl{font-weight:700;font-size:13.5px;flex:1}
@@ -101,7 +111,10 @@
 </header>
 
 <div class="tabbar" id="tabbar"></div>
-<div class="docpane" id="docpane"></div>
+<div class="docpane" id="docpane">
+  <div class="doc-col" id="doccol"></div>
+  <div class="pdf-col" id="pdfcol" hidden></div>
+</div>
 
 <div class="toast" id="toast"></div>
 <div id="printarea"></div>
@@ -147,13 +160,16 @@ function exportPDF(name){
   window.print();
 }
 
+let _citeN=0;
+function citeBadges(md){return (md||'').replace(/\[markdown_chunk:([0-9a-f]+)\]/g,(_,hx)=>{_citeN++;return `<span class="cite" data-hex="${hx}">${_citeN}</span>`;});}
+
 function render(){
   const tb=$('#tabbar');tb.innerHTML='';
   doc.order.forEach(title=>{const t=document.createElement('div');
     t.className='tab'+(doc.active===title?' active':'')+(isPending(doc.content[title])?' busy':'');
-    t.textContent=title;t.onclick=()=>{doc.active=title;render();};tb.appendChild(t);});
-  const pane=$('#docpane');
-  if(!doc.active){pane.innerHTML='';return;}
+    t.textContent=title;t.onclick=()=>{doc.active=title;closePdf();render();};tb.appendChild(t);});
+  const col=$('#doccol');
+  if(!doc.active){col.innerHTML='';return;}
   const showName=shownFor(doc.active);
   const content=doc.content[showName]||'';
   const pending=isPending(content);
@@ -161,15 +177,36 @@ function render(){
   const seg=hasMa2?`<span class="seg">
       <button class="${doc.offerView==='gemma'?'on':''}" data-v="gemma">Gemma</button>
       <button class="${doc.offerView==='ma2'?'on':''}" data-v="ma2">MA2</button></span>`:'';
-  pane.innerHTML=`<div class="docwrap">
+  _citeN=0;
+  col.innerHTML=`<div class="docwrap">
       <div class="doctool"><span class="ttl">${esc(doc.active)}</span>${seg}
         <button class="iconbtn" id="t-copy" title="Copy Markdown">${COPY_ICON}</button>
         <button class="iconbtn" id="t-pdf" title="Export to PDF">${PDF_ICON}</button></div>
-      <div class="docbody${pending?' pending':''}">${pending?'Generating…':md2html(content)}</div></div>`;
-  pane.querySelector('#t-copy').onclick=()=>copyMD(showName);
-  pane.querySelector('#t-pdf').onclick=()=>exportPDF(showName);
-  pane.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
+      <div class="docbody${pending?' pending':''}">${pending?'Generating…':md2html(citeBadges(content))}</div></div>`;
+  col.querySelector('#t-copy').onclick=()=>copyMD(showName);
+  col.querySelector('#t-pdf').onclick=()=>exportPDF(showName);
+  col.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
 }
+
+// citation in a document section -> resolve -> open the PDF in the split pane
+$('#doccol').addEventListener('click',e=>{const c=e.target.closest('.cite');if(c)resolveCite(c.dataset.hex);});
+async function resolveCite(hx){
+  try{const d=await(await fetch('api/citation/'+encodeURIComponent(hx))).json();
+    if(d&&d.source_path)window.JOB2COOL_OPEN_PDF(d); else toast('Source not available');
+  }catch(e){toast('Could not load source');}
+}
+// open the cited PDF side-by-side inside the active tab (left: text, right: PDF)
+window.JOB2COOL_OPEN_PDF=function(data){
+  const col=$('#pdfcol');const src=data.source_path||'';
+  const url=window.JOB2COOL_PDF_URL?window.JOB2COOL_PDF_URL(data.domain_id,src):'#';
+  col.innerHTML=`<div class="pdf-head"><span class="src" title="${esc(src)}">${esc(src)}${data.section_path?(' · '+esc(data.section_path)):''}</span>
+      <a href="${url}" target="_blank">Open full PDF ↗</a><button id="pdfclose" title="Close">×</button></div>
+      <div class="pdf-body" id="pdfbody"></div>`;
+  col.hidden=false;$('#docpane').classList.add('split');
+  col.querySelector('#pdfclose').onclick=closePdf;
+  if(window.JOB2COOL_RENDER_PDF)window.JOB2COOL_RENDER_PDF(col.querySelector('#pdfbody'),data);
+};
+function closePdf(){const col=$('#pdfcol');col.hidden=true;col.innerHTML='';$('#docpane').classList.remove('split');}
 
 // reset tabs at the start of a new turn (hook called by cv-chat on send)
 window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=null;doc.offerView='gemma';render();};

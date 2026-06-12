@@ -7,7 +7,7 @@
     background: #ffe39e !important;
     border-bottom: 0.5px solid var(--border-color);
     border-radius: 4px 4px 0px 0px !important;
-    overflow: hidden;
+    /* overflow: hidden; */
 }
 
 .jsPanel .jsPanel-titlebar {

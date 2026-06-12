@@ -4196,26 +4196,26 @@
     // Keep them welcoming, focused on who Diana is and how the user can
     // interact — let actual CV content come out in the answers.
     var GREETING_TEXTS = [
-        "Hi, I'm Diana, your HR Assistant. Tell me the role you're hiring for and I'll put together the full package: job offer, technical interviews, onboarding plan, and culture fit.",
-        "Welcome. I'm Diana, your HR Assistant. Describe the hiring need in plain terms and I'll generate the complete pack: job offer, interviews, onboarding, and team fit.",
-        "Hello! I'm Diana, your HR Assistant. Give me a role and a few details, and I'll draft the offer, interview plan, onboarding, and culture-fit guide.",
-        "Hi there. I'm Diana, your HR Assistant. Tell me what you need to hire for and I'll build the whole package, grounded in your company knowledge base.",
-        "I'm Diana, your HR Assistant. Share the hiring need and I'll produce the job offer, technical interviews, onboarding plan, and cultural fit.",
-        "Hello! I'm Diana, your HR Assistant. Describe the role you want to fill and I'll assemble the full hiring pack for you.",
-        "Hi, I'm Diana, your HR Assistant. Just describe the position and I'll prepare everything you need to hire, from the offer to the onboarding plan.",
-        "Welcome aboard. I'm Diana, your HR Assistant. Tell me about the role and I'll turn it into a complete hiring package in moments.",
-        "Hi! I'm Diana, your HR Assistant. Give me the gist of the role and I'll handle the job offer, interview questions, onboarding, and team-fit assessment.",
-        "Hello, I'm Diana, your HR Assistant. What role are you hiring for? I'll draft the whole package, grounded in your company's documents.",
-        "Hi there, I'm Diana, your HR Assistant. Describe your ideal candidate and I'll build the offer, interviews, onboarding, and culture-fit guide.",
-        "I'm Diana, your HR Assistant. Tell me the position and any must-have skills, and I'll generate the complete hiring pack.",
-        "Welcome. I'm Diana, your HR Assistant. A quick description of the role is all I need to prepare the offer, interviews, and onboarding plan.",
-        "Hello! I'm Diana, your HR Assistant. Let me know who you're looking to hire and I'll take care of the documents end to end.",
-        "Hi, I'm Diana, your HR Assistant. Share the role you have in mind and I'll assemble the job offer, technical interviews, onboarding, and team fit.",
-        "I'm Diana, your HR Assistant. Describe the hiring need and I'll do the heavy lifting: offer, interviews, onboarding, and culture fit, grounded in your knowledge base.",
-        "Hi there! I'm Diana, your HR Assistant. Give me a role to work with and I'll produce a complete, ready-to-review hiring package.",
-        "Hello, I'm Diana, your HR Assistant. Tell me what you're hiring for and I'll prepare the full set of documents for you to review and edit.",
-        "Welcome! I'm Diana, your HR Assistant. Outline the role and I'll generate the offer, interview plan, onboarding roadmap, and cultural fit.",
-        "Hi, I'm Diana, your HR Assistant. Just tell me the role and I'll handle the job offer, interviews, onboarding, and team-fit assessment."
+        "I'm Diana, your HR Assistant. Tell me what you need.",
+        "Hi! I'm Diana, your HR Assistant. How can I help you today?",
+        "Hello, I'm Diana, your HR Assistant. What are you hiring for?",
+        "I'm Diana, your HR Assistant. Who are you looking to hire?",
+        "Hi there! I'm Diana, your HR Assistant. What can I help you with?",
+        "Welcome. I'm Diana, your HR Assistant. What do you need?",
+        "I'm Diana, your HR Assistant. Tell me about the role.",
+        "Hello! I'm Diana, your HR Assistant. What role are you filling?",
+        "Hi, I'm Diana, your HR Assistant. How can I help?",
+        "I'm Diana, your HR Assistant. What would you like to create?",
+        "Hey! I'm Diana, your HR Assistant. What are we hiring for?",
+        "Hello, I'm Diana, your HR Assistant. How can I assist you today?",
+        "I'm Diana, your HR Assistant. Just tell me the role.",
+        "Hi there. I'm Diana, your HR Assistant. What do you have in mind?",
+        "Welcome! I'm Diana, your HR Assistant. What can I do for you?",
+        "I'm Diana, your HR Assistant. Ready when you are.",
+        "Hi! I'm Diana, your HR Assistant. What position are you hiring for?",
+        "Hello, I'm Diana, your HR Assistant. Tell me how I can help.",
+        "I'm Diana, your HR Assistant. What's the role?",
+        "Hi, I'm Diana, your HR Assistant. Let's get started. What do you need?"
     ];
     var GREETING_TEXT = GREETING_TEXTS[Math.floor(Math.random() * GREETING_TEXTS.length)];
 
