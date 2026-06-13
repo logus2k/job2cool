@@ -45,20 +45,25 @@ import services
 JUDGE_MODEL = os.getenv("JOB2COOL_JUDGE",
                         os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4"))
 JUDGE_SYSTEM = (
-    "You are a strict judge of an HR assistant's RAG output. You receive these "
-    "clearly-labelled sections: USER QUERY (what the user asked); EVIDENCE "
-    "(passages retrieved from the company knowledge base); DIANA'S THINKING (her "
-    "private reasoning for this turn — context only); WORKSPACE DOCUMENTS (the "
-    "actual hiring deliverables Diana wrote into the document pane); and VISIBLE "
-    "CHAT ANSWER (the short summary shown in the chat). "
-    "Judge the WORKSPACE DOCUMENTS together with the VISIBLE CHAT ANSWER as "
-    "Diana's effective response; treat DIANA'S THINKING as context only, never as "
-    "a source of truth. "
+    "You are a strict, fair judge of an HR assistant's output. You receive: "
+    "USER QUERY (what the user asked); SOURCE MATERIAL (the full pool of approved "
+    "grounding for this turn — it combines the company knowledge base and, for a "
+    "Job Offer, a specialist offer draft Diana refines; every passage in it is "
+    "valid grounding on its own); DIANA'S THINKING (her private reasoning, for "
+    "background); and WORKSPACE DOCUMENTS (the hiring deliverables Diana "
+    "produced — these are her response, and the only thing you score). "
     "Output ONLY a JSON object (no prose, no code fence) of the form "
-    '{"faithfulness": <0..1>, "answer_relevance": <0..1>, "rationale": "<short>"}. '
-    "faithfulness = how well the WORKSPACE DOCUMENTS and VISIBLE CHAT ANSWER are "
-    "supported by the EVIDENCE (penalise claims not grounded in it); "
-    "answer_relevance = how well they address the USER QUERY.")
+    '{"faithfulness": <0..1>, "answer_relevance": <0..1>, "rationale": "<text>"}. '
+    "faithfulness = the share of claims in the WORKSPACE DOCUMENTS that appear "
+    "anywhere in the SOURCE MATERIAL. Treat the whole SOURCE MATERIAL as one pool: "
+    "a claim is faithful the moment any single passage supports it, whichever part "
+    "of the pool that passage comes from. Reserve a deduction for a claim that no "
+    "passage anywhere in the SOURCE MATERIAL supports. Documents whose every claim "
+    "traces to the SOURCE MATERIAL score 1.0. "
+    "answer_relevance = how well the WORKSPACE DOCUMENTS address the USER QUERY. "
+    "rationale = 2-4 complete sentences; when you deduct, name the specific claim "
+    "from the WORKSPACE DOCUMENTS that the SOURCE MATERIAL does not support, and "
+    "finish every sentence.")
 
 # --- service endpoints (internal noted-network names; env-overridable) -------
 AGENT_SERVER  = os.getenv("AGENT_SERVER_URL",  "http://agent_server:7701")
@@ -231,23 +236,32 @@ async def score_answer(req: ScoreRequest):
     turn = cache.get_turn(req.turn_id)
     if not turn:
         return {"error": "turn not found"}
+    ma2 = (turn.get("ma2_offer") or "").strip()
+    # One combined grounding pool — presenting evidence and the MA2 draft as
+    # separate labelled sources made the judge cross-validate them (deducting
+    # when a claim was in one but not the other). Merged, any passage grounds.
+    # MA2 goes first so the small judge model attends to it (it's the compact,
+    # offer-specific source that's easy to lose after a long evidence block).
+    sm_parts = []
+    if ma2:
+        sm_parts.append(f"[Specialist offer draft Diana refines]\n{ma2}")
+    sm_parts.append(f"[Company knowledge base]\n{turn.get('evidence') or '(none)'}")
+    source_material = "\n\n".join(sm_parts)
     judge_user = (
         f"USER QUERY:\n{turn.get('question', '')}\n\n"
-        f"EVIDENCE (from the company knowledge base):\n"
-        f"{turn.get('evidence') or '(no evidence)'}\n\n"
-        f"DIANA'S THINKING (private reasoning — context only):\n"
+        f"SOURCE MATERIAL (one pool of approved grounding — any passage here is "
+        f"valid on its own):\n{source_material}\n\n"
+        f"DIANA'S THINKING (background context):\n"
         f"{turn.get('thinking') or '(none captured)'}\n\n"
         f"WORKSPACE DOCUMENTS (what Diana wrote into the document pane):\n"
-        f"{turn.get('documents') or '(none)'}\n\n"
-        f"VISIBLE CHAT ANSWER (the summary shown to the user):\n"
-        f"{turn.get('answer') or '(empty)'}")
+        f"{turn.get('documents') or '(none)'}")
     try:
         async with httpx.AsyncClient() as client:
             content = await services.llm_complete(
                 client, JUDGE_MODEL,
                 [{"role": "system", "content": JUDGE_SYSTEM},
                  {"role": "user", "content": judge_user}],
-                max_tokens=300, temperature=0.1, timeout=60, think=False)
+                max_tokens=700, temperature=0.1, timeout=60, think=False)
         m = re.search(r"\{[\s\S]*\}", content)
         if not m:
             return {"error": "judge returned no JSON", "raw": content[:200]}
@@ -255,7 +269,7 @@ async def score_answer(req: ScoreRequest):
         return {"turn_id": req.turn_id,
                 "faithfulness": float(v.get("faithfulness") or 0.0),
                 "answer_relevance": float(v.get("answer_relevance") or 0.0),
-                "rationale": str(v.get("rationale") or "")[:280]}
+                "rationale": str(v.get("rationale") or "")[:800]}
     except Exception as e:
         return {"error": f"{type(e).__name__}: {e}"}
 

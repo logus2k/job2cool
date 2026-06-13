@@ -122,6 +122,11 @@
   .cite:hover{background:var(--primary);color:var(--ink)}
   .cite.ref{background:#eef0f5;color:#6b7280;cursor:default}
   .cite.ref:hover{background:#e6e8ef;color:#6b7280}
+  .src-passage{padding:1rem 1.1rem}
+  .src-passage .src-note{font-size:12px;color:var(--muted);margin-bottom:.7rem}
+  .src-passage blockquote{margin:0;padding:.7rem .9rem;border-left:3px solid var(--primary);
+                          background:var(--panel);border-radius:0 8px 8px 0;color:var(--ink);
+                          font-size:13.5px;line-height:1.6;white-space:pre-wrap}
   .docwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-width:920px;margin:0 auto}
   .doctool{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-bottom:1px solid var(--line);background:#fbfbfe}
   .doctool .ttl{font-weight:700;font-size:13.5px;flex:1}
@@ -281,9 +286,14 @@ function exportPDF(name){
   window.print();
 }
 
-let _citeN=0;
+let _citeMap=new Map();   // hex -> badge number, deduped per render (cv pattern)
 function citeBadges(md){
-  let s=(md||'').replace(/\[markdown_chunk:([0-9a-f]+)\]/g,(_,hx)=>{_citeN++;return `<span class="cite" data-hex="${hx}">${_citeN}</span>`;});
+  // Same source cited many times keeps ONE number (dedupe by hex), instead of
+  // incrementing on every occurrence so 6 sources look like 18.
+  let s=(md||'').replace(/\[markdown_chunk:([0-9a-f]+)\]/g,(_,hx)=>{
+    if(!_citeMap.has(hx))_citeMap.set(hx,_citeMap.size+1);
+    return `<span class="cite" data-hex="${hx}">${_citeMap.get(hx)}</span>`;
+  });
   // graph-structure citations: the doc pane resolves PDF chunks, not graph nodes —
   // show [E:]/[R:] as subtle, non-clickable grounding markers (not raw text).
   s=s.replace(/\[E:([^\]]+)\]/g,(_,id)=>`<span class="cite ref" title="entity: ${esc(id)}">E</span>`);
@@ -307,12 +317,11 @@ function render(){
   const seg=hasMa2?`<span class="seg">
       <button class="${doc.offerView==='gemma'?'on':''}" data-v="gemma">Gemma</button>
       <button class="${doc.offerView==='ma2'?'on':''}" data-v="ma2">MA2</button></span>`:'';
-  _citeN=0;
   col.innerHTML=`<div class="docwrap">
       <div class="doctool"><span class="ttl">${esc(doc.active)}</span>${seg}
         <button class="iconbtn" id="t-copy" title="Copy Markdown">${COPY_ICON}</button>
         <button class="iconbtn" id="t-pdf" title="Export to PDF">${PDF_ICON}</button></div>
-      <div class="docbody${pending?' pending':''}">${pending?'Generating…':md2html(citeBadges(content))}</div></div>`;
+      <div class="docbody${pending?' pending':''}">${pending?'Generating…':(_citeMap=new Map(),md2html(citeBadges(content)))}</div></div>`;
   col.querySelector('#t-copy').onclick=()=>copyMD(showName);
   col.querySelector('#t-pdf').onclick=()=>exportPDF(showName);
   col.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
@@ -383,9 +392,23 @@ function shareAll(){
 $('#doccol').addEventListener('click',e=>{const c=e.target.closest('.cite');if(c&&c.dataset.hex)resolveCite(c.dataset.hex);});
 async function resolveCite(hx){
   try{const d=await(await fetch('api/citation/'+encodeURIComponent(hx))).json();
-    if(d&&d.source_path)window.JOB2COOL_OPEN_PDF(d); else toast('Source not available');
+    if(d&&Array.isArray(d.regions)&&d.regions.length)window.JOB2COOL_OPEN_PDF(d);   // has bbox -> open PDF at the highlight
+    else if(d&&(d.body||d.source_path))window.JOB2COOL_SHOW_SOURCE(d);               // no bbox -> show the cited passage, not a cover page
+    else toast('Source not available');
   }catch(e){toast('Could not load source');}
 }
+// no page/bbox for this chunk -> show the cited text in the side pane (cv's
+// fallback) instead of opening the PDF at its useless cover page.
+window.JOB2COOL_SHOW_SOURCE=function(data){
+  const col=$('#pdfcol');const src=data.source_path||'';
+  const url=(window.JOB2COOL_PDF_URL&&src)?window.JOB2COOL_PDF_URL(data.domain_id,src):'';
+  col.innerHTML=`<div class="pdf-head"><span class="src" title="${esc(src)}">${esc(src||'Source passage')}${data.section_path?(' · '+esc(data.section_path)):''}</span>
+      ${url?`<a href="${url}" target="_blank">Open full PDF ↗</a>`:''}<button id="pdfclose" title="Close">×</button></div>
+      <div class="pdf-body src-passage"><div class="src-note">No page highlight is available for this passage — showing the cited text.</div>
+      <blockquote>${esc(data.body||'(no text available)')}</blockquote></div>`;
+  col.hidden=false;$('#docpane').classList.add('split');
+  col.querySelector('#pdfclose').onclick=closePdf;
+};
 // open the cited PDF side-by-side inside the active tab (left: text, right: PDF)
 window.JOB2COOL_OPEN_PDF=function(data){
   const col=$('#pdfcol');const src=data.source_path||'';

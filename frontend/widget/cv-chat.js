@@ -2584,6 +2584,12 @@
             });
         }
         var meta = metaData || {};
+        // job2cool writes citations into the DOCUMENT pane, not the chat bubble,
+        // so the bubble-scan above under-counts (usually 0). Prefer the backend's
+        // actual document-citation counts when present.
+        if (typeof meta.cited_chunks === 'number') citedChunks = meta.cited_chunks;
+        if (typeof meta.cited_entities === 'number') citedEntities = meta.cited_entities;
+        if (typeof meta.cited_edges === 'number') citedEdges = meta.cited_edges;
         var retrievedChunks = meta.retrieved_chunks || 0;
         var retrievedEntities = meta.retrieved_entities || 0;
         var retrievedEdges = meta.retrieved_edges || 0;
@@ -2660,14 +2666,13 @@
             renderParserBubble(bubble, parser, body, numbering, null, scoreData);
             state.history.push({ role: 'user', content: userText });
             state.history.push({ role: 'assistant', content: body });
-            // Only fall back to speaking at end if early-TTS-on-</voice>
-            // didn't already fire mid-stream.
-            if (state.ttsOn && !ttsDispatched) {
-                if (parser.voiceText) {
-                    speak(parser.voiceText, 'finish-voice');
-                } else if (body.trim()) {
-                    speak(body, 'finish-body');
-                }
+            // Speak ONLY the <voice> line — never the written answer. job2cool
+            // puts the deliverable in the document and a short closing note in
+            // the chat; reading that note (or any body text) aloud is exactly
+            // what we must avoid, so there is deliberately no speak(body)
+            // fallback. (Fires here only if early-TTS-on-</voice> didn't.)
+            if (state.ttsOn && !ttsDispatched && parser.voiceText) {
+                speak(parser.voiceText, 'finish-voice');
             }
             // Background RAGAS judge - faithfulness + answer_relevance
             // - via cv-backend /api/score_answer. Fails soft: if the
@@ -4196,26 +4201,26 @@
     // Keep them welcoming, focused on who Diana is and how the user can
     // interact — let actual CV content come out in the answers.
     var GREETING_TEXTS = [
-        "I'm Diana, your HR Assistant. Tell me what you need.",
-        "Hi! I'm Diana, your HR Assistant. How can I help you today?",
-        "Hello, I'm Diana, your HR Assistant. What are you hiring for?",
-        "I'm Diana, your HR Assistant. Who are you looking to hire?",
-        "Hi there! I'm Diana, your HR Assistant. What can I help you with?",
-        "Welcome. I'm Diana, your HR Assistant. What do you need?",
-        "I'm Diana, your HR Assistant. Tell me about the role.",
+        "Hi! I'm Diana, your HR Assistant. What are you hiring for?",
+        "Hello! I'm Diana, your HR Assistant. How can I help you today?",
+        "I'm Diana, your HR Assistant. Which role are you hiring for?",
+        "Hi there! I'm Diana, your HR Assistant. Who are you looking to hire?",
+        "Welcome! I'm Diana, your HR Assistant. What can I help you with?",
+        "Hello, I'm Diana, your HR Assistant. What position do you have in mind?",
+        "Hi! I'm Diana, your HR Assistant. What would you like to put together?",
         "Hello! I'm Diana, your HR Assistant. What role are you filling?",
-        "Hi, I'm Diana, your HR Assistant. How can I help?",
-        "I'm Diana, your HR Assistant. What would you like to create?",
-        "Hey! I'm Diana, your HR Assistant. What are we hiring for?",
+        "Hi, I'm Diana, your HR Assistant. How can I help with your hiring?",
+        "Hey! I'm Diana, your HR Assistant. What are we hiring for today?",
         "Hello, I'm Diana, your HR Assistant. How can I assist you today?",
-        "I'm Diana, your HR Assistant. Just tell me the role.",
-        "Hi there. I'm Diana, your HR Assistant. What do you have in mind?",
-        "Welcome! I'm Diana, your HR Assistant. What can I do for you?",
-        "I'm Diana, your HR Assistant. Ready when you are.",
-        "Hi! I'm Diana, your HR Assistant. What position are you hiring for?",
-        "Hello, I'm Diana, your HR Assistant. Tell me how I can help.",
-        "I'm Diana, your HR Assistant. What's the role?",
-        "Hi, I'm Diana, your HR Assistant. Let's get started. What do you need?"
+        "Hi there! I'm Diana, your HR Assistant. What do you have in mind?",
+        "Welcome. I'm Diana, your HR Assistant. What can I do for you?",
+        "I'm Diana, your HR Assistant. Which position are you looking to fill?",
+        "Hi! I'm Diana, your HR Assistant. Tell me about the role you need.",
+        "Hello! I'm Diana, your HR Assistant. What hiring need can I help with?",
+        "Hi! I'm Diana, your HR Assistant. What kind of role are you looking to fill?",
+        "I'm Diana, your HR Assistant. What would you like to create today?",
+        "Hello, I'm Diana, your HR Assistant. How can I help you hire?",
+        "Hi! I'm Diana, your HR Assistant. Ready when you are — what are we hiring for?"
     ];
     var GREETING_TEXT = GREETING_TEXTS[Math.floor(Math.random() * GREETING_TEXTS.length)];
 

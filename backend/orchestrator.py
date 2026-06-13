@@ -109,6 +109,30 @@ def _evidence_block(ev: dict, limit: int = 6) -> str:
     return _CITATION_RULES + "\n" + "\n".join(parts)
 
 
+def _grounding_prose(ev: dict) -> str:
+    """Lean, prose-only grounding for the JUDGE — source passages + entity
+    descriptions, without the citation tags/preamble or the terse entity/edge
+    triple-lists that bloat the LLM-facing evidence block. A focused context the
+    small judge model can actually verify claims against."""
+    parts: list[str] = []
+    for c in (ev.get("chunks") or [])[:6]:
+        t = (c.get("text") or "").strip()
+        if t:
+            parts.append(f"[{c.get('source_path') or 'source'}] {t}")
+    for x in (ev.get("excerpts") or [])[:8]:
+        t = (x.get("text") or x.get("snippet") or "").strip()
+        if t:
+            parts.append(f"[excerpt] {t}")
+    descs = []
+    for e in (ev.get("entities") or [])[:25]:
+        d = ((e.get("properties") or {}).get("description") or "").strip()
+        if d:
+            descs.append(f"- {e.get('label') or e.get('id')}: {d}")
+    if descs:
+        parts.append("Key concepts:\n" + "\n".join(descs))
+    return "\n\n".join(parts)
+
+
 def _sources_footer(ev: dict) -> str:
     srcs = ev.get("sources") or []
     return ("\n\n_Sources: " + ", ".join(sorted(set(srcs))) + "_") if srcs else ""
@@ -134,12 +158,19 @@ SECTIONS = [
         "key": "offer", "title": "Job Offer",
         "query": "{need} role responsibilities required skills",
         "instruction": (
-            "Refine the DRAFT below into a polished, professional **Job Offer**. "
-            "Keep these subsections: a one-paragraph Summary, Required Skills "
-            "(bulleted), Responsibilities (bulleted), and a short 'What we offer' "
-            "note. Fix any factual oddities from the draft, align it to the "
-            "evidence, and keep it concise. Output Markdown, starting at level-3 "
-            "headings (###). Do not repeat the section title."),
+            "The DRAFT below is the authoritative Job Offer from a specialist "
+            "offer model — use it as your basis. Reproduce its content "
+            "faithfully: keep its Summary, its Required Skills and "
+            "Responsibilities (including the specific tools, frameworks and "
+            "technologies it names) and its overall shape, even where the company "
+            "evidence does not mention them. Use the company evidence in a "
+            "supporting role only — to correct a clear factual error in the draft "
+            "and to add any genuinely missing, relevant detail. Present the result "
+            "as a polished, professional **Job Offer** with these subsections: a "
+            "one-paragraph Summary, Required Skills (bulleted), Responsibilities "
+            "(bulleted), and a short 'What we offer' note. Output Markdown "
+            "starting at level-3 headings (###); do not repeat the section "
+            "title."),
     },
     {
         "key": "interview", "title": "Technical Interviews",
@@ -382,14 +413,17 @@ async def run_chat(message: str, history: list[dict],
                       f"write your 2-3 sentence confirmation."}],
                     max_tokens=INTRO_MAX, temperature=0.5):
                 intro_parts.append(delta)
-                yield _sse({"delta": delta})
         except Exception:
-            yield _sse({"delta": f"Building the {role} documents.\n"})
-        # Diana's reasoning (the Thinking panel) + visible confirmation, kept for
-        # the judge so it scores the whole turn, not just the chat summary.
+            pass
+        # Surface ONLY Diana's reasoning (the Thinking panel). The intro's visible
+        # reply is intentionally NOT streamed: (a) it duplicated the spoken voice
+        # line, and (b) the model sometimes drafted the whole deliverable into it,
+        # leaking a second, different job offer into the chat. The spoken voice +
+        # progress lines + closing note are the user-facing message.
         intro_raw = "".join(intro_parts)
         intro_thinking = _extract_think(intro_raw)
-        intro_visible = _strip_blocks(intro_raw)
+        if intro_thinking:
+            yield _sse({"delta": f"<think>{intro_thinking}</think>"})
 
         # Brief spoken summary — the avatar speaks the <voice> only, not the
         # whole answer (cv pattern). Stripped from the visible text by cv-chat.
@@ -406,12 +440,14 @@ async def run_chat(message: str, history: list[dict],
 
         # 3) Generate requested deliverables ---------------------------------
         total_chunks = 0
+        total_excerpts = 0   # graph chunk-excerpts are citable passages too (cv parity)
         cited: list[dict] = []
         cited_excerpts: list[dict] = []
         agg_entities: dict[str, dict] = {}
         agg_edges: dict[tuple, dict] = {}
         evidence_all: list[str] = []
         doc_bodies: list[str] = []   # what Diana wrote to the workspace (for the judge)
+        ma2_draft = ""               # the specialist MA2 offer (ground truth for the judge)
         for i, sec in enumerate(secs, start=1):
             # Create this deliverable's tab now (opens + focuses in the UI).
             buf = buffers.create(name=sec["title"],
@@ -422,6 +458,7 @@ async def run_chat(message: str, history: list[dict],
             ev = await services.graph_and_vector_search(
                 client, query, domains, top_k=6)
             total_chunks += len(ev.get("chunks") or [])
+            total_excerpts += len(ev.get("excerpts") or [])
             evidence = _evidence_block(ev)
 
             for c in (ev.get("chunks") or []):
@@ -437,8 +474,9 @@ async def run_chat(message: str, history: list[dict],
                 k = (ed.get("source"), ed.get("type"), ed.get("target"))
                 if all(k):
                     agg_edges.setdefault(k, ed)
-            if evidence:
-                evidence_all.append(evidence)
+            prose = _grounding_prose(ev)   # lean grounding stored for the judge
+            if prose:
+                evidence_all.append(prose)
 
             is_offer = sec["key"] == "offer"
 
@@ -452,6 +490,8 @@ async def run_chat(message: str, history: list[dict],
                         max_tokens=DPO_MAX, temperature=0.3, timeout=120)
                 except Exception:
                     draft = ""
+            if is_offer and draft:
+                ma2_draft = draft   # ground truth the judge scores Gemma's offer against
             # When both MA2 and gemma are selected, keep the raw MA2 draft in its
             # own buffer so the Job Offer tab can toggle between the two versions.
             if is_offer and offer_both and draft:
@@ -467,7 +507,9 @@ async def run_chat(message: str, history: list[dict],
                 user_parts = [f"Hiring need: {need}", f"Role: {role}"]
                 if draft:
                     user_parts.append(
-                        "DRAFT (from the offer model, refine this):\n" + draft)
+                        "AUTHORITATIVE DRAFT — the specialist offer model's Job "
+                        "Offer; this is your basis to reproduce and refine:\n"
+                        + draft)
                 if include_evidence:
                     user_parts.append("Company evidence:\n" + evidence)
                 user_parts.append(sec["instruction"])
@@ -492,27 +534,40 @@ async def run_chat(message: str, history: list[dict],
         # 4) Closing chat note (grounding + gaps + nudge) + turn cache --------
         turn_id = hashlib.sha1((need + str(total_chunks)).encode()).hexdigest()[:12]
         remaining = [s["title"] for s in SECTIONS if s["key"] not in set(requested)]
-        note = await _closing_note(client, role, need, names, domain,
-                                   remaining, cited_excerpts or cited)
+        note = _closing_note(role, names, domain, remaining)
         yield _sse({"delta": "\n\n" + note})
 
         cache.put_turn(turn_id, question=need,
                        evidence="\n\n".join(evidence_all),
                        thinking=intro_thinking,
                        documents="\n\n---\n\n".join(doc_bodies),
-                       answer=(intro_visible + "\n\n" + note).strip(),
+                       ma2_offer=ma2_draft,
+                       answer=note,
                        entities=list(agg_entities.values()),
                        edges=list(agg_edges.values()),
                        domains=domains)
+
+        # Citations live in the DOCUMENT, not the chat — so the widget's
+        # bubble-scan would report 0. Report what Diana actually cited in the
+        # documents (deduped by tag) so the Score card reflects reality.
+        _docs = "\n".join(doc_bodies)
+        cited_chunks = len(set(re.findall(r"\[markdown_chunk:([0-9a-f]+)\]", _docs)))
+        cited_entities = len(set(re.findall(r"\[E:([^\]]+)\]", _docs)))
+        cited_edges = len(set(re.findall(r"\[R:([^\]]+)\]", _docs)))
 
         yield _sse({"meta": {"turn_id": turn_id,
                              "buffers": [b.buffer_id for b in section_bufs.values()],
                              "deliverables": [s["title"] for s in secs],
                              "offer_ma2": bool(offer_both),
                              "role": role, "domain": domain,
-                             "retrieved_chunks": total_chunks,
+                             # citable chunk pool = dense vector chunks + graph
+                             # excerpts (both carry [markdown_chunk] tags), cv-style.
+                             "retrieved_chunks": total_chunks + total_excerpts,
                              "retrieved_entities": len(agg_entities),
                              "retrieved_edges": len(agg_edges),
+                             "cited_chunks": cited_chunks,
+                             "cited_entities": cited_entities,
+                             "cited_edges": cited_edges,
                              "avg_similarity": 0.0}})
         yield "data: [DONE]\n\n"
 
@@ -529,52 +584,18 @@ def _humanize_list(items: list[str]) -> str:
     return ", ".join(items[:-1]) + f", or {items[-1]}"
 
 
-async def _closing_note(client: httpx.AsyncClient, role: str, need: str,
-                        deliverables: str, domain: str, remaining: list[str],
-                        chunks: list[dict]) -> str:
+def _closing_note(role: str, deliverables: str, domain: str,
+                  remaining: list[str]) -> str:
     """Diana's brief chat note AFTER the document(s) are written. It deliberately
-    does NOT recap the document content (that lives in the mid pane). Instead:
-    (1) confirm what landed in the workspace, (2) flag — grounded in the
-    evidence — where the KB was thin so the user knows what to double-check, and
-    (3) nudge the next deliverable. The genuinely useful, non-redundant part is
-    the coverage/gap note."""
+    does NOT recap the document content (that lives in the mid pane) and makes NO
+    evidence claims (so it cannot hallucinate): it confirms what landed in the
+    workspace and nudges the next deliverable. The substance — and its grounded,
+    clickable citations — lives in the document itself."""
     are = "are" if "," in deliverables else "is"
     lead = (f"Done — the **{deliverables}** for a {role} {are} in your workspace"
             + (f", grounded in `{domain}`" if domain else "") + ".")
-
-    # (2) Grounded coverage/gap note — the only LLM-generated part, so the gap is
-    # real (from the evidence) and not invented.
-    labeled: list[str] = []
-    for c in chunks:
-        txt = (c.get("text") or c.get("snippet") or "").strip()
-        if txt:
-            labeled.append(f"(source: {c.get('source_path')})\n{txt[:400]}")
-        if len(labeled) >= 6:
-            break
-    gap = ""
-    if labeled:
-        try:
-            gap = await services.llm_complete(
-                client, services.GEMMA_MODEL,
-                [{"role": "system", "content":
-                  "You write ONE short sentence for an HR user about EVIDENCE "
-                  "COVERAGE — what the company knowledge base did NOT cover well "
-                  "for this hiring work, so the user knows what to double-check "
-                  "in the document. Base it ONLY on the evidence provided; if "
-                  "coverage looks complete, say so briefly. Do NOT recap the "
-                  "document. Plain prose, exactly one sentence, no preamble."},
-                 {"role": "user", "content":
-                  f"Hiring work: {deliverables} for a {role}.\n"
-                  f"Request: {need}\n\nEvidence:\n\n" + "\n\n".join(labeled)}],
-                max_tokens=SUMMARY_MAX, temperature=0.3, timeout=120, think=False)
-            gap = (gap or "").strip()
-        except Exception:
-            gap = ""
-
-    # (3) Next-step nudge — accurate, built from deliverables NOT generated.
     nudge = ""
     human = _humanize_list([r.lower() for r in remaining])
     if human:
         nudge = f"Want me to prepare the {human} next?"
-
-    return " ".join(p for p in (lead, gap, nudge) if p)
+    return " ".join(p for p in (lead, nudge) if p)

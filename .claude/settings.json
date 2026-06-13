@@ -8,7 +8,12 @@
       "Bash(find /home/logus/env/assets/agent_server -name \"docker-compose*.yml\" 2>/dev/null)",
       "Read(//home/logus/env/assets/agent_server/**)",
       "Bash(curl -s -X POST http://localhost:4920/api/score_answer -H 'Content-Type: application/json' -d '{\"turn_id\":\"__TRACKED_VAR__\"}' --max-time 120)",
-      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\"}' --max-time 280)"
+      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\"}' --max-time 280)",
+      "Bash(node --check /tmp/j2c_app.js)",
+      "Bash(exit 1)",
+      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\"}' --max-time 200)",
+      "Bash(node --check frontend/widget/cv-chat.js)",
+      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\",\"config\":{\"offer_sources\":[\"ma2\",\"gemma\",\"rag\"]}}' --max-time 220)"
     ]
   }
 }
