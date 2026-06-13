@@ -15,12 +15,19 @@ services:
       NOTED_RAG_URL: "http://kb-service:8080/rag"
       NOTED_GRAPH_URL: "http://kb-service:8080/graph"
       NOTED_TOOLS_URL: "http://noted-tools:7702"
+      # Shared MCP tool/skill host (Skills/Tools admin UI). The backend holds the
+      # admin token so the browser never sees it. Keep token in sync with mcp/.env.
+      MCP_SERVICE_URL: "http://mcp-service:8080"
+      MCP_ADMIN_TOKEN: "${MCP_ADMIN_TOKEN:-mcp-admin-7f3c9a2e5b14d806}"
+      MCP_APP: "job2cool"
       JOB2COOL_GEMMA_MODEL: "gemma-4"
       JOB2COOL_DPO_MODEL: "ma2-360m-dpo-b01"
       JOB2COOL_DOMAINS: "jobs_onboard_devops,ai_and_jobs,prod_mng,sw_arch"
     volumes:
       # Live-mount the frontend so the shell can be iterated without rebuilds.
       - ./frontend:/app/frontend:ro
+      # Persistent per-user chat threads (survive container restarts).
+      - ./data:/app/data
     restart: unless-stopped
     networks:
       - noted-network

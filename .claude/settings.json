@@ -14,11 +14,20 @@
       "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\"}' --max-time 200)",
       "Bash(node --check frontend/widget/cv-chat.js)",
       "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\",\"config\":{\"offer_sources\":[\"ma2\",\"gemma\",\"rag\"]}}' --max-time 220)",
-      "Bash(grep -oE \"api\\\\\\('[^']+'|api\\\\\\(\\\\`[^\\\\`]+|/api/[a-z_/{}.\\\\$-]+\" /home/logus/env/assets/job2cool/frontend/js2c/kb.js)"
+      "Bash(grep -oE \"api\\\\\\('[^']+'|api\\\\\\(\\\\`[^\\\\`]+|/api/[a-z_/{}.\\\\$-]+\" /home/logus/env/assets/job2cool/frontend/js2c/kb.js)",
+      "Bash(node --check /home/logus/env/assets/job2cool/frontend/js2c/mcp.js)",
+      "Bash(node --check /home/logus/env/assets/job2cool/frontend/js2c/kb.js)",
+      "Bash(curl -s \"http://localhost:4920/api/graph/research/jobs_onboard_devops/corpus\")",
+      "Bash(curl -s -o /dev/null -w 'GET status=%{http_code} type=%{content_type} size=%{size_download}\\\\n' -r 0-1024 http://localhost:4920/api/documents/files/jobs_onboard_devops/dell_beginner_devops_handbook.pdf)",
+      "Bash(node --check frontend/js2c/chats.js)",
+      "Bash(curl -s -XPUT http://localhost:4920/api/job2cool/chats/t_demo123 -H 'X-Forwarded-Email: tester@example.com' -H 'content-type: application/json' -d '{\"title\":\"DevOps offer\",\"messages\":[{\"role\":\"user\",\"content\":\"Write a DevOps offer\"},{\"role\":\"assistant\",\"content\":\"Here is the offer.\"}]}')",
+      "Bash(curl -s http://localhost:4920/api/job2cool/chats -H 'X-Forwarded-Email: tester@example.com')"
     ],
     "additionalDirectories": [
       "/home/logus/env/assets/kb",
-      "/home/logus/env/assets/proxy_server"
+      "/home/logus/env/assets/proxy_server",
+      "/home/logus/env/assets/mcp/app",
+      "/home/logus/env/assets/mcp"
     ]
   }
 }

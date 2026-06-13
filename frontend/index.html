@@ -9,8 +9,8 @@
 <link rel="stylesheet" href="static/widget/cv-chat.css">
 <style>
   :root{ --bg:#f6f7fb; --panel:#fff; --ink:#1e2330; --muted:#6b7280;
-    --primary:#ffe19b; --primary-d:#8a6a12; --primary-soft:#ffe19b;
-    --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); }
+    --primary:#ffe19b; --primary-d:#101010; --primary-soft:#ffe19b;
+    --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); --topbar-h:58px; }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
   body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);
@@ -35,15 +35,20 @@
   .navitem .soon{margin-left:auto;font-size:9.5px;font-weight:700;color:#b9920f;background:#fff7df;
                  border:1px solid #f0e2b0;border-radius:6px;padding:0 4px}
   .navspace{flex:1}
-  .sidenav .profile{display:flex;align-items:center;gap:.55rem;padding:.55rem .5rem;border-top:1px solid var(--line);margin-top:.4rem}
-  .sidenav .profile .av{width:32px;height:32px;border-radius:50%;flex:none;
-                        background:linear-gradient(135deg,var(--primary),#e9c45f);
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:12px;font-weight:700;color:#5a4500}
-  .sidenav .profile .who{min-width:0}
-  .sidenav .profile .who b{display:block;font-size:13px;line-height:1.2}
-  .sidenav .profile .who span{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+  /* ---- global top bar (over the content area, right of the sidenav) ---- */
+  .topbar{position:fixed;top:0;left:236px;right:0;height:var(--topbar-h);background:var(--panel);
+          border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 1.3rem;z-index:30}
+  .topbar .sp{flex:1}
+  .profile{display:flex;align-items:center;gap:.6rem}
+  .profile .av{width:34px;height:34px;border-radius:50%;flex:none;
+               background:linear-gradient(135deg,var(--primary),#e9c45f);background-size:cover;background-position:center;
+               display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#5a4500}
+  .profile .who{min-width:0;text-align:right}
+  .profile .who b{display:block;font-size:13px;line-height:1.15}
+  .profile .who span{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;padding-top:var(--topbar-h)}
+  /* Dock the Assistant panel below the top bar (was top:0). */
+  body .cvchat-panel{top:var(--topbar-h)}
   header{display:flex;align-items:center;gap:.7rem;padding:.5rem 1.3rem;min-height:72px;background:var(--panel);
          border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
   .logo{height:56px;width:auto;display:block;border-radius:6px}
@@ -137,6 +142,8 @@
   .kb-doctable th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:.45rem .5rem;border-bottom:1px solid var(--line)}
   .kb-doctable td{padding:.5rem .5rem;border-bottom:1px solid #f1f2f6;vertical-align:top}
   .kb-doctable td.nm b{font-size:13px}
+  .kb-doctable td.nm a{color:inherit;text-decoration:none}
+  .kb-doctable td.nm a:hover{text-decoration:underline;cursor:pointer}
   .kb-doctable td.nm span{display:block;font-size:10.5px;color:var(--muted);font-family:ui-monospace,monospace}
   .kb-doctable td.act{white-space:nowrap;display:flex;gap:.25rem}
   .kb-doctable input[type=checkbox]{accent-color:var(--primary);width:15px;height:15px}
@@ -286,20 +293,19 @@
   <div class="brand"><img src="static/images/job2cool_logo_small.png" alt=""/><b>job2cool</b></div>
   <button class="newreq" id="newReq">＋ New Request</button>
   <div class="navlist" id="navlist">
-    <a class="navitem" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Home<span class="soon">soon</span></a>
-    <a class="navitem" data-nav="assistant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg>AI Assistant</a>
     <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>My Workspace</a>
-    <a class="navitem" data-nav="templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Templates<span class="soon">soon</span></a>
-    <a class="navitem" data-nav="documents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Documents<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg>Chats</a>
+    <a class="navitem" data-nav="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Agents</a>
     <a class="navitem" data-nav="kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>Knowledge Base</a>
-    <a class="navitem" data-nav="candidates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.2a3.2 3.2 0 0 1 0 6M20.5 20a5 5 0 0 0-3.5-4.8"/></svg>Candidates<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 8h6M8 12h8M8 16h5"/></svg>Skills</a>
+    <a class="navitem" data-nav="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8 7.2 20l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.7 2.7-2.3-2.3z"/></svg>Tools</a>
     <a class="navitem" data-nav="company"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>Company Profile<span class="soon">soon</span></a>
-    <a class="navitem" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</a>
   </div>
   <div class="navspace"></div>
   <a class="navitem" data-nav="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></svg>Help &amp; Support<span class="soon">soon</span></a>
-  <div class="profile"><div class="av" id="meAv"></div><div class="who"><b id="meName">HR Manager</b><span id="meEmail">Signing in…</span></div></div>
+  <a class="navitem" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</a>
 </nav>
+<div class="topbar"><div class="sp"></div><div class="profile"><div class="who"><b id="meName">HR Manager</b><span id="meEmail">Signing in…</span></div><div class="av" id="meAv"></div></div></div>
 <div class="main">
   <div id="view-workspace" class="viewpane">
     <div class="wsbar">
@@ -325,6 +331,19 @@
 
   <!-- Knowledge Base view (consolidated Domain Manager + Monitor) -->
   <div id="view-kb" class="viewpane" hidden></div>
+
+  <!-- Skills + Tools views (MCP tool/skill host admin) -->
+  <div id="view-skills" class="viewpane" hidden></div>
+  <div id="view-tools" class="viewpane" hidden></div>
+
+  <!-- Chats view (list of the user's stored conversations) -->
+  <div id="view-chats" class="viewpane" hidden></div>
+
+  <!-- Agents view (agent_server presets job2cool uses + their templates) -->
+  <div id="view-agents" class="viewpane" hidden>
+    <div class="kb-head"><b>Agents</b><span class="kb-sub">agent_server presets &amp; templates</span></div>
+    <div class="kb-empty" style="padding:2rem">Agent management is being set up.</div>
+  </div>
 
   <!-- Settings view (native, not a modal) -->
   <div id="view-settings" class="viewpane" hidden>
@@ -556,20 +575,23 @@ function openAssistant(){
 }
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
 function showView(name){
-  ['workspace','kb','settings'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
+  ['workspace','kb','settings','skills','tools','agents','chats'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
   document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===name));
   if(name==='settings')syncSettingsView();
   if(name==='kb'){window.JOB2COOL_KB_OPEN&&window.JOB2COOL_KB_OPEN();}
   else{window.JOB2COOL_KB_CLOSE&&window.JOB2COOL_KB_CLOSE();}
+  if(name==='skills'||name==='tools'){window.JOB2COOL_MCP_OPEN&&window.JOB2COOL_MCP_OPEN(name);}
+  if(name==='agents'){window.JOB2COOL_AGENTS_OPEN&&window.JOB2COOL_AGENTS_OPEN();}
+  if(name==='chats'){window.JOB2COOL_CHATS_OPEN&&window.JOB2COOL_CHATS_OPEN();}
 }
 // left-nav wiring: views switch the main pane; Assistant toggles the chat overlay; rest are placeholders.
 document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',e=>{
   e.preventDefault();const k=n.dataset.nav;
   if(k==='assistant')return openAssistant();
-  if(k==='workspace'||k==='kb'||k==='settings')return showView(k);
+  if(k==='workspace'||k==='kb'||k==='settings'||k==='skills'||k==='tools'||k==='agents'||k==='chats')return showView(k);
   toast(n.textContent.replace('soon','').trim()+' — coming soon');
 }));
-$('#newReq').onclick=()=>{showView('workspace');if(window.JOB2COOL_NEW_TURN)window.JOB2COOL_NEW_TURN();openAssistant();};
+$('#newReq').onclick=()=>{showView('workspace');if(window.JOB2COOL_NEW_TURN)window.JOB2COOL_NEW_TURN();if(window.JOB2COOL_CHAT_NEW)window.JOB2COOL_CHAT_NEW();openAssistant();};
 $('#exportAllBtn').onclick=exportAll;
 $('#shareBtn').onclick=shareAll;
 
@@ -603,6 +625,8 @@ render();
 <script src="static/js2c/pdfcite.js"></script>
 <!-- Knowledge Base view (Domain Manager + Monitor) -->
 <script src="static/js2c/kb.js"></script>
+<script src="static/js2c/mcp.js"></script>
+<script src="static/js2c/chats.js"></script>
 <!-- cv-chat Assistant (chat + STT/TTS/avatar + Thinking/Graph/Score/citations) -->
 <script src="static/widget/vendor/onnxruntime-web/ort.wasm.min.js"></script>
 <script src="static/widget/vendor/vad/bundle.min.js"></script>

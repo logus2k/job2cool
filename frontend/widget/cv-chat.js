@@ -2666,6 +2666,8 @@
             renderParserBubble(bubble, parser, body, numbering, null, scoreData);
             state.history.push({ role: 'user', content: userText });
             state.history.push({ role: 'assistant', content: body });
+            // Auto-persist the thread each turn (Chats history; page-side store).
+            try { if (window.JOB2COOL_TURN_SAVED) window.JOB2COOL_TURN_SAVED(state.history.slice()); } catch (e) {}
             // Speak ONLY the <voice> line — never the written answer. job2cool
             // puts the deliverable in the document and a short closing note in
             // the chat; reading that note (or any body text) aloud is exactly
@@ -4241,6 +4243,32 @@
         // next launcher click triggers the auto-enable-avatar path again.
         if (state.avatarOn || state.ttsOn) setMode('silent');
     }
+
+    // ── Chats persistence hooks (used by js2c/chats.js) ──
+    // Clear the conversation and start fresh (greeting will show on open).
+    window.JOB2COOL_CHAT_RESET = function () {
+        state.history = [];
+        state.scoreHistory = [];
+        if (messagesEl) messagesEl.innerHTML = '';
+        state.greeted = false;
+    };
+    // Reload a stored thread's full conversation into the panel and open it.
+    window.JOB2COOL_CHAT_LOAD = function (messages) {
+        state.history = [];
+        state.scoreHistory = [];
+        if (messagesEl) messagesEl.innerHTML = '';
+        state.greeted = true;   // don't inject a greeting over a loaded thread
+        (messages || []).forEach(function (m) {
+            var content = m && m.content || '';
+            if (m && m.role === 'user') {
+                addMessage('user', escapeHtml(content).replace(/\n/g, '<br>'));
+            } else {
+                addMessage('assistant', renderMarkdown(content));
+            }
+            state.history.push({ role: m ? m.role : 'assistant', content: content });
+        });
+        openPanel();
+    };
 
     function mount() {
         if (document.querySelector('.cvchat-root')) return;

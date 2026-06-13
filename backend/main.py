@@ -79,6 +79,11 @@ NOTED_RAG     = os.getenv("NOTED_RAG_URL",     "http://noted-rag:8200")
 NOTED_GRAPH   = os.getenv("NOTED_GRAPH_URL",   "http://noted-graph:5523")
 NOTED_TOOLS   = os.getenv("NOTED_TOOLS_URL",   "http://noted-tools:7702")
 NOTED_BACKEND = os.getenv("NOTED_BACKEND_URL", "http://noted:8123")
+# Shared MCP tool/skill host. The frontend Skills/Tools admin UI talks to it
+# through this backend (which holds the admin token so the browser never does).
+MCP_SERVICE     = os.getenv("MCP_SERVICE_URL", "http://mcp-service:8080").rstrip("/")
+MCP_ADMIN_TOKEN = os.getenv("MCP_ADMIN_TOKEN", "")
+MCP_APP         = os.getenv("MCP_APP", "job2cool")
 
 # Models (both co-resident on agent_server, selected per request by `model`).
 GEMMA_MODEL = os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4")
@@ -161,7 +166,10 @@ async def _google_userinfo(access_token: str) -> dict:
             r = await client.get(_GOOGLE_USERINFO_URL,
                                   headers={"Authorization": f"Bearer {access_token}"})
         info = r.json() if r.status_code == 200 else {}
-    except Exception:  # noqa: BLE001
+        if r.status_code != 200:
+            print(f"[me-debug] userinfo HTTP {r.status_code}: {r.text[:120]}", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"[me-debug] userinfo error: {type(e).__name__}: {e}", flush=True)
         info = {}
     if info:
         if len(_userinfo_cache) > 256:
@@ -185,6 +193,8 @@ async def me(request: Request):
     access_token = (request.headers.get("X-Access-Token") or "").strip()
 
     info = await _google_userinfo(access_token)
+    print(f"[me-debug] X-Access-Token len={len(access_token)} "
+          f"userinfo_keys={sorted(info.keys())} name={info.get('name')!r}", flush=True)
     name = (info.get("name") or "").strip() or pref
     picture = (info.get("picture") or "").strip() or None
     email = email or (info.get("email") or "").strip()
@@ -196,6 +206,113 @@ async def me(request: Request):
         "picture": picture,
         "authenticated": bool(email),
     }, headers={"Cache-Control": "no-store"})
+
+
+# --- chat history persistence (per-user, on-disk; survives restarts) ---------
+# Option A: job2cool owns chat threads, keyed by the authenticated email, stored
+# on a mounted volume. Threads auto-save each turn from the widget; the Chats
+# view lists them; selecting one reloads the whole conversation.
+JOB2COOL_DATA_DIR = os.getenv("JOB2COOL_DATA_DIR", "/app/data")
+_CHATS_DIR = os.path.join(JOB2COOL_DATA_DIR, "chats")
+_TID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _chat_user_dir(request: Request) -> str:
+    email = (request.headers.get("X-Forwarded-Email") or "").strip().lower()
+    key = re.sub(r"[^a-z0-9._-]", "_", email) if email else "anon"
+    d = os.path.join(_CHATS_DIR, key)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+class ChatThreadIn(BaseModel):
+    title: str = ""
+    messages: list = []
+
+
+@app.get("/api/job2cool/chats")
+async def chats_list(request: Request):
+    d = _chat_user_dir(request)
+    out = []
+    for fn in os.listdir(d):
+        if not fn.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(d, fn)) as f:
+                t = json.load(f)
+            out.append({"thread_id": t.get("thread_id") or fn[:-5],
+                        "title": t.get("title") or "Untitled",
+                        "updated_at": t.get("updated_at") or 0,
+                        "message_count": len(t.get("messages") or [])})
+        except Exception:  # noqa: BLE001
+            continue
+    out.sort(key=lambda x: x["updated_at"], reverse=True)
+    return JSONResponse({"chats": out})
+
+
+@app.get("/api/job2cool/chats/{tid}")
+async def chats_get(tid: str, request: Request):
+    if not _TID_RE.match(tid):
+        return JSONResponse({"error": "bad id"}, status_code=400)
+    p = os.path.join(_chat_user_dir(request), tid + ".json")
+    if not os.path.isfile(p):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    with open(p) as f:
+        return JSONResponse(json.load(f))
+
+
+@app.put("/api/job2cool/chats/{tid}")
+async def chats_put(tid: str, body: ChatThreadIn, request: Request):
+    if not _TID_RE.match(tid):
+        return JSONResponse({"error": "bad id"}, status_code=400)
+    p = os.path.join(_chat_user_dir(request), tid + ".json")
+    now = time.time()
+    created = now
+    if os.path.isfile(p):
+        try:
+            with open(p) as f:
+                created = json.load(f).get("created_at") or now
+        except Exception:  # noqa: BLE001
+            pass
+    rec = {"thread_id": tid, "title": (body.title or "Untitled")[:120],
+           "created_at": created, "updated_at": now, "messages": body.messages}
+    tmp = p + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(rec, f, ensure_ascii=False)
+    os.replace(tmp, p)
+    return JSONResponse({"ok": True, "thread_id": tid, "updated_at": now})
+
+
+class ChatRenameIn(BaseModel):
+    title: str = ""
+
+
+@app.patch("/api/job2cool/chats/{tid}")
+async def chats_rename(tid: str, body: ChatRenameIn, request: Request):
+    if not _TID_RE.match(tid):
+        return JSONResponse({"error": "bad id"}, status_code=400)
+    p = os.path.join(_chat_user_dir(request), tid + ".json")
+    if not os.path.isfile(p):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    with open(p) as f:
+        rec = json.load(f)
+    rec["title"] = (body.title or "Untitled")[:120]
+    tmp = p + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(rec, f, ensure_ascii=False)
+    os.replace(tmp, p)
+    return JSONResponse({"ok": True, "title": rec["title"]})
+
+
+@app.delete("/api/job2cool/chats/{tid}")
+async def chats_delete(tid: str, request: Request):
+    if not _TID_RE.match(tid):
+        return JSONResponse({"error": "bad id"}, status_code=400)
+    p = os.path.join(_chat_user_dir(request), tid + ".json")
+    if os.path.isfile(p):
+        os.remove(p)
+        return JSONResponse({"deleted": True})
+    return JSONResponse({"deleted": False}, status_code=404)
 
 
 # --- Assistant (cv contract) + live-document buffers (owned by job2cool) ------
@@ -359,6 +476,38 @@ _proxy_client = httpx.AsyncClient(timeout=httpx.Timeout(60.0, read=None))
 _HOP_BY_HOP = {"host", "content-length", "connection", "keep-alive",
                "transfer-encoding", "te", "trailer", "upgrade",
                "proxy-authorization", "proxy-authenticate"}
+
+
+# --- MCP tool/skill host proxy (declared BEFORE the /api/* catch-all) --------
+@app.api_route("/api/mcp/{path:path}",
+               methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+async def proxy_mcp(path: str, request: Request):
+    """Forward Skills/Tools admin calls to mcp-service. This backend holds the
+    admin bearer token (writes) so the browser never sees it, and pins the app
+    scope to job2cool by default."""
+    params = dict(request.query_params)
+    params.setdefault("app", MCP_APP)
+    headers = {k: v for k, v in request.headers.items()
+               if k.lower() not in _HOP_BY_HOP and k.lower() != "authorization"}
+    if MCP_ADMIN_TOKEN:
+        headers["Authorization"] = f"Bearer {MCP_ADMIN_TOKEN}"
+    body = await request.body()
+    req = _proxy_client.build_request(
+        request.method, f"{MCP_SERVICE}/{path}", params=params,
+        headers=headers, content=body, timeout=httpx.Timeout(95.0, read=95.0))
+    upstream = await _proxy_client.send(req, stream=True)
+    resp_headers = {k: v for k, v in upstream.headers.items()
+                    if k.lower() not in _HOP_BY_HOP}
+
+    async def _body():
+        try:
+            async for chunk in upstream.aiter_raw():
+                yield chunk
+        finally:
+            await upstream.aclose()
+
+    return StreamingResponse(_body(), status_code=upstream.status_code,
+                             headers=resp_headers)
 
 
 @app.api_route("/api/{path:path}",

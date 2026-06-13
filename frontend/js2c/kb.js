@@ -122,7 +122,7 @@
       <div class="kb-dhead"><b>${esc(d.name || sel)}</b><span class="kb-dom-id">${esc(sel)}</span></div>
       <div class="kb-tabs">
         <button data-t="documents" class="${tab === 'documents' ? 'on' : ''}">Documents</button>
-        <button data-t="knowledge" class="${tab === 'knowledge' ? 'on' : ''}">Knowledge</button>
+        <button data-t="knowledge" class="${tab === 'knowledge' ? 'on' : ''}">Database</button>
         <button data-t="settings" class="${tab === 'settings' ? 'on' : ''}">Settings</button>
       </div>
       <div class="kb-tabbody" id="kb-tabbody"></div>`;
@@ -233,7 +233,7 @@
     const rows = shown.map(d => `
       <tr>
         <td><input type="checkbox" data-p="${esc(d.path)}" ${docSel.has(d.path) ? 'checked' : ''}></td>
-        <td class="nm"><b>${esc(d.display_name || d.basename || (d.path || '').split('/').pop())}</b><span>${esc(d.path)}</span></td>
+        <td class="nm">${(() => { const nm = esc(d.display_name || d.basename || (d.path || '').split('/').pop()); if (d.exists === false) return `<b>${nm}</b>`; const url = api('documents/files/' + enc(sel) + '/' + (d.path || '').split('/').map(enc).join('/')); return `<a href="${url}" target="_blank" rel="noopener" title="Open in new tab"><b>${nm}</b></a>`; })()}<span>${esc(d.path)}</span></td>
         <td>${esc(d.category || '')}</td>
         <td><span class="kb-chip">${esc((d.mode || '').replace('_', ' & '))}</span></td>
         <td>${fmtDate(d.added_at)}${d.exists === false ? ' <span class="kb-phase err">missing</span>' : ''}</td>
