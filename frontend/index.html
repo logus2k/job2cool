@@ -52,9 +52,9 @@
   .pill.ai{background:var(--primary-soft);color:var(--primary-d)}
   .pill.done{background:#e7f6ee;color:var(--ok)}
   .hbtn{border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;padding:.5rem .9rem;
-        color:var(--muted);font-size:16px;display:inline-flex;align-items:center;gap:.4rem}
+        color:var(--muted);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:.4rem}
   .hbtn:hover{border-color:var(--primary);color:var(--primary-d)}
-  .hbtn.primary{background:var(--primary);border-color:var(--primary);color:var(--ink);font-weight:600;font-size:13px}
+  .hbtn.primary{background:var(--primary);border-color:var(--primary);color:var(--ink)}
   .hbtn.primary:hover{background:#ffd779}
   .hbtn:disabled{opacity:.45;cursor:not-allowed}
   .hbtn:disabled:hover{border-color:var(--line);color:var(--muted)}
@@ -70,6 +70,10 @@
   .kb-spacer{flex:1}
   .kb-body{flex:1;min-height:0;display:flex}
   .kb-list{width:330px;flex:none;border-right:1px solid var(--line);overflow:auto;padding:.6rem;background:var(--panel)}
+  .kb-newdom{display:block;width:100%;border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary-d);
+             font-weight:700;font-size:13px;padding:.6rem;border-radius:9px;cursor:pointer;margin-bottom:.5rem;
+             position:sticky;top:0;z-index:1}
+  .kb-newdom:hover{background:var(--primary)}
   .kb-dom{display:flex;align-items:center;gap:.5rem;padding:.55rem .6rem;border-radius:9px;cursor:pointer;border:1px solid transparent}
   .kb-dom:hover{background:#f5f6fa}
   .kb-dom.on{background:var(--primary-soft);border-color:#f0e2b0}

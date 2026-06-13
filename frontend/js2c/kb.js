@@ -99,10 +99,11 @@
   }
   function renderList() {
     const el = document.getElementById('kb-list'); if (!el) return;
-    el.innerHTML = DOMAINS.map(d => `
+    el.innerHTML = `<button class="kb-newdom" id="kb-new">＋ New Domain</button>` + DOMAINS.map(d => `
       <div class="kb-dom${d.domain_id === sel ? ' on' : ''}" data-id="${esc(d.domain_id)}">
         <div class="kb-dom-main"><b>${esc(d.name || d.domain_id)}</b><span class="kb-dom-id">${esc(d.domain_id)}</span></div>
         ${listChip(d.domain_id)}</div>`).join('');
+    document.getElementById('kb-new').onclick = () => newDomain();
     el.querySelectorAll('.kb-dom').forEach(n => n.onclick = () => selectDomain(n.dataset.id));
   }
   function selectDomain(id) {
@@ -184,8 +185,7 @@
           <button class="hbtn" id="kb-diag">🩺 Run Diagnostics</button>
           <span class="kb-note">Full re-extraction.</span>
         </div>
-      </div>
-      <div id="kb-diag-out"></div>`;
+      </div>`;
     const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
     on('kb-rebuild', doRebuild); on('kb-rebuild2', doRebuild); on('kb-diag', doDiagnostics);
     on('kb-resume', () => act('resume')); on('kb-abort', () => act('abort')); on('kb-recluster', () => act('recluster'));
@@ -200,16 +200,28 @@
     await act('rebuild');
   }
   async function doDiagnostics() {
-    const out = document.getElementById('kb-diag-out'); if (out) out.innerHTML = '<div class="kb-empty">Running diagnostics…</div>';
+    // Render in an OVERLAY, not inline: the 5s status poll rebuilds the Knowledge
+    // tab and would wipe an inline result while preflight (~5s) is still running.
+    const domain = sel;
+    const bg = document.createElement('div'); bg.className = 'kbdlg-bg';
+    bg.innerHTML = `<div class="kbdlg" style="width:660px;max-width:94vw">
+      <h3>Diagnostics — ${esc(domain)}</h3>
+      <div id="kb-diag-body"><div class="kb-empty">Running diagnostics…</div></div>
+      <div class="foot"><button class="hbtn" data-x>Close</button></div></div>`;
+    document.body.appendChild(bg);
+    const close = () => bg.remove();
+    bg.querySelector('[data-x]').onclick = close;
+    bg.onclick = e => { if (e.target === bg) close(); };
+    const out = bg.querySelector('#kb-diag-body');
     try {
-      const j = await (await fetch(api('domains/' + enc(sel) + '/preflight'), { method: 'POST' })).json();
+      const j = await (await fetch(api('domains/' + enc(domain) + '/preflight'), { method: 'POST' })).json();
       const rows = (j.checks || []).map(c => {
         const ic = c.status === 'ok' ? '✓' : c.status === 'warn' ? '!' : '✕';
         return `<div class="kb-chk ${esc(c.status)}"><span class="kb-chk-ic">${ic}</span><span class="kb-chk-n">${esc(c.name)}</span><span class="kb-chk-ms">${c.elapsed_ms != null ? c.elapsed_ms + 'ms' : ''}</span><span class="kb-chk-d">${esc(c.detail || '')}</span></div>`;
       }).join('');
       const cnt = st => (j.checks || []).filter(c => c.status === st).length;
-      if (out) out.innerHTML = `<div class="kb-card"><div class="kb-card-h">Diagnostics ${j.ok ? '<span class="kb-phase ok">pass</span>' : '<span class="kb-phase err">blocking error</span>'}<span class="kb-spacer"></span><span class="kb-mini">${cnt('ok')} ok · ${cnt('warn')} warn · ${cnt('error')} error</span></div>${rows}</div>`;
-    } catch (e) { if (out) out.innerHTML = '<div class="kb-empty">Diagnostics failed to run.</div>'; }
+      out.innerHTML = `<div class="kb-card-h" style="margin:.2rem 0 .7rem">${j.ok ? '<span class="kb-phase ok">pass</span>' : '<span class="kb-phase err">blocking error</span>'}<span class="kb-spacer"></span><span class="kb-mini">${cnt('ok')} ok · ${cnt('warn')} warn · ${cnt('error')} error</span></div>${rows}`;
+    } catch (e) { out.innerHTML = '<div class="kb-empty">Diagnostics failed to run.</div>'; }
   }
 
   // ---------- Documents tab (full CRUD) ----------
