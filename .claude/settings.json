@@ -16,7 +16,8 @@
       "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\",\"config\":{\"offer_sources\":[\"ma2\",\"gemma\",\"rag\"]}}' --max-time 220)"
     ],
     "additionalDirectories": [
-      "/home/logus/env/assets/kb"
+      "/home/logus/env/assets/kb",
+      "/home/logus/env/assets/proxy_server"
     ]
   }
 }

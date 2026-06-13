@@ -28,6 +28,7 @@ import asyncio
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 import httpx
@@ -132,6 +133,69 @@ async def health():
         "domains": JOB2COOL_DOMAINS,
         "dependencies": results,
     })
+
+
+# --- identity (oauth2-proxy) -------------------------------------------------
+# nginx (with oauth2-proxy --set-xauthrequest=true) forwards the authenticated
+# user's identity as X-Forwarded-* headers — same pattern as jobunter. The email
+# is the canonical key. When the headers are absent (local dev without the proxy)
+# we report "not authenticated" so the UI can fall back gracefully.
+_GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+_userinfo_cache: dict[str, tuple[float, dict]] = {}  # access_token -> (expires_at, claims)
+
+
+async def _google_userinfo(access_token: str) -> dict:
+    """Fetch Google profile claims (name, picture) for an access token.
+
+    Google omits name/picture from the ID token; they live only at the UserInfo
+    endpoint. Cached briefly per access token (the token rotates ~hourly).
+    """
+    if not access_token:
+        return {}
+    now = time.time()
+    hit = _userinfo_cache.get(access_token)
+    if hit and hit[0] > now:
+        return hit[1]
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(_GOOGLE_USERINFO_URL,
+                                  headers={"Authorization": f"Bearer {access_token}"})
+        info = r.json() if r.status_code == 200 else {}
+    except Exception:  # noqa: BLE001
+        info = {}
+    if info:
+        if len(_userinfo_cache) > 256:
+            _userinfo_cache.clear()
+        _userinfo_cache[access_token] = (now + 600, info)
+    return info
+
+
+@app.get("/api/job2cool/me")
+async def me(request: Request):
+    """Echo the authenticated identity from oauth2-proxy headers.
+
+    Email/user/preferred-username come from the X-Auth-Request-* set; the richer
+    Google profile claims (name, picture) are fetched from Google's UserInfo
+    endpoint using the access token forwarded as X-Access-Token
+    (oauth2-proxy --pass-access-token).
+    """
+    email = (request.headers.get("X-Forwarded-Email") or "").strip()
+    user = (request.headers.get("X-Forwarded-User") or "").strip()
+    pref = (request.headers.get("X-Forwarded-Preferred-Username") or "").strip() or None
+    access_token = (request.headers.get("X-Access-Token") or "").strip()
+
+    info = await _google_userinfo(access_token)
+    name = (info.get("name") or "").strip() or pref
+    picture = (info.get("picture") or "").strip() or None
+    email = email or (info.get("email") or "").strip()
+
+    return JSONResponse({
+        "email": email or None,
+        "user": user or None,
+        "display_name": name,
+        "picture": picture,
+        "authenticated": bool(email),
+    }, headers={"Cache-Control": "no-store"})
 
 
 # --- Assistant (cv contract) + live-document buffers (owned by job2cool) ------
