@@ -4360,9 +4360,6 @@
             // by toggleAvatar on first activation; works the same whether
             // the user clicked the launcher or the avatar button.
             openPanel();
-            if (!state.avatarOn && typeof io !== 'undefined') {
-                toggleAvatar();
-            }
         });
         panel.querySelector('.cvchat-close').addEventListener('click', closePanel);
 

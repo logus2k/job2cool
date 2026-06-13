@@ -166,10 +166,7 @@ async def _google_userinfo(access_token: str) -> dict:
             r = await client.get(_GOOGLE_USERINFO_URL,
                                   headers={"Authorization": f"Bearer {access_token}"})
         info = r.json() if r.status_code == 200 else {}
-        if r.status_code != 200:
-            print(f"[me-debug] userinfo HTTP {r.status_code}: {r.text[:120]}", flush=True)
-    except Exception as e:  # noqa: BLE001
-        print(f"[me-debug] userinfo error: {type(e).__name__}: {e}", flush=True)
+    except Exception:  # noqa: BLE001
         info = {}
     if info:
         if len(_userinfo_cache) > 256:
@@ -193,8 +190,6 @@ async def me(request: Request):
     access_token = (request.headers.get("X-Access-Token") or "").strip()
 
     info = await _google_userinfo(access_token)
-    print(f"[me-debug] X-Access-Token len={len(access_token)} "
-          f"userinfo_keys={sorted(info.keys())} name={info.get('name')!r}", flush=True)
     name = (info.get("name") or "").strip() or pref
     picture = (info.get("picture") or "").strip() or None
     email = email or (info.get("email") or "").strip()
