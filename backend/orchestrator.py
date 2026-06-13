@@ -403,7 +403,8 @@ async def run_chat(message: str, history: list[dict],
         try:
             async for delta in services.llm_stream(
                     client, services.GEMMA_MODEL,
-                    [{"role": "system", "content": INTRO_SYSTEM},
+                    [{"role": "system", "content": await services.get_agent_prompt(
+                        client, "job2cool_orchestrator", INTRO_SYSTEM)},
                      {"role": "user", "content":
                       f"{need}\n\n(You are generating ONLY these deliverables: "
                       f"{names}. Confirm exactly these in your reply — do not "
@@ -522,7 +523,8 @@ async def run_chat(message: str, history: list[dict],
                     "entities, [R:<...>] for relationships; never invent a tag.")
                 section_md = await services.llm_complete(
                     client, services.GEMMA_MODEL,
-                    [{"role": "system", "content": SECTION_SYSTEM},
+                    [{"role": "system", "content": await services.get_agent_prompt(
+                        client, "job2cool_composer", SECTION_SYSTEM)},
                      {"role": "user", "content": "\n\n".join(user_parts)}],
                     max_tokens=SECTION_MAX, temperature=0.4, timeout=300)
 

@@ -80,13 +80,12 @@
   function render() {
     const root = document.getElementById('view-kb'); if (!root) return;
     root.innerHTML = `
-      <div class="kb-head"><b>Knowledge Base</b>
-        <span class="kb-sub">Company hiring knowledge · ${DOMAINS.length} domains</span>
-      </div>
+      <div class="kb-head"><button class="hbtn btnnew" id="kb-new">＋ New Domain</button><span class="kb-sub">Company hiring knowledge · ${DOMAINS.length} domains</span></div>
       <div class="kb-body">
         <div class="kb-list" id="kb-list"></div>
         <div class="kb-detail" id="kb-detail"></div>
       </div>`;
+    const nb = document.getElementById('kb-new'); if (nb) nb.onclick = () => newDomain();
     renderList(); renderDetail();
   }
 
@@ -99,11 +98,10 @@
   }
   function renderList() {
     const el = document.getElementById('kb-list'); if (!el) return;
-    el.innerHTML = `<button class="kb-newdom" id="kb-new">＋ New Domain</button>` + DOMAINS.map(d => `
+    el.innerHTML = DOMAINS.map(d => `
       <div class="kb-dom${d.domain_id === sel ? ' on' : ''}" data-id="${esc(d.domain_id)}">
         <div class="kb-dom-main"><b>${esc(d.name || d.domain_id)}</b><span class="kb-dom-id">${esc(d.domain_id)}</span></div>
         ${listChip(d.domain_id)}</div>`).join('');
-    document.getElementById('kb-new').onclick = () => newDomain();
     el.querySelectorAll('.kb-dom').forEach(n => n.onclick = () => selectDomain(n.dataset.id));
   }
   function selectDomain(id) {

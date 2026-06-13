@@ -58,8 +58,7 @@
     try { tools = (await jget('tools')).tools || []; } catch (e) { root.innerHTML = `<div class="kb-head"><b>Tools</b></div><div class="kb-empty">Failed to load: ${esc(e.message)}</div>`; return; }
     try { IMPLS = (await jget('health')).impls || IMPLS; } catch (e) {}
     root.innerHTML = `
-      <div class="kb-head"><b>Tools</b><span class="kb-sub">Callable tools available to this app over MCP</span>
-        <button class="hbtn primary" id="mcp-new-tool" style="margin-left:auto">＋ New Tool</button></div>
+      <div class="kb-head"><button class="hbtn btnnew" id="mcp-new-tool">＋ New Tool</button><span class="kb-sub">Callable tools available to this app over MCP</span></div>
       <div style="display:flex;flex:1;min-height:0">
         <div id="mcp-tools-main" style="flex:1;min-width:0;overflow:auto;padding:1rem 1.3rem">
           ${tools.length ? `<table class="kb-doctable"><thead><tr><th>Name</th><th>Description</th><th>Tier</th><th>Impl</th><th>Enabled</th><th></th></tr></thead><tbody>${tools.map(t => `
@@ -76,7 +75,7 @@
               </td>
             </tr>`).join('')}</tbody></table>` : `<div class="kb-empty">No tools yet. Click ＋ New Tool to add one.</div>`}
         </div>
-        <div id="mcp-tool-side" class="pdf-col" hidden style="flex:0 0 460px;min-width:0">
+        <div id="mcp-tool-side" class="j2c-side" hidden>
           <div class="pdf-head"><span class="src" id="mcp-side-title">Test</span><button id="mcp-side-close" title="Close">✕</button></div>
           <div id="mcp-side-body" style="flex:1;overflow:auto;padding:1rem 1.1rem"></div>
         </div>
@@ -84,6 +83,7 @@
     const by = n => tools.find(t => t.name === n);
     root.querySelector('#mcp-new-tool').onclick = () => editTool(null);
     root.querySelector('#mcp-side-close').onclick = closeSide;
+    if (window.JOB2COOL_RESIZER) window.JOB2COOL_RESIZER(document.getElementById('mcp-tool-side'));
     root.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editTool(by(b.dataset.edit)));
     root.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (!confirm('Delete tool ' + b.dataset.del + '?')) return; try { await jsend('tools/' + enc(b.dataset.del), 'DELETE'); toast('Tool deleted'); renderTools(); } catch (e) { toast('Delete failed: ' + e.message); } });
     root.querySelectorAll('[data-toggle]').forEach(c => c.onchange = async () => { const t = by(c.dataset.toggle); try { await jsend('tools/' + enc(t.name), 'PUT', toolBody({ ...t, enabled: c.checked })); toast(c.checked ? 'Enabled' : 'Disabled'); } catch (e) { toast('Update failed: ' + e.message); c.checked = !c.checked; } });
@@ -157,8 +157,7 @@
     try { skills = ((await jget('skills')).skills || []).sort((a, b) => (a.priority || 100) - (b.priority || 100)); }
     catch (e) { root.innerHTML = `<div class="kb-head"><b>Skills</b></div><div class="kb-empty">Failed to load: ${esc(e.message)}</div>`; return; }
     root.innerHTML = `
-      <div class="kb-head"><b>Skills</b><span class="kb-sub">Reusable instruction templates (served over MCP as prompts)</span>
-        <button class="hbtn primary" id="mcp-new-skill" style="margin-left:auto">＋ New Skill</button></div>
+      <div class="kb-head"><button class="hbtn btnnew" id="mcp-new-skill">＋ New Skill</button><span class="kb-sub">Reusable instruction templates (served over MCP as prompts)</span></div>
       <div style="padding:1rem 1.3rem">
         ${skills.length ? `<table class="kb-doctable"><thead><tr><th>Name</th><th>Description</th><th>Triggers</th><th>Priority</th><th>Enabled</th><th></th></tr></thead><tbody>${skills.map(s => `
           <tr>

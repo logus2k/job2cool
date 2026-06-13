@@ -18,7 +18,7 @@
   /* ---- left nav rail ---- */
   .sidenav{width:236px;flex:none;background:var(--panel);border-right:1px solid var(--line);
            display:flex;flex-direction:column;padding:.9rem .7rem .7rem}
-  .sidenav .brand{display:flex;align-items:center;gap:.55rem;padding:.1rem .4rem .9rem}
+  .sidenav .brand{display:flex;align-items:center;gap:.55rem;padding:.1rem .4rem 0.55rem}
   .sidenav .brand img{height:97px;width:auto;display:block}
   .sidenav .brandtxt{display:flex;flex-direction:column}
   .sidenav .brand b{font-size:19px;letter-spacing:-.2px;line-height:1.1}
@@ -65,6 +65,10 @@
   .hbtn:hover{border-color:var(--primary);color:var(--primary-d)}
   .hbtn.primary{background:var(--primary);border-color:var(--primary);color:var(--ink)}
   .hbtn.primary:hover{background:#ffd779}
+  /* "+ New …" buttons (New Domain/Chat/Agent/Tool/Skill) — green, matches New Request */
+  .hbtn.btnnew{background:#b6e5b7;border-color:var(--primary);color:var(--primary-d)}
+  .hbtn.btnnew:hover{background:#97dd99}
+  .topbar-title{font-size:18px;font-weight:700;letter-spacing:-.2px}
   .hbtn:disabled{opacity:.45;cursor:not-allowed}
   .hbtn:disabled:hover{border-color:var(--line);color:var(--muted)}
   .hbtn.danger{color:#b42318;border-color:#f0c8c2}
@@ -79,7 +83,7 @@
   .kb-spacer{flex:1}
   .kb-body{flex:1;min-height:0;display:flex}
   .kb-list{width:330px;flex:none;border-right:1px solid var(--line);overflow:auto;padding:.6rem;background:var(--panel)}
-  .kb-newdom{display:block;width:100%;border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary-d);
+  .kb-newdom{display:block;width:100%;border:1px solid var(--primary);background:#b6e5b7;color:var(--primary-d);
              font-weight:700;font-size:13px;padding:.6rem;border-radius:9px;cursor:pointer;margin-bottom:.5rem;
              position:sticky;top:0;z-index:1}
   .kb-newdom:hover{background:var(--primary)}
@@ -146,6 +150,17 @@
   .kb-doctable td.nm b{font-size:13px}
   .kb-doctable td.nm a{color:inherit;text-decoration:none}
   .kb-doctable td.nm a:hover{text-decoration:underline;cursor:pointer}
+  /* resizable admin side panel (Tools test, Agents editor) */
+  /* same width as the Assistant chat (shared --cvchat-panel-w), responsive + resizable */
+  .j2c-side{position:relative;flex:0 1 min(var(--cvchat-panel-w),100vw);max-width:100%;min-width:0;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--panel)}
+  .j2c-side[hidden]{display:none}
+  .j2c-resize{position:absolute;left:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:6}
+  .j2c-resize:hover{background:var(--primary-soft)}
+  .j2c-side label{font-size:12px;font-weight:600;color:var(--ink);margin-top:.3rem}
+  .j2c-side label .muted{font-weight:400}
+  .j2c-side input,.j2c-side textarea,.j2c-side select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;font:inherit;font-size:13px;background:#fff}
+  .j2c-side textarea{resize:vertical}
+  .j2c-side textarea.grow{flex:1;min-height:140px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.45}
   .kb-doctable td.nm span{display:block;font-size:10.5px;color:var(--muted);font-family:ui-monospace,monospace}
   .kb-doctable td.act{white-space:nowrap;display:flex;gap:.25rem}
   .kb-doctable input[type=checkbox]{accent-color:var(--primary);width:15px;height:15px}
@@ -206,6 +221,31 @@
                  justify-content:center;background:var(--primary-soft);color:var(--primary-d)}
   .ov-empty .big svg{width:30px;height:30px}
   .ov-empty h3{margin:0 0 .4rem;color:var(--ink);font-size:17px}
+  /* blueprint alignment: per-deliverable icon colours, card footer, 2-col progress */
+  .card .ic.c-offer{background:#ede9fe;color:#6d28d9}
+  .card .ic.c-onboard{background:#dcfce7;color:#15803d}
+  .card .ic.c-tech{background:#dbeafe;color:#1d4ed8}
+  .card .ic.c-culture{background:#ffedd5;color:#c2410c}
+  .cardfoot{display:flex;gap:.4rem;align-items:center;margin-top:.1rem}
+  .cardfoot .open{flex:1}
+  .card .kebab{border:1px solid var(--line);background:#fff;border-radius:9px;padding:.5rem .55rem;cursor:pointer;color:var(--muted);font-weight:700;line-height:1}
+  .card .kebab:hover:not(:disabled){border-color:var(--primary);color:var(--primary-d)}
+  .card .kebab:disabled{opacity:.4;cursor:default}
+  .prog-grid{display:flex;gap:1.2rem;align-items:center}
+  .prog-grid .steps{flex:1}
+  .prog-art{flex:none;width:220px;max-width:36%}
+  .prog-art svg{width:100%;height:auto;display:block}
+  .step{align-items:flex-start}
+  .step .dot{margin-top:1px}
+  .step .step-tx{display:flex;flex-direction:column;line-height:1.3}
+  .step .step-tx b{font-weight:600;font-size:13px;color:var(--ink)}
+  .step .step-tx span{font-size:11.5px;color:var(--muted)}
+  .step.active .step-tx b{color:var(--primary-d)}
+  .prog-done{margin-top:1rem;text-align:center;border-top:1px solid var(--line);padding-top:1rem;display:flex;flex-direction:column;gap:.15rem}
+  .prog-done b{color:var(--ink);font-size:14px}
+  .prog-done span{color:var(--muted);font-size:12.5px}
+  .ws-footer{flex:none;text-align:center;color:var(--muted);font-size:11.5px;padding:.55rem;border-top:1px solid var(--line);background:var(--panel)}
+  @media(max-width:760px){.prog-grid{flex-direction:column}.prog-art{display:none}}
 
   .tabbar{display:flex;gap:.2rem;padding:.4rem .6rem 0;background:var(--panel);border-bottom:1px solid var(--line);overflow:auto}
   .tab{padding:.5rem .9rem;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
@@ -293,9 +333,9 @@
 <body>
 <nav class="sidenav">
   <div class="brand"><img src="static/images/job2cool_logo_small.png" alt=""/><div class="brandtxt"><b>job2cool</b><span class="brandtag">AI-assisted HR</span></div></div>
-  <button class="newreq" id="newReq">＋ New Request</button>
+  <button class="newreq" id="newReq">＋ New Chat</button>
   <div class="navlist" id="navlist">
-    <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>My Workspace</a>
+    <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Workspace</a>
     <a class="navitem" data-nav="chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg>Chats</a>
     <a class="navitem" data-nav="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Agents</a>
     <a class="navitem" data-nav="kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>Knowledge Base</a>
@@ -307,13 +347,10 @@
   <a class="navitem" data-nav="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></svg>Help &amp; Support<span class="soon">soon</span></a>
   <a class="navitem" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</a>
 </nav>
-<div class="topbar"><div class="sp"></div><div class="profile"><div class="who"><b id="meName">HR Manager</b><span id="meEmail">Signing in…</span></div><div class="av" id="meAv"></div></div></div>
+<div class="topbar"><b class="topbar-title" id="topTitle">Workspace</b><div class="sp"></div><div class="profile"><div class="who"><b id="meName">HR Manager</b><span id="meEmail">Signing in…</span></div><div class="av" id="meAv"></div></div></div>
 <div class="main">
   <div id="view-workspace" class="viewpane">
     <div class="wsbar">
-      <div class="wstitle">
-        <b>Hiring Package</b>
-      </div>
       <div class="spacer"></div>
       <button class="hbtn" id="shareBtn" title="Share">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg>
@@ -329,6 +366,7 @@
       <div class="doc-col" id="doccol"></div>
       <div class="pdf-col" id="pdfcol" hidden></div>
     </div>
+    <div class="ws-footer">AI generated content. Please review and customize before use.</div>
   </div>
 
   <!-- Knowledge Base view (consolidated Domain Manager + Monitor) -->
@@ -349,7 +387,7 @@
 
   <!-- Settings view (native, not a modal) -->
   <div id="view-settings" class="viewpane" hidden>
-    <div class="kb-head"><b>Settings</b><span class="kb-sub">How the hiring package is generated</span></div>
+    <div class="kb-head"><span class="kb-sub">How the hiring package is generated</span></div>
     <div class="settings-wrap">
       <div class="kb-card">
         <div class="kb-card-h">Job Offer Generation</div>
@@ -396,6 +434,9 @@ const DESC={
   'Cultural & Team Fit':'Assessment framework for cultural fit and team alignment.'
 };
 const DOC_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+const ICON_CLASS={'Job Offer':'c-offer','Onboarding Plan':'c-onboard','Technical Interviews':'c-tech','Cultural & Team Fit':'c-culture'};
+const STEP_SUB={'Job Offer':'Creating the comprehensive job offer document','Onboarding Plan':'Designing the 30-60-90 day onboarding experience','Technical Interviews':'Building the technical assessment framework','Cultural & Team Fit':'Creating the cultural fit evaluation framework'};
+const PROG_ART='<svg viewBox="0 0 210 150" fill="none"><rect x="58" y="36" width="78" height="98" rx="10" fill="#f3f2fb" stroke="#e6e8ef" transform="rotate(-8 97 85)"/><rect x="70" y="30" width="78" height="98" rx="10" fill="#faf9ff" stroke="#e6e8ef" transform="rotate(-3 109 79)"/><rect x="80" y="26" width="78" height="98" rx="10" fill="#fff" stroke="#e6e8ef"/><rect x="92" y="44" width="50" height="6" rx="3" fill="#e7e9f2"/><rect x="92" y="58" width="40" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="72" width="50" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="86" width="34" height="6" rx="3" fill="#eef0f5"/><circle cx="150" cy="40" r="20" fill="#6d4cf2"/><path d="M150 29l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff"/></svg>';
 
 function shownFor(title){
   if(title==='Job Offer'&&doc.offerView==='ma2'&&doc.content['Job Offer (MA2)']!=null) return 'Job Offer (MA2)';
@@ -468,23 +509,29 @@ function renderOverview(){
   const cards=items.map(name=>{
     const pend=isPending(doc.content[name]);
     return `<div class="card">
-      <div class="ic">${ICONS[name]||DOC_ICON}</div>
+      <div class="ic ${ICON_CLASS[name]||''}">${ICONS[name]||DOC_ICON}</div>
       <h4>${esc(name)}</h4>
       <p>${esc(DESC[name]||'')}</p>
       <div class="st ${pend?'gen':'ok'}">${pend?'● Generating…':'✓ Completed'}</div>
-      <button class="open" data-open="${esc(name)}" ${pend?'disabled':''}>Open Document</button>
+      <div class="cardfoot">
+        <button class="open" data-open="${esc(name)}" ${pend?'disabled':''}>Open Document</button>
+        <button class="kebab" data-pdf="${esc(name)}" title="Export PDF" ${pend?'disabled':''}>⋯</button>
+      </div>
     </div>`;}).join('');
-  const steps=[{label:'Analyzing requirements',done:true,active:false}]
-    .concat(items.map(n=>{const p=isPending(doc.content[n]);return {label:'Generating '+n,done:!p,active:p};}));
+  const steps=[{label:'Analyzing requirements',sub:'Understanding your needs and role requirements',done:true,active:false}]
+    .concat(items.map(n=>{const p=isPending(doc.content[n]);return {label:'Generating '+n,sub:STEP_SUB[n]||'',done:!p,active:p};}));
   const stepsHtml=steps.map(s=>`<div class="step ${s.done?'done':(s.active?'active':'')}">
-      <span class="dot">${s.done?'✓':''}</span>${esc(s.label)}</div>`).join('');
+      <span class="dot">${s.done?'✓':''}</span><div class="step-tx"><b>${esc(s.label)}</b>${s.sub?`<span>${esc(s.sub)}</span>`:''}</div></div>`).join('');
   col.innerHTML=`<div class="overview">
-    <div class="ov-sub">${allDone?'All documents generated and ready to use.':'Generating your hiring package — documents appear as Diana completes them.'}</div>
+    <div class="ov-sub">${allDone?'All documents generated by AI based on your request.':'Generating your hiring package — documents appear as Diana completes them.'}</div>
     <div class="cards">${cards}</div>
-    <div class="progwrap"><h4>Generation Progress</h4><div class="steps">${stepsHtml}</div></div>
-    ${allDone?'<div class="ov-banner">✓ All documents have been generated successfully!</div>':''}
+    <div class="progwrap"><h4>Generation Progress</h4>
+      <div class="prog-grid"><div class="steps">${stepsHtml}</div><div class="prog-art">${PROG_ART}</div></div>
+      ${allDone?`<div class="prog-done"><b>All documents have been generated successfully!</b><span>You can now review, edit, and export all documents.</span></div>`:''}
+    </div>
   </div>`;
   col.querySelectorAll('.open').forEach(b=>b.onclick=()=>{doc.active=b.dataset.open;closePdf();render();});
+  col.querySelectorAll('.kebab').forEach(b=>b.onclick=()=>exportPDF(b.dataset.pdf));
 }
 
 // workspace top bar: status pill + enable/disable Share / Export All
@@ -576,8 +623,10 @@ function openAssistant(){
   if(!document.body.classList.contains('cvchat-open')){const l=document.querySelector('.cvchat-launcher');if(l)l.click();}
 }
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
+const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Chats'};
 function showView(name){
   ['workspace','kb','settings','skills','tools','agents','chats'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
+  {const tt=$('#topTitle');if(tt)tt.textContent=VIEW_TITLES[name]||'';}
   document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===name));
   if(name==='settings')syncSettingsView();
   if(name==='kb'){window.JOB2COOL_KB_OPEN&&window.JOB2COOL_KB_OPEN();}
@@ -627,8 +676,10 @@ render();
 <script src="static/js2c/pdfcite.js"></script>
 <!-- Knowledge Base view (Domain Manager + Monitor) -->
 <script src="static/js2c/kb.js"></script>
+<script src="static/js2c/sidepanel.js"></script>
 <script src="static/js2c/mcp.js"></script>
 <script src="static/js2c/chats.js"></script>
+<script src="static/js2c/agents.js"></script>
 <!-- cv-chat Assistant (chat + STT/TTS/avatar + Thinking/Graph/Score/citations) -->
 <script src="static/widget/vendor/onnxruntime-web/ort.wasm.min.js"></script>
 <script src="static/widget/vendor/vad/bundle.min.js"></script>

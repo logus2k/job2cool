@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from typing import Any, AsyncIterator
 from urllib.parse import quote
 
@@ -28,6 +29,47 @@ GEMMA_MODEL = os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4")
 DPO_MODEL   = os.getenv("JOB2COOL_DPO_MODEL",   "ma2-360m-dpo-b01")
 # Reuse cv's query-rewriter preset by default (it already exists on agent_server).
 QUERY_REWRITER = os.getenv("JOB2COOL_QUERY_REWRITER", "cv_query_rewriter")
+
+
+# --- editable agent prompts (job2cool_* presets on agent_server) -------------
+# job2cool's system prompts live as agent_server presets so they're editable in
+# the Agents UI. We fetch the preset's TEXT (cached) and use it with our own
+# model selection (model choice stays in code); the inline constant is both the
+# fallback and the seed source, so behaviour is unchanged if a preset is missing.
+_agent_prompt_cache: dict[str, tuple[float, str]] = {}
+_AGENT_PROMPT_TTL = 60.0
+
+
+async def get_agent_prompt(client: httpx.AsyncClient, name: str, fallback: str) -> str:
+    now = time.time()
+    hit = _agent_prompt_cache.get(name)
+    if hit and hit[0] > now:
+        return hit[1]
+    try:
+        r = await client.get(f"{AGENT_SERVER}/admin/api/agents/{name}", timeout=5)
+        if r.status_code == 200:
+            sp = (r.json().get("system_prompt") or "").strip()
+            if sp:
+                _agent_prompt_cache[name] = (now + _AGENT_PROMPT_TTL, sp)
+                return sp
+    except Exception:  # noqa: BLE001
+        pass
+    return fallback
+
+
+async def ensure_agent_preset(client: httpx.AsyncClient, name: str,
+                              system_prompt: str) -> None:
+    """Seed the preset from the inline default if absent. Never overwrites —
+    edits made in the Agents UI are preserved."""
+    try:
+        r = await client.get(f"{AGENT_SERVER}/admin/api/agents/{name}", timeout=5)
+        if r.status_code == 200:
+            return
+        await client.post(f"{AGENT_SERVER}/admin/api/agents",
+                          json={"name": name, "system_prompt": system_prompt},
+                          timeout=10)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 # --- LLM ---------------------------------------------------------------------

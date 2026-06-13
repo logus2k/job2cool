@@ -105,7 +105,18 @@ app = FastAPI(title="job2cool-backend", version="0.1.0")
 # `/api/*` prefixes this backend OWNS (everything else under /api proxies to
 # noted). Keep in sync as Assistant routes land in S4.
 _OWNED_API_PREFIXES = ("health", "chat", "citation", "graph_trace",
-                       "score_answer", "buffers", "job2cool")
+                       "score_answer", "buffers", "job2cool", "agents", "mcp")
+
+
+@app.on_event("startup")
+async def _seed_job2cool_agents():
+    """Seed the editable job2cool_* agent presets from the inline defaults
+    (idempotent; never overwrites user edits). Lets the Agents UI manage Diana's
+    templates while keeping the constants as fallback."""
+    async with httpx.AsyncClient() as client:
+        await services.ensure_agent_preset(client, "job2cool_orchestrator", orchestrator.INTRO_SYSTEM)
+        await services.ensure_agent_preset(client, "job2cool_composer", orchestrator.SECTION_SYSTEM)
+        await services.ensure_agent_preset(client, "job2cool_judge", JUDGE_SYSTEM)
 
 
 # --- health / connectivity ---------------------------------------------------
@@ -450,7 +461,8 @@ async def score_answer(req: ScoreRequest):
         async with httpx.AsyncClient() as client:
             content = await services.llm_complete(
                 client, JUDGE_MODEL,
-                [{"role": "system", "content": JUDGE_SYSTEM},
+                [{"role": "system", "content": await services.get_agent_prompt(
+                    client, "job2cool_judge", JUDGE_SYSTEM)},
                  {"role": "user", "content": judge_user}],
                 max_tokens=700, temperature=0.1, timeout=60, think=False)
         m = re.search(r"\{[\s\S]*\}", content)
@@ -471,6 +483,34 @@ _proxy_client = httpx.AsyncClient(timeout=httpx.Timeout(60.0, read=None))
 _HOP_BY_HOP = {"host", "content-length", "connection", "keep-alive",
                "transfer-encoding", "te", "trailer", "upgrade",
                "proxy-authorization", "proxy-authenticate"}
+
+
+# --- agent_server preset admin proxy (declared BEFORE the /api/* catch-all) --
+@app.api_route("/api/agents/{path:path}",
+               methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+async def proxy_agents(path: str, request: Request):
+    """Forward the Agents view to agent_server's preset admin API
+    (/admin/api/agents). The view filters to job2cool_* presets."""
+    url = f"{AGENT_SERVER}/admin/api/agents" + (f"/{path}" if path else "")
+    headers = {k: v for k, v in request.headers.items()
+               if k.lower() not in _HOP_BY_HOP}
+    body = await request.body()
+    req = _proxy_client.build_request(
+        request.method, url, params=request.query_params,
+        headers=headers, content=body)
+    upstream = await _proxy_client.send(req, stream=True)
+    resp_headers = {k: v for k, v in upstream.headers.items()
+                    if k.lower() not in _HOP_BY_HOP}
+
+    async def _body():
+        try:
+            async for chunk in upstream.aiter_raw():
+                yield chunk
+        finally:
+            await upstream.aclose()
+
+    return StreamingResponse(_body(), status_code=upstream.status_code,
+                             headers=resp_headers)
 
 
 # --- MCP tool/skill host proxy (declared BEFORE the /api/* catch-all) --------

@@ -74,8 +74,7 @@
     try { chats = (await (await fetch(api('job2cool/chats'), { cache: 'no-store' })).json()).chats || []; }
     catch (e) { root.innerHTML = `<div class="kb-head"><b>Chats</b></div><div class="kb-empty">Failed to load chats.</div>`; return; }
     root.innerHTML = `
-      <div class="kb-head"><b>Chats</b><span class="kb-sub">Your saved conversations</span>
-        <button class="hbtn primary" id="chats-new" style="margin-left:auto">＋ New chat</button></div>
+      <div class="kb-head"><button class="hbtn btnnew" id="chats-new">＋ New chat</button><span class="kb-sub">Your saved conversations</span></div>
       <div style="padding:1rem 1.3rem">
         ${chats.length ? `<table class="kb-doctable"><thead><tr><th>Title</th><th>Turns</th><th>Updated</th><th></th></tr></thead><tbody>${chats.map(c => `
           <tr>
