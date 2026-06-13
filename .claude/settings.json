@@ -13,7 +13,8 @@
       "Bash(exit 1)",
       "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\"}' --max-time 200)",
       "Bash(node --check frontend/widget/cv-chat.js)",
-      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\",\"config\":{\"offer_sources\":[\"ma2\",\"gemma\",\"rag\"]}}' --max-time 220)"
+      "Bash(curl -s -N -X POST http://localhost:4920/api/chat -H 'Content-Type: application/json' -d '{\"message\":\"I need a job description for a Senior DevOps engineer with Kubernetes and security experience.\",\"config\":{\"offer_sources\":[\"ma2\",\"gemma\",\"rag\"]}}' --max-time 220)",
+      "Bash(grep -oE \"api\\\\\\('[^']+'|api\\\\\\(\\\\`[^\\\\`]+|/api/[a-z_/{}.\\\\$-]+\" /home/logus/env/assets/job2cool/frontend/js2c/kb.js)"
     ],
     "additionalDirectories": [
       "/home/logus/env/assets/kb",
