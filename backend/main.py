@@ -54,12 +54,19 @@ JUDGE_SYSTEM = (
     "produced — these are her response, and the only thing you score). "
     "Output ONLY a JSON object (no prose, no code fence) of the form "
     '{"faithfulness": <0..1>, "answer_relevance": <0..1>, "rationale": "<text>"}. '
-    "faithfulness = the share of claims in the WORKSPACE DOCUMENTS that appear "
-    "anywhere in the SOURCE MATERIAL. Treat the whole SOURCE MATERIAL as one pool: "
-    "a claim is faithful the moment any single passage supports it, whichever part "
-    "of the pool that passage comes from. Reserve a deduction for a claim that no "
-    "passage anywhere in the SOURCE MATERIAL supports. Documents whose every claim "
-    "traces to the SOURCE MATERIAL score 1.0. "
+    "faithfulness = how well the claims in the WORKSPACE DOCUMENTS are supported "
+    "by the SOURCE MATERIAL, taken as one pool. Judge by MEANING, not wording: a "
+    "claim is faithful when its substance is supported by any part of the pool, "
+    "counting direct statements, paraphrases, reasonable synthesis, and "
+    "professional elaboration that stays consistent with a concept the pool "
+    "covers. When the pool covers a concept (for example continuous improvement / "
+    "Kaizen), a claim that builds on that concept is fully grounded even if the "
+    "wording differs. A skill, technology, seniority, or requirement the USER "
+    "QUERY explicitly asks for is also grounded — restating what the user "
+    "requested is responsive, not fabrication. Reserve a deduction for a claim "
+    "whose substance has no basis anywhere in the pool or the user's request — a "
+    "fabricated tool, metric, employer, or requirement that nobody stated or "
+    "implied. Documents whose every claim is supported score 1.0. "
     "answer_relevance = how well the WORKSPACE DOCUMENTS address the USER QUERY. "
     "rationale = 2-4 complete sentences; when you deduct, name the specific claim "
     "from the WORKSPACE DOCUMENTS that the SOURCE MATERIAL does not support, and "
@@ -230,6 +237,14 @@ class ScoreRequest(BaseModel):
     turn_id: str
 
 
+def _docs_for_judge(docs: str | None) -> str:
+    """Strip inline citation tags before judging — they are provenance markers,
+    not claims, and the judge otherwise mistakes a stray tag for a fabrication."""
+    if not docs:
+        return "(none)"
+    return re.sub(r"\[(?:markdown_chunk:[0-9a-f]+|E:[^\]]+|R:[^\]]+)\]", "", docs)
+
+
 @app.post("/api/score_answer")
 async def score_answer(req: ScoreRequest):
     """RAGAS-style judge over the cached (question, evidence, answer)."""
@@ -254,7 +269,7 @@ async def score_answer(req: ScoreRequest):
         f"DIANA'S THINKING (background context):\n"
         f"{turn.get('thinking') or '(none captured)'}\n\n"
         f"WORKSPACE DOCUMENTS (what Diana wrote into the document pane):\n"
-        f"{turn.get('documents') or '(none)'}")
+        f"{_docs_for_judge(turn.get('documents'))}")
     try:
         async with httpx.AsyncClient() as client:
             content = await services.llm_complete(
