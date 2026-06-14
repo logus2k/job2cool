@@ -64,6 +64,7 @@
     if (window.JOB2COOL_CHAT_LOAD) window.JOB2COOL_CHAT_LOAD(t.messages || []);
     if (window.JOB2COOL_SET_DOCS) window.JOB2COOL_SET_DOCS(t.documents || {});
     if (window.JOB2COOL_SET_ROLE) window.JOB2COOL_SET_ROLE(t.role || (t.documents && t.documents.role) || '');
+    if (window.showView) window.showView('workspace');   // reopening a chat lands you in its Workspace
   }
   async function renameThread(id, current) {
     const title = window.prompt('Rename chat', current || '');
@@ -98,8 +99,8 @@
             <td class="nm"><a data-open="${esc(c.thread_id)}" title="Reopen"><b>${esc(c.title)}</b></a>${c.role && c.role !== c.title ? `<span style="display:block;font-size:11px;color:var(--muted);font-family:inherit">${esc(c.role)}</span>` : ''}</td>
             <td>${Math.max(1, Math.floor((c.message_count || 0) / 2))}</td>
             <td>${esc(fmtWhen(c.updated_at))}</td>
-            <td style="white-space:nowrap"><button class="hbtn" data-open="${esc(c.thread_id)}">Open</button><button class="hbtn" data-rename="${esc(c.thread_id)}">Rename</button><button class="hbtn" data-del="${esc(c.thread_id)}">Delete</button></td>
-          </tr>`).join('')}</tbody></table>` : `<div class="kb-empty">No saved chats yet. Start one with ＋ New chat or the Diana launcher.</div>`}
+            <td style="white-space:nowrap;text-align:right"><button class="hbtn" data-open="${esc(c.thread_id)}">Open</button><button class="hbtn" data-rename="${esc(c.thread_id)}">Rename</button><button class="hbtn" data-del="${esc(c.thread_id)}">Delete</button></td>
+          </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full">No saved chats yet.</div>`}
       </div>`;
     root.querySelector('#chats-new').onclick = () => { window.JOB2COOL_CHAT_NEW(); openChat(); };
     root.querySelectorAll('[data-open]').forEach(b => b.onclick = () => loadThread(b.dataset.open));

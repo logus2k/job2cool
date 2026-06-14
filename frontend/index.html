@@ -13,12 +13,16 @@
     --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); --topbar-h:58px; --statusbar-h:26px; }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
-  body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);
+  body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);
        display:flex;height:100vh;overflow:hidden;padding-bottom:var(--statusbar-h)}
   /* single global bottom status bar (like noted) */
   .statusbar{position:fixed;left:0;right:0;bottom:0;height:var(--statusbar-h);display:flex;align-items:center;
-             justify-content:center;background:#fff3d8;border-top:1px solid var(--line);
-             color:var(--muted);font-size:11.5px;z-index:40}
+             justify-content:center;background:#fff0ce;border-top:1px solid var(--line);
+             color:#666666;font-size:10px;z-index:40}
+  .statusbar .sb-brand{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;gap:6px;
+             padding:0 12px;background:#d0efd1;color:var(--primary-d);font-weight:600;font-size:11.5px;
+             border-right:1px solid var(--line)}
+  .statusbar .sb-brand svg{width:14px;height:14px}
   /* ---- left nav rail ---- */
   .sidenav{width:236px;flex:none;background:var(--panel);border-right:1px solid var(--line);
            display:flex;flex-direction:column;padding:.9rem .7rem .7rem}
@@ -131,6 +135,8 @@
   .kb-banner.warn{background:#fff4e0;border-color:#f3dcb0;color:#b9760f}
   .kb-banner.err{background:#fdecea;border-color:#f0c8c2;color:#b42318}
   .kb-empty{color:var(--muted);font-size:13px;text-align:center;padding:2rem 1rem}
+  .kb-empty.full{min-height:calc(100vh - var(--topbar-h) - var(--statusbar-h) - 4rem);
+                 display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem}
   .kb-doclist{display:flex;flex-direction:column;gap:.4rem}
   .kb-doc{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
   .kb-doc-main{flex:1;min-width:0}
@@ -156,10 +162,13 @@
   .kb-doctable td.nm a:hover{text-decoration:underline;cursor:pointer}
   /* resizable admin side panel (Tools test, Agents editor) */
   /* same width as the Assistant chat (shared --cvchat-panel-w), responsive + resizable */
-  .j2c-side{position:relative;flex:0 1 min(var(--cvchat-panel-w),100vw);max-width:100%;min-width:0;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--panel)}
+  .j2c-side{position:relative;flex:0 1 min(var(--cvchat-panel-w),100vw);max-width:100%;min-width:0;display:flex;flex-direction:column;border-left:1px solid #e2e8f0;background:#fffef7;box-shadow:-8px 0 32px rgba(15,23,42,.18)}
   .j2c-side[hidden]{display:none}
-  .j2c-resize{position:absolute;left:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:6}
-  .j2c-resize:hover{background:var(--primary-soft)}
+  .j2c-side .pdf-head{background:#ffe19b;color:#313131;border-bottom:none;padding:8px 14px}
+  .j2c-side .pdf-head .src{color:#313131}
+  .j2c-resize{position:absolute;left:0;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:6}
+  .j2c-resize::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:transparent;transition:background .12s ease}
+  .j2c-resize:hover::before{background:#0e7490}
   .j2c-side label{font-size:12px;font-weight:600;color:var(--ink);margin-top:.3rem}
   .j2c-side label .muted{font-weight:400}
   .j2c-side input,.j2c-side textarea,.j2c-side select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;font:inherit;font-size:13px;background:#fff}
@@ -223,9 +232,9 @@
              border-radius:14px;color:var(--ok);font-weight:600;font-size:13.5px}
   .ov-empty{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
             align-items:center;justify-content:center;text-align:center;color:var(--muted)}
-  .ov-empty .big{width:60px;height:60px;border-radius:16px;margin:0 auto 1rem;display:flex;align-items:center;
-                 justify-content:center;background:var(--primary-soft);color:var(--primary-d)}
-  .ov-empty .big svg{width:30px;height:30px}
+  .ov-empty .big{width:210px;height:150px;margin:0 auto 1rem;display:flex;align-items:center;
+                 justify-content:center}
+  .ov-empty .big svg{width:210px;height:150px}
   .ov-empty h3{margin:0 0 .4rem;color:var(--ink);font-size:17px}
   /* blueprint alignment: per-deliverable icon colours, card footer, 2-col progress */
   .card .ic.c-offer{background:#ede9fe;color:#6d28d9}
@@ -265,7 +274,7 @@
   .pdf-head{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;border-bottom:1px solid var(--line);background:#fff;font:600 12.5px system-ui}
   .pdf-head .src{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
   .pdf-head a{color:var(--primary-d);text-decoration:none;font-weight:600;font-size:12px}
-  .pdf-head button{border:0;background:#eef0f5;border-radius:7px;width:26px;height:24px;cursor:pointer;font-size:15px}
+  .pdf-head button{border:0;background:transparent;border-radius:7px;width:26px;height:24px;cursor:pointer;font-size:11px;color:#1d1d1d}
   .pdf-body{flex:1;overflow:auto;padding:1rem}
   .cite{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin:0 2px;
         border-radius:8px;background:var(--primary-soft);color:var(--primary-d);font-size:11px;font-weight:700;cursor:pointer;vertical-align:1px}
@@ -344,9 +353,9 @@
     <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Workspace</a>
     <a class="navitem" data-nav="chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg>Chats</a>
     <a class="navitem" data-nav="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Agents</a>
-    <a class="navitem" data-nav="kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>Knowledge Base</a>
     <a class="navitem" data-nav="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 8h6M8 12h8M8 16h5"/></svg>Skills</a>
     <a class="navitem" data-nav="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8 7.2 20l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.7 2.7-2.3-2.3z"/></svg>Tools</a>
+    <a class="navitem" data-nav="kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>Knowledge Base</a>
     <a class="navitem" data-nav="company"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>Company Profile<span class="soon">soon</span></a>
   </div>
   <div class="navspace"></div>
@@ -359,13 +368,9 @@
     <div class="wsbar">
       <div class="ws-role" id="wsRole" hidden></div>
       <div class="spacer"></div>
-      <button class="hbtn" id="shareBtn" title="Share">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg>
-        <span style="font-size:13px">Share</span>
-      </button>
-      <button class="hbtn primary" id="exportAllBtn" title="Export all documents">
+      <button class="hbtn primary" id="exportAllBtn" title="Download all documents">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
-        Export All
+        Download All
       </button>
     </div>
     <div class="tabbar" id="tabbar"></div>
@@ -407,7 +412,7 @@
   </div>
 </div>
 
-<div class="statusbar">AI generated content. Please review and customize before use.</div>
+<div class="statusbar"><span class="sb-brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/><path d="M2 12v3M22 12v3"/></svg>job2cool v1.0</span>AI generated content. Please review and customize before use</div>
 <div class="toast" id="toast"></div>
 <div id="printarea"></div>
 
@@ -505,10 +510,9 @@ function renderOverview(){
   const col=$('#doccol');const items=doc.order;
   if(!items.length){
     col.innerHTML=`<div class="ov-empty">
-      <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg></div>
+      <div class="big">${PROG_ART}</div>
       <h3>No documents yet</h3>
-      <p>Tell Diana what you are hiring for and your tailored hiring package will appear here.</p>
-      <button class="hbtn primary" style="margin:.6rem auto 0" onclick="openAssistant()">Open the Assistant</button>
+      <p>Your tailored hiring package will appear here.</p>
     </div>`;
     return;
   }
@@ -541,13 +545,13 @@ function renderOverview(){
   col.querySelectorAll('.kebab').forEach(b=>b.onclick=()=>exportPDF(b.dataset.pdf));
 }
 
-// workspace top bar: status pill + enable/disable Share / Export All
+// workspace top bar: status pill + enable/disable Download All
 function updateWsBar(){
   const items=doc.order;
-  const ea=$('#exportAllBtn'),sh=$('#shareBtn');
+  const ea=$('#exportAllBtn');
   const ready=items.some(n=>!isPending(doc.content[n]));
-  if(ea)ea.disabled=!ready; if(sh)sh.disabled=!ready;
-  const wr=$('#wsRole');if(wr){const r=(doc.role||'').trim();wr.textContent=r?(r+' · Hiring Package'):'';wr.hidden=!r;}
+  if(ea)ea.disabled=!ready;
+  const wr=$('#wsRole');if(wr){const r=(doc.role||'').trim();wr.textContent=r;wr.hidden=!r;}
 }
 // Export All: print every completed deliverable (one per page) -> Save as PDF.
 function exportAll(){
@@ -559,13 +563,6 @@ function exportAll(){
   const prev=document.title;document.title='Hiring Package';
   function after(){document.title=prev;pa.innerHTML='';window.removeEventListener('afterprint',after);}
   window.addEventListener('afterprint',after);window.print();
-}
-// Share: copy the whole package as Markdown to the clipboard.
-function shareAll(){
-  const names=doc.order.filter(n=>!isPending(doc.content[n]));
-  if(!names.length){toast('Nothing to share yet');return;}
-  const md=names.map(n=>`# ${n}\n\n${doc.content[shownFor(n)]||doc.content[n]||''}`).join('\n\n---\n\n');
-  navigator.clipboard.writeText(md).then(()=>toast('Hiring package copied to clipboard')).catch(()=>toast('Copy failed'));
 }
 
 // citation in a document section -> resolve -> open the PDF in the split pane
@@ -638,6 +635,11 @@ function openAssistant(){
 }
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
 const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Chats'};
+// Only one right-edge panel is ever open at a time. Hides every .j2c-side
+// panel except the one passed (exceptId); the chat panel closes itself.
+window.JOB2COOL_CLOSE_SIDE_PANELS=function(exceptId){
+  document.querySelectorAll('.j2c-side').forEach(p=>{if(p.id!==exceptId)p.hidden=true;});
+};
 function showView(name){
   ['workspace','kb','settings','skills','tools','agents','chats'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
   {const tt=$('#topTitle');if(tt)tt.textContent=VIEW_TITLES[name]||'';}
@@ -658,7 +660,6 @@ document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',e=>{
 }));
 $('#newReq').onclick=()=>{showView('workspace');if(window.JOB2COOL_NEW_TURN)window.JOB2COOL_NEW_TURN();if(window.JOB2COOL_CHAT_NEW)window.JOB2COOL_CHAT_NEW();openAssistant();};
 $('#exportAllBtn').onclick=exportAll;
-$('#shareBtn').onclick=shareAll;
 
 // left-nav profile: read the oauth2-proxy identity (X-Forwarded-* via /api/job2cool/me).
 (async function loadIdentity(){

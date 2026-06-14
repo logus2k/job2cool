@@ -350,6 +350,32 @@ body.cvchat-resizing {
 .cvchat-msg-assistant .cvchat-bubble:hover .cvchat-copy-btn { opacity: 1; }
 .cvchat-copy-btn:hover { background: #c8e6c0; }
 
+/* Live "Generation Progress" checklist in the chat (mirrors the workspace stepper). */
+.cvchat-progress {
+    align-self: flex-start;
+    max-width: 92%;
+    margin: 2px 0 10px;
+    background: #fff;
+    border: 1px solid var(--cv-border);
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    box-shadow: rgba(9, 30, 66, 0.08) 0px 1px 2px;
+}
+.cvchat-progress .cvp-head { margin: 0 0 0.7rem; font-size: 13px; font-weight: 700; color: var(--cv-text); }
+.cvchat-progress .cvp-steps { display: flex; flex-direction: column; gap: 0.5rem; }
+.cvchat-progress .cvp-step { display: flex; align-items: center; gap: 0.6rem; font-size: 12.5px; color: #8a93a3; }
+.cvchat-progress .cvp-dot {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid #e2e6ee; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+}
+.cvchat-progress .cvp-tx { display: flex; flex-direction: column; line-height: 1.25; }
+.cvchat-progress .cvp-tx span { font-size: 11px; color: #9aa3b2; }
+.cvchat-progress .cvp-step.done { color: #1f2733; }
+.cvchat-progress .cvp-step.done .cvp-dot { background: #157347; border-color: #157347; color: #fff; }
+.cvchat-progress .cvp-step.active { color: #101010; font-weight: 600; }
+.cvchat-progress .cvp-step.active .cvp-dot { border-color: #101010; box-shadow: 0 0 0 3px #eef5fb; }
+.cvchat-progress .cvp-done { margin-top: 0.7rem; font-size: 12px; font-weight: 600; color: #157347; }
+
 .cvchat-msg-user .cvchat-bubble {
     background: #e9ffea;
     color: #010101;
@@ -1055,12 +1081,11 @@ body.cvchat-resizing {
 .cvchat-iconbtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .cvchat-send {
-    background: #5aa098;
-    border-color: var(--cv-accent);
-    color: #fff;
+    background: #b6e5b7;
+    color: #333;
 }
-.cvchat-send:hover { background: var(--cv-accent-deep); border-color: var(--cv-accent-deep); }
-.cvchat-send:disabled { background: var(--cv-accent); border-color: var(--cv-accent); }
+.cvchat-send:hover { background: #97dd99; }
+.cvchat-send:disabled { background: #d6efd7; color: #888; }
 
 /* mic active (capturing) */
 .cvchat-mic.active {

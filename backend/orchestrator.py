@@ -436,8 +436,13 @@ async def run_chat(message: str, history: list[dict],
                      f"I'll write it into the document for you.")
         yield _sse({"delta": f"\n\n<voice>{voice}</voice>"})
 
-        yield _sse({"delta": f"\n\n_Role: **{role}** · grounding in `{domain}`._\n"
-                             f"_Generating ({0}/{len(secs)})…_\n"})
+        yield _sse({"delta": f"\n\n_Role: **{role}** · grounding in `{domain}`._\n"})
+
+        # Live "Generation Progress" checklist in the chat (mirrors the workspace
+        # stepper). We stream a structured snapshot instead of inline ▸/✓ text so
+        # the widget can render a real checklist that updates per deliverable.
+        prog = [{"title": s["title"], "state": "pending"} for s in secs]
+        yield _sse({"progress": {"steps": prog}})
 
         # 3) Generate requested deliverables ---------------------------------
         total_chunks = 0
@@ -454,7 +459,8 @@ async def run_chat(message: str, history: list[dict],
             buf = buffers.create(name=sec["title"],
                                  initial_content=f"# {sec['title']}\n\n_Generating…_")
             section_bufs[sec["key"]] = buf
-            yield _sse({"delta": f"\n▸ **{sec['title']}** — researching…"})
+            prog[i - 1]["state"] = "active"
+            yield _sse({"progress": {"steps": prog}})
             query = sec["query"].format(need=need)
             ev = await services.graph_and_vector_search(
                 client, query, domains, top_k=6)
@@ -531,7 +537,8 @@ async def run_chat(message: str, history: list[dict],
             body = f"# {sec['title']}\n\n{section_md.strip()}{_cited_sources(ev)}"
             buffers.replace(buf.buffer_id, body)
             doc_bodies.append(body)
-            yield _sse({"delta": f" ✓ _( {i}/{len(secs)} )_"})
+            prog[i - 1]["state"] = "done"
+            yield _sse({"progress": {"steps": prog}})
 
         # 4) Closing chat note (grounding + gaps + nudge) + turn cache --------
         turn_id = hashlib.sha1((need + str(total_chunks)).encode()).hexdigest()[:12]

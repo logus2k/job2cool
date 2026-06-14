@@ -24,6 +24,8 @@
 
   function openSide(title) {
     const side = document.getElementById('ag-side'); if (!side) return null;
+    if (window.JOB2COOL_CHAT_CLOSE) try { window.JOB2COOL_CHAT_CLOSE(); } catch (e) {}
+    if (window.JOB2COOL_CLOSE_SIDE_PANELS) window.JOB2COOL_CLOSE_SIDE_PANELS('ag-side');
     document.getElementById('ag-side-title').textContent = title;
     side.hidden = false;
     if (window.JOB2COOL_RESIZER) window.JOB2COOL_RESIZER(side);
@@ -38,16 +40,18 @@
     catch (e) { root.innerHTML = `<div class="kb-head"><b>Agents</b></div><div class="kb-empty">Failed to load: ${esc(e.message)}</div>`; return; }
     agents.sort((a, b) => a.name.localeCompare(b.name));
     root.innerHTML = `
-      <div class="kb-head"><button class="hbtn btnnew" id="ag-new">＋ New Agent</button><span class="kb-sub">agent_server presets that drive Diana — edit a template to change her behaviour</span></div>
       <div style="display:flex;flex:1;min-height:0">
-        <div id="ag-main" style="flex:1;min-width:0;overflow:auto;padding:1rem 1.3rem">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+          <div class="kb-head"><button class="hbtn btnnew" id="ag-new">＋ New Agent</button><span class="kb-sub">agent_server presets that drive Diana — edit a template to change her behaviour</span></div>
+          <div id="ag-main" style="flex:1;min-width:0;overflow:auto;padding:1rem 1.3rem">
           ${agents.length ? `<table class="kb-doctable"><thead><tr><th>Agent</th><th>Role</th><th>Memory</th><th></th></tr></thead><tbody>${agents.map(a => `
             <tr>
               <td><b>${esc(a.name.slice(PREFIX.length))}</b><div class="muted" style="font-size:11px">${esc(a.name)}</div></td>
               <td>${esc(ROLE[a.name] || '')}</td>
               <td><code style="font-size:11px">${esc(a.memory_policy || 'none')}</code></td>
-              <td style="white-space:nowrap"><button class="hbtn" data-edit="${esc(a.name)}">Edit template</button><button class="hbtn" data-del="${esc(a.name)}">Delete</button></td>
-            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty">No job2cool agents yet. Click ＋ New Agent to add one.</div>`}
+              <td style="white-space:nowrap;text-align:right"><button class="hbtn" data-edit="${esc(a.name)}">Edit template</button><button class="hbtn" data-del="${esc(a.name)}">Delete</button></td>
+            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full">No job2cool agents yet. Click ＋ New Agent to add one.</div>`}
+          </div>
         </div>
         <div id="ag-side" class="j2c-side" hidden>
           <div class="pdf-head"><span class="src" id="ag-side-title">Edit</span><button id="ag-side-close" title="Close">✕</button></div>

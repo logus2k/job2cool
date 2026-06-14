@@ -376,7 +376,7 @@
   // ---------- public hooks ----------
   window.JOB2COOL_KB_OPEN = async function () {
     const root = document.getElementById('view-kb'); if (!root) return;
-    if (!DOMAINS.length) root.innerHTML = '<div class="kb-empty" style="margin:3rem auto">Loading knowledge base…</div>';
+    if (!DOMAINS.length) root.innerHTML = '<div class="kb-empty full">Loading knowledge base…</div>';
     await refreshAll();
     if (!sel && DOMAINS.length) sel = DOMAINS[0].domain_id;
     if (sel && !FMT[sel]) await loadFmt(sel);

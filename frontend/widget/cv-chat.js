@@ -912,6 +912,44 @@
         return content;
     }
 
+    // Live "Generation Progress" checklist, mirroring the workspace stepper.
+    // Inserted just above the assistant bubble for the current turn and updated
+    // in place as the server streams `progress` snapshots (one per deliverable
+    // state change). `el` is the existing checklist node (or null on first call).
+    var PROGRESS_SUB = {
+        'Job Offer': 'Creating the comprehensive job offer document',
+        'Onboarding Plan': 'Designing the 30-60-90 day onboarding experience',
+        'Technical Interviews': 'Building the technical assessment framework',
+        'Cultural & Team Fit': 'Creating the cultural fit evaluation framework'
+    };
+    function renderProgressChecklist(el, bubble, progress) {
+        var steps = (progress && progress.steps) || [];
+        if (!el) {
+            el = document.createElement('div');
+            el.className = 'cvchat-progress';
+            // bubble is the .cvchat-bubble-content; its grandparent is the msg row.
+            var msgRow = bubble.parentNode && bubble.parentNode.parentNode;
+            if (msgRow && msgRow.parentNode) msgRow.parentNode.insertBefore(el, msgRow);
+            else messagesEl.appendChild(el);
+        }
+        var allDone = steps.length && steps.every(function (s) { return s.state === 'done'; });
+        // First step is the always-done "Analyzing requirements", then one row
+        // per deliverable — exactly like the workspace renderOverview stepper.
+        var rows = [{ label: 'Analyzing requirements', sub: 'Understanding your needs and role requirements', state: 'done' }]
+            .concat(steps.map(function (s) {
+                return { label: 'Generating ' + s.title, sub: PROGRESS_SUB[s.title] || '', state: s.state };
+            }));
+        var esc = function (s) { return (s || '').replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+        var stepsHtml = rows.map(function (r) {
+            var cls = r.state === 'done' ? 'done' : (r.state === 'active' ? 'active' : '');
+            return '<div class="cvp-step ' + cls + '"><span class="cvp-dot">' + (r.state === 'done' ? '✓' : '') + '</span>'
+                + '<div class="cvp-tx"><b>' + esc(r.label) + '</b>' + (r.sub ? '<span>' + esc(r.sub) + '</span>' : '') + '</div></div>';
+        }).join('');
+        el.innerHTML = '<div class="cvp-head">Generation Progress</div><div class="cvp-steps">' + stepsHtml + '</div>'
+            + (allDone ? '<div class="cvp-done">All documents have been generated successfully.</div>' : '');
+        return el;
+    }
+
     function notice(text) {
         var n = document.createElement('div');
         n.className = 'cvchat-error';
@@ -2466,6 +2504,7 @@
 
         var bubble = addMessage('assistant', '');
         bubble.innerHTML = '<span class="cvchat-typing"><span></span><span></span><span></span></span>';
+        var progressEl = null;         // live "Generation Progress" checklist (above the bubble)
         var numbering = new Map();
         var parser = new ThinkingParser();
         var body = '';                 // accumulated answer text (post-</think>, voice stripped)
@@ -2538,6 +2577,11 @@
                             if (obj.meta.role && window.JOB2COOL_SET_ROLE) {
                                 try { window.JOB2COOL_SET_ROLE(obj.meta.role); } catch (e) {}
                             }
+                            continue;
+                        }
+                        if (obj.progress) {
+                            progressEl = renderProgressChecklist(progressEl, bubble, obj.progress);
+                            scrollToBottom();
                             continue;
                         }
                         if (obj.delta) {
@@ -4230,6 +4274,9 @@
     var GREETING_TEXT = GREETING_TEXTS[Math.floor(Math.random() * GREETING_TEXTS.length)];
 
     function openPanel() {
+        // Only one right-edge panel open at a time: opening the chat closes any
+        // open Tools/Skills/Agents side panel.
+        try { if (window.JOB2COOL_CLOSE_SIDE_PANELS) window.JOB2COOL_CLOSE_SIDE_PANELS(); } catch (e) {}
         document.body.classList.add('cvchat-open');
         if (!state.greeted) {
             state.greeted = true;
@@ -4246,6 +4293,10 @@
         // next launcher click triggers the auto-enable-avatar path again.
         if (state.avatarOn || state.ttsOn) setMode('silent');
     }
+
+    // Close the chat panel (used by the Tools/Skills/Agents side panels so only
+    // one right-edge panel is open at a time).
+    window.JOB2COOL_CHAT_CLOSE = closePanel;
 
     // ── Chats persistence hooks (used by js2c/chats.js) ──
     // Clear the conversation and start fresh (greeting will show on open).
