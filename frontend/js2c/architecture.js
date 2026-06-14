@@ -38,26 +38,26 @@
   const NODES = {
     'job2cool-backend': { x: 385, y: 178, w: 230, h: 64, net: 'app',     label: 'job2cool-backend', sub: 'App orchestrator · FastAPI', port: ':4920', probe: false, big: true },
 
-    'proxy_server':     { x: 292, y: 80,  w: 180, h: 54, net: 'edge',    label: 'proxy_server',  sub: 'nginx · public origin · auth', port: ':80/443', probe: false },
-    'oauth2-proxy':     { x: 528, y: 80,  w: 180, h: 54, net: 'edge',    label: 'oauth2-proxy',  sub: 'Google auth → X-Forwarded-*', port: '—', probe: false },
+    'proxy_server':     { x: 292, y: 80,  w: 180, h: 64, net: 'edge',    label: 'proxy_server',  sub: 'nginx · public origin · auth', port: ':80/443', probe: false },
+    'oauth2-proxy':     { x: 528, y: 80,  w: 180, h: 64, net: 'edge',    label: 'oauth2-proxy',  sub: 'Google auth → X-Forwarded-*', port: ':4180', probe: false },
 
     'agent_server':     { x: 138, y: 284, w: 160, h: 64, net: 'noted',   label: 'agent_server',  sub: 'LLM API · gemma-4 · ma2-dpo', port: ':7701', probe: true },
     'kb-service':       { x: 326, y: 284, w: 160, h: 64, net: 'noted',   label: 'kb-service',    sub: 'KB gateway · /rag /graph', port: ':4940', probe: true },
     'mcp-service':      { x: 514, y: 284, w: 160, h: 64, net: 'mcp',     label: 'mcp-service',   sub: 'Tools / Skills host', port: ':4950', probe: true },
     'noted-tools':      { x: 702, y: 284, w: 160, h: 64, net: 'noted',   label: 'noted-tools',   sub: 'MCP user-tools · optional', port: ':7702', probe: true },
 
-    'websearch_server': { x: 820, y: 378, w: 152, h: 48, net: 'mcp',     label: 'websearch_server', sub: 'web_search backend · Camoufox', port: ':4960', probe: true, sm: true },
+    'websearch_server': { x: 730, y: 378, w: 168, h: 64, net: 'mcp',     label: 'websearch_server', sub: 'web_search · Camoufox', port: ':4960', probe: true },
 
-    'noted-rag':        { x: 218, y: 474, w: 168, h: 58, net: 'noted',   label: 'noted-rag',     sub: 'Vector retrieval · ChromaDB', port: ':8201', probe: true },
-    'noted-graph':      { x: 416, y: 474, w: 168, h: 58, net: 'noted',   label: 'noted-graph',   sub: 'Knowledge-graph retrieval ⚡', port: ':5523', probe: true },
-    'noted':            { x: 614, y: 474, w: 168, h: 58, net: 'noted',   label: 'noted',         sub: 'KB / document files', port: ':8123', probe: true },
+    'noted-rag':        { x: 218, y: 474, w: 168, h: 64, net: 'noted',   label: 'noted-rag',     sub: 'Vector retrieval · ChromaDB', port: ':8201', probe: true },
+    'noted-graph':      { x: 416, y: 474, w: 168, h: 64, net: 'noted',   label: 'noted-graph',   sub: 'Knowledge-graph retrieval ⚡', port: ':5523', probe: true },
+    'noted':            { x: 614, y: 474, w: 168, h: 64, net: 'noted',   label: 'noted',         sub: 'KB / document files', port: ':8123', probe: true },
 
-    'llama-vision':     { x: 270, y: 580, w: 240, h: 58, net: 'noted',   label: 'llama-vision',  sub: 'GPU host · gemma-4 + bge-m3 + reranker', port: ':8500', probe: true },
-    'noted-arcadedb':   { x: 560, y: 580, w: 170, h: 58, net: 'noted',   label: 'noted-arcadedb', sub: 'Graph persistence', port: ':2480', probe: true },
+    'llama-vision':     { x: 270, y: 580, w: 240, h: 64, net: 'noted',   label: 'llama-vision',  sub: 'GPU host · gemma-4 + bge-m3 + reranker', port: ':8500', probe: true },
+    'noted-arcadedb':   { x: 560, y: 580, w: 170, h: 64, net: 'noted',   label: 'noted-arcadedb', sub: 'Graph persistence', port: ':2480', probe: true },
 
-    'stt_server':       { x: 220, y: 686, w: 160, h: 54, net: 'logus2k', label: 'stt_server',    sub: 'Speech-to-text', port: ':2700', probe: true },
-    'tts_server':       { x: 420, y: 686, w: 160, h: 54, net: 'logus2k', label: 'tts_server',    sub: 'Text-to-speech', port: ':7700', probe: true },
-    'avatar_server':    { x: 620, y: 686, w: 160, h: 54, net: 'logus2k', label: 'avatar_server', sub: 'Talking avatar', port: ':7800', probe: true },
+    'stt_server':       { x: 220, y: 686, w: 160, h: 64, net: 'logus2k', label: 'stt_server',    sub: 'Speech-to-text', port: ':2700', probe: true },
+    'tts_server':       { x: 420, y: 686, w: 160, h: 64, net: 'logus2k', label: 'tts_server',    sub: 'Text-to-speech', port: ':7700', probe: true },
+    'avatar_server':    { x: 620, y: 686, w: 160, h: 64, net: 'logus2k', label: 'avatar_server', sub: 'Talking avatar', port: ':7800', probe: true },
   };
 
   // Group/tier labels (small caps above each cluster).
@@ -65,14 +65,14 @@
     { x: 292, y: 72,  t: 'Edge & Identity' },
     { x: 385, y: 170, t: 'Application' },
     { x: 138, y: 276, t: 'Direct dependencies' },
-    { x: 820, y: 370, t: 'mcp tool backend' },
+    { x: 730, y: 370, t: 'mcp tool backend' },
     { x: 218, y: 466, t: 'KB engine stack · via kb-service' },
     { x: 270, y: 572, t: 'Model & graph store' },
   ];
 
   // Faint enclosing panel for the voice cluster.
   const PANELS = [
-    { x: 206, y: 678, w: 580, h: 70, t: 'Voice · via proxy origin' },
+    { x: 206, y: 678, w: 580, h: 80, t: 'Voice · via proxy origin' },
   ];
 
   // --- edges (call paths). via:'left' routes through a left side channel.
@@ -131,7 +131,7 @@
     if (!n.sm) g.appendChild(el('text', { x: lx, y: n.y + n.h - 9, class: 'n-p' }, n.port));
     const dr = n.sm ? 5 : 6, dx = n.x + n.w - (n.sm ? 13 : 16), dy = n.y + (n.sm ? 13 : 16);
     g.appendChild(el('circle', { cx: dx, cy: dy, r: dr + 2, fill: '#fff' }));
-    g.appendChild(el('circle', { id: 'adot-' + id, cx: dx, cy: dy, r: dr, fill: STATUS.unknown.fill,
+    g.appendChild(el('circle', { id: 'adot-' + id, class: 'hdot', cx: dx, cy: dy, r: dr, fill: STATUS.unknown.fill,
       'data-probe': n.probe ? '1' : '0' }));
     if (!n.probe) g.appendChild(el('circle', { cx: dx, cy: dy, r: dr, fill: 'none', stroke: '#94a3b8',
       'stroke-width': 1, 'stroke-dasharray': '2 1.6' }));
@@ -159,6 +159,7 @@
         .leg{font-size:11px;fill:#475569}
         .pan-l{font-weight:700;font-size:10px;fill:#94a3b8;letter-spacing:.04em}
         .foot{font-size:10px;fill:#aab4c2}
+        .arch-svg.stale .hdot{opacity:.28}
       </style>`;
 
     PANELS.forEach(p => {
@@ -194,14 +195,11 @@
 
     for (const id in NODES) drawNode(svg, id, NODES[id]);
 
-    svg.appendChild(el('text', { x: W / 2, y: 770, class: 'foot', 'text-anchor': 'middle' },
-      'noted platform infra (Airflow · Postgres · Redis · MLflow · MinIO) backs KB ingestion only — not on job2cool’s request path.'));
-
     return svg;
   }
 
   // --- public API ------------------------------------------------------------
-  let _statusEl = null;
+  let _statusEl = null, _freshEl = null;
 
   function render(root, opts) {
     opts = opts || {};
@@ -210,7 +208,10 @@
     wrap.className = 'arch-wrap';
     wrap.innerHTML = `
       <style>
-        .arch-wrap{padding:1rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;min-height:0}
+        /* fill the Help view and vertically center the block; safe-center
+           falls back to top-align (no clipping) when the viewport is short. */
+        .arch-wrap{padding:1rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;
+          flex:1;min-height:0;justify-content:safe center;overflow:auto}
         .arch-bar{display:flex;align-items:center;gap:.7rem}
         .arch-bar h3{margin:0;font-size:15px;color:var(--ink,#1f2937)}
         .arch-bar .sp{flex:1}
@@ -218,10 +219,24 @@
         .arch-refresh{border:1px solid var(--line,#e5e9f0);background:#fff;border-radius:8px;padding:.4rem .8rem;font:inherit;font-size:12.5px;cursor:pointer}
         .arch-refresh:hover{border-color:#cfe6f7;background:#f6fbff}
         .arch-stage{max-width:1000px;width:100%;margin:0 auto}
+        /* "live feed" watchdog: each push restarts archDecay; if pushes stop,
+           the browser's own animation clock carries it green→yellow→orange→red,
+           and the animationend EVENT fires goStale(). No JS timer involved. */
+        .arch-fresh{display:inline-flex;align-items:center;gap:.4rem;font-size:12px;font-weight:600;
+          padding:.28rem .6rem;border:1px solid #e5e9f0;border-radius:999px;color:#94a3b8;background:#fff}
+        .arch-fresh i{width:8px;height:8px;border-radius:50%;background:currentColor;
+          box-shadow:0 0 0 3px color-mix(in srgb, currentColor 22%, transparent)}
+        .arch-fresh.live{animation:archDecay var(--arch-stale,40s) linear forwards}
+        .arch-fresh.stale{color:#dc2626 !important;animation:none !important;border-color:#f3c9c9;background:#fff6f6}
+        @keyframes archDecay{
+          0%{color:#16a34a} 30%{color:#16a34a} 46%{color:#eab308}
+          70%{color:#f97316} 100%{color:#dc2626}
+        }
       </style>
       <div class="arch-bar">
         <h3>Architecture &amp; health</h3>
         <span class="sp"></span>
+        <span class="arch-fresh" id="arch-fresh"><i></i><b>connecting…</b></span>
         <span class="arch-status" id="arch-status"></span>
         <button class="arch-refresh" id="arch-refresh">↻ Refresh</button>
       </div>
@@ -229,10 +244,32 @@
     root.appendChild(wrap);
     wrap.querySelector('#arch-stage').appendChild(buildSVG());
     _statusEl = wrap.querySelector('#arch-status');
+    _freshEl = wrap.querySelector('#arch-fresh');
+    // animationend only fires if NO push restarted the animation in time.
+    _freshEl.addEventListener('animationend', goStale);
     const btn = wrap.querySelector('#arch-refresh');
     if (opts.onRefresh) btn.onclick = () => opts.onRefresh();
     else btn.style.display = 'none';
   }
+
+  function _label(s) { const b = _freshEl && _freshEl.querySelector('b'); if (b) b.textContent = s; }
+  function goStale() {
+    if (_freshEl) _freshEl.classList.add('stale');
+    _label('no signal');
+    const svg = document.querySelector('.arch-svg'); if (svg) svg.classList.add('stale');
+  }
+  // Call on every push: pets the watchdog by restarting the decay animation.
+  function markLive() {
+    if (!_freshEl) return;
+    _freshEl.classList.remove('stale');
+    const svg = document.querySelector('.arch-svg'); if (svg) svg.classList.remove('stale');
+    _label('live feed');
+    _freshEl.classList.remove('live');
+    void _freshEl.offsetWidth;        // reflow so re-adding restarts the animation
+    _freshEl.classList.add('live');
+  }
+  // Call on an explicit socket drop: jump straight to the stale/red end-state.
+  function markDisconnected() { _freshEl && _freshEl.classList.remove('live'); goStale(); }
 
   function setHealth(map) {
     map = map || {};
@@ -248,5 +285,5 @@
   }
   function setStatusText(s) { if (_statusEl) _statusEl.textContent = s || ''; }
 
-  window.JOB2COOL_ARCHITECTURE = { render, setHealth, setStatusText, NODES, STATUS };
+  window.JOB2COOL_ARCHITECTURE = { render, setHealth, setStatusText, markLive, markDisconnected, NODES, STATUS };
 })();

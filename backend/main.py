@@ -40,6 +40,7 @@ from pydantic import BaseModel
 
 import buffers
 import cache
+import health_monitor
 import orchestrator
 import services
 import socketio_relay
@@ -126,6 +127,13 @@ async def _start_socketio_relay():
     """Connect the upstream Socket.IO client to the graph engine so KB build
     progress streams to the browser (relayed by socketio_relay.sio)."""
     await socketio_relay.start()
+
+
+@app.on_event("startup")
+async def _start_health_monitor():
+    """Start the watcher-gated dependency-health heartbeat (pushed to the Help &
+    Support page over Socket.IO; probes only while a browser is watching)."""
+    await health_monitor.start()
 
 
 # --- health / connectivity ---------------------------------------------------

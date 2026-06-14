@@ -114,8 +114,16 @@ def post_batch(rag_url: str, collection: str, records: list[dict],
         try:
             r = requests.post(f"{rag_url}/upsert_records", json=payload, timeout=300)
             if r.status_code == 200:
-                return r.json()
-            last = f"HTTP {r.status_code}: {r.text[:200]}"
+                body = r.json()
+                # Only accept a batch whose writes were read-back confirmed.
+                # A 'partial' (verified < indexed) means some rows didn't
+                # persist; retry — skip_existing will re-do only the missing.
+                if body.get("verified", body.get("indexed", 0)) >= body.get("indexed", 0):
+                    return body
+                last = (f"unverified write: indexed={body.get('indexed')} "
+                        f"verified={body.get('verified')}")
+            else:
+                last = f"HTTP {r.status_code}: {r.text[:200]}"
         except requests.RequestException as e:  # noqa: BLE001
             last = f"{type(e).__name__}: {e}"
         if attempt < retries:
@@ -201,16 +209,18 @@ def main() -> int:
     processed = 0     # rows actually sent (built records)
     short = 0         # rows dropped for being too short / id-less
     indexed = 0       # server-confirmed newly embedded
+    verified = 0      # read-back confirmed present in ChromaDB
     skipped = 0       # server-confirmed already present (resume)
     row_idx = -1
     buf: list[dict] = []
 
     def flush() -> None:
-        nonlocal indexed, skipped
+        nonlocal indexed, verified, skipped
         if not buf:
             return
         res = post_batch(args.rag_url, collection, buf, args.batch)
         indexed += res.get("indexed", 0)
+        verified += res.get("verified", res.get("indexed", 0))
         skipped += res.get("skipped_existing", 0)
         buf.clear()
         elapsed = time.time() - t0
@@ -220,7 +230,7 @@ def main() -> int:
         pct = (seen / target * 100) if target else 100
         sys.stdout.write(
             f"\r[{pct:5.1f}%] seen {seen}/{target}  built {processed}  "
-            f"indexed {indexed}  resumed {skipped}  short {short}  "
+            f"indexed {indexed} (ack {verified})  resumed {skipped}  short {short}  "
             f"{rate:5.1f} CV/s  ETA {_fmt_eta(eta)}   "
         )
         sys.stdout.flush()
@@ -252,8 +262,12 @@ def main() -> int:
     elapsed = time.time() - t0
     print(f"\n\n[done] visited {seen} rows in {_fmt_eta(elapsed)} "
           f"({(processed/elapsed if elapsed else 0):.1f} CV/s built).")
-    print(f"       built {processed} | newly indexed {indexed} | "
-          f"resumed/already-present {skipped} | dropped-short {short}")
+    print(f"       built {processed} | newly indexed {indexed} "
+          f"(read-back ack {verified}) | resumed/already-present {skipped} | "
+          f"dropped-short {short}")
+    if verified != indexed:
+        print(f"       WARNING: {indexed - verified} indexed rows were NOT "
+              f"read-back confirmed — re-run to repair.")
 
     report(args.rag_url, collection, args.sample_query)
     return 0
