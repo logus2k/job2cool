@@ -110,7 +110,11 @@
         // Each entry is a live reference - judge callbacks mutate the
         // same object, so the averages stay accurate as RAGAS scores
         // land asynchronously.
-        scoreHistory: []
+        scoreHistory: [],
+        // Per-assistant-turn panel snapshots for full-fidelity replay of a
+        // reopened project: {thinking, trace, score}. trace/score are filled in
+        // asynchronously (graph_trace + judge) and re-persisted when they land.
+        panelHistory: []
     };
     var stt = { socket: null, ctx: null, node: null, source: null, stream: null,
                 resampler: null, vad: null,
@@ -2713,8 +2717,16 @@
             renderParserBubble(bubble, parser, body, numbering, null, scoreData);
             state.history.push({ role: 'user', content: userText });
             state.history.push({ role: 'assistant', content: body });
-            // Auto-persist the thread each turn (Chats history; page-side store).
-            try { if (window.JOB2COOL_TURN_SAVED) window.JOB2COOL_TURN_SAVED(state.history.slice()); } catch (e) {}
+            // Snapshot this turn's panels for replay. `score` is the live
+            // reference (judge mutates it); `trace` is filled when graph_trace
+            // resolves below. _persist re-saves whenever either lands.
+            var panel = { thinking: parser.thinkingBuffer || '', trace: null, score: scoreData };
+            state.panelHistory.push(panel);
+            function _persist() {
+                try { if (window.JOB2COOL_TURN_SAVED) window.JOB2COOL_TURN_SAVED(state.history.slice()); } catch (e) {}
+            }
+            // Auto-persist the thread each turn (project history; page-side store).
+            _persist();
             // Speak ONLY the <voice> line — never the written answer. job2cool
             // puts the deliverable in the document and a short closing note in
             // the chat; reading that note (or any body text) aloud is exactly
@@ -2744,11 +2756,13 @@
                     }
                     renderParserBubble(bubble, parser, body, numbering,
                         bubble._traceData || null, scoreData);
+                    _persist();   // RAGAS landed → re-save with the final score
                 }).catch(function (e) {
                     scoreData.judge_pending = false;
                     scoreData.judge_error = String(e && e.message || e);
                     renderParserBubble(bubble, parser, body, numbering,
                         bubble._traceData || null, scoreData);
+                    _persist();
                 });
             }
             // After stream-end, fetch the aggregated trace and re-
@@ -2783,8 +2797,10 @@
                     bubble._graphResolved = true;
                     var hasEnts = !!(trace && trace.entities && trace.entities.length);
                     bubble._traceData = hasEnts ? trace : null;
+                    panel.trace = bubble._traceData;   // snapshot for replay
                     renderParserBubble(bubble, parser, body, numbering,
                         bubble._traceData, scoreData);
+                    _persist();   // graph trace landed → re-save with it
                 }).catch(function (e) {
                     console.warn('[cvchat] graph_trace fetch failed:', e);
                     bubble._graphResolved = true;
@@ -4298,26 +4314,56 @@
     // one right-edge panel is open at a time).
     window.JOB2COOL_CHAT_CLOSE = closePanel;
 
-    // ── Chats persistence hooks (used by js2c/chats.js) ──
+    // ── Projects persistence hooks (used by js2c/chats.js) ──
+    // Per-turn panel snapshots (thinking/graph/score) for full-fidelity replay.
+    window.JOB2COOL_GET_PANELS = function () {
+        return (state.panelHistory || []).map(function (p) {
+            return { thinking: p.thinking || '', trace: p.trace || null, score: p.score || null };
+        });
+    };
     // Clear the conversation and start fresh (greeting will show on open).
     window.JOB2COOL_CHAT_RESET = function () {
         state.history = [];
         state.scoreHistory = [];
+        state.panelHistory = [];
         if (messagesEl) messagesEl.innerHTML = '';
         state.greeted = false;
     };
-    // Reload a stored thread's full conversation into the panel and open it.
-    window.JOB2COOL_CHAT_LOAD = function (messages) {
+    // Reload a stored project's full conversation — including the live panels
+    // (Thinking / Graph / Score) — into the chat and open it. `panels` is the
+    // per-assistant-turn snapshot array saved alongside the messages.
+    window.JOB2COOL_CHAT_LOAD = function (messages, panels) {
         state.history = [];
         state.scoreHistory = [];
+        state.panelHistory = [];
         if (messagesEl) messagesEl.innerHTML = '';
         state.greeted = true;   // don't inject a greeting over a loaded thread
+        panels = panels || [];
+        var aIdx = 0;   // assistant-turn index → panels[aIdx]
         (messages || []).forEach(function (m) {
             var content = m && m.content || '';
             if (m && m.role === 'user') {
                 addMessage('user', escapeHtml(content).replace(/\n/g, '<br>'));
             } else {
-                addMessage('assistant', renderMarkdown(content));
+                var panel = panels[aIdx] || {};
+                var bubble = addMessage('assistant', '');
+                // Reconstruct the bubble exactly as the live renderer would: a
+                // minimal "done" parser (thinking text), fresh citation numbering
+                // (renderCitations repopulates it from the body's tags), plus the
+                // saved graph trace + score so all three toggles come back.
+                var fakeParser = { _inThinking: false, thinkingBuffer: panel.thinking || '', voiceText: '' };
+                var numbering = new Map();
+                if (panel.trace) bubble._traceData = panel.trace;
+                bubble._graphResolved = true;
+                var score = panel.score || null;
+                if (score) state.scoreHistory.push(score);
+                state.panelHistory.push({ thinking: panel.thinking || '', trace: panel.trace || null, score: score });
+                try {
+                    renderParserBubble(bubble, fakeParser, content, numbering, panel.trace || null, score);
+                } catch (e) {
+                    bubble.innerHTML = renderMarkdown(content);   // fallback to plain text
+                }
+                aIdx++;
             }
             state.history.push({ role: m ? m.role : 'assistant', content: content });
         });

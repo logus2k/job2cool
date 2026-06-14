@@ -194,3 +194,39 @@ The target homepage:
   orchestrator.
 - Audio routing (`/stt,/tts,/avatar`) is the existing proxy's job, not
   job2cool-backend ("don't touch nginx").
+
+## 9. Status update (2026-06-14)
+
+Major work landed since this plan was written. Authoritative detail lives in the
+agent memory (`~/.claude/projects/-home-logus-env-assets-job2cool/memory/`).
+
+**Nav / UI (BUILT).** Left-nav is now Workspace · **Projects** · Agents · Skills ·
+Tools · Knowledge Base · Company Profile(soon); global top bar carries the area
+title + identity (Google name/photo via oauth2-proxy access-token → UserInfo).
+Skills/Tools/Agents have CRUD views in resizable right side-panels styled like the
+Assistant chat (only one right panel open at a time). Workspace aligned to the
+TalentForge blueprint (cards + Generation Progress + single cream status bar).
+
+**Projects (was "Chats", BUILT).** Per-user named workspaces: New Project dialog =
+name + optional description + **private/shared** visibility (shared default).
+Private → per-user dir; Shared → `data/chats/_shared/` (owner-tagged, listed for all,
+owner-only edit/delete). Reopening a project does **full-fidelity replay**:
+conversation + workspace docs + role + the live **Thinking / Graph / Score** panels.
+
+**KB / engine (BUILT/FIXED).** kb-service is the KB gateway job2cool consumes
+(`NOTED_*_URL` → kb-service). KB view loads fast (list first, statuses stream), and
+**live graph-build progress** streams over **Socket.IO** (graph engine emits
+`kb:progress` per-domain room → job2cool-backend relays to the Database tab) — no
+polling (setTimeout/setInterval are banned project-wide; use event-driven push).
+Fixed a noted-graph bug that wiped the thematic layer on Rebuild for domains with
+zero sameAs edges (list-aliasing in `_merge_sameas_identity_classes`).
+
+**Infra.** Frontend is now **baked into the image** (bind mount removed) — frontend
+changes need `docker compose up -d --build job2cool-backend`. nginx upload limit
+raised to 100m on BOTH `/job2cool/` and the shared `/oauth2/auth` subrequest.
+
+**Pending / deferred.** (a) Engine-stack decoupling — move noted-rag/graph/arcadedb
+into a KB-owned compose/network and drop noted's MLflow/Airflow wiring (we did the
+in-place graph emitter instead, no fork). (b) Migrate cv, then noted, to consume
+kb-service. (c) cv/noted don't have the live-progress relay yet. (d) Browser
+verification pass for the live progress + project replay.

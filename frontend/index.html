@@ -355,10 +355,10 @@
 <body>
 <nav class="sidenav">
   <div class="brand"><img src="static/images/job2cool_logo_small.png" alt=""/><div class="brandtxt"><b>job2cool</b><span class="brandtag">AI-assisted HR</span></div></div>
-  <button class="newreq" id="newReq">＋ New Chat</button>
+  <button class="newreq" id="newReq">＋ New Project</button>
   <div class="navlist" id="navlist">
     <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Workspace</a>
-    <a class="navitem" data-nav="chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg>Chats</a>
+    <a class="navitem" data-nav="chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 0 1 2-2h4.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</a>
     <a class="navitem" data-nav="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Agents</a>
     <a class="navitem" data-nav="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 8h6M8 12h8M8 16h5"/></svg>Skills</a>
     <a class="navitem" data-nav="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8 7.2 20l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.7 2.7-2.3-2.3z"/></svg>Tools</a>
@@ -642,7 +642,7 @@ function openAssistant(){
   if(!document.body.classList.contains('cvchat-open')){const l=document.querySelector('.cvchat-launcher');if(l)l.click();}
 }
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
-const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Chats'};
+const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Projects'};
 // Only one right-edge panel is ever open at a time. Hides every .j2c-side
 // panel except the one passed (exceptId); the chat panel closes itself.
 window.JOB2COOL_CLOSE_SIDE_PANELS=function(exceptId){
@@ -666,7 +666,7 @@ document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',e=>{
   if(k==='workspace'||k==='kb'||k==='settings'||k==='skills'||k==='tools'||k==='agents'||k==='chats')return showView(k);
   toast(n.textContent.replace('soon','').trim()+' — coming soon');
 }));
-$('#newReq').onclick=()=>{showView('workspace');if(window.JOB2COOL_NEW_TURN)window.JOB2COOL_NEW_TURN();if(window.JOB2COOL_CHAT_NEW)window.JOB2COOL_CHAT_NEW();openAssistant();};
+$('#newReq').onclick=()=>{ if(window.JOB2COOL_NEW_PROJECT) window.JOB2COOL_NEW_PROJECT(); };
 $('#exportAllBtn').onclick=exportAll;
 
 // left-nav profile: read the oauth2-proxy identity (X-Forwarded-* via /api/job2cool/me).

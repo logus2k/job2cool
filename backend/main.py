@@ -232,95 +232,178 @@ _CHATS_DIR = os.path.join(JOB2COOL_DATA_DIR, "chats")
 _TID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
+def _user_email(request: Request) -> str:
+    return (request.headers.get("X-Forwarded-Email") or "").strip().lower()
+
+
+def _user_key(request: Request) -> str:
+    email = _user_email(request)
+    return re.sub(r"[^a-z0-9._-]", "_", email) if email else "anon"
+
+
 def _chat_user_dir(request: Request) -> str:
-    email = (request.headers.get("X-Forwarded-Email") or "").strip().lower()
-    key = re.sub(r"[^a-z0-9._-]", "_", email) if email else "anon"
-    d = os.path.join(_CHATS_DIR, key)
+    d = os.path.join(_CHATS_DIR, _user_key(request))
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _shared_dir() -> str:
+    """Shared projects live here (visible to every authenticated user), each
+    tagged with its `owner_key`. Private projects stay in the per-user dir."""
+    d = os.path.join(_CHATS_DIR, "_shared")
     os.makedirs(d, exist_ok=True)
     return d
 
 
 class ChatThreadIn(BaseModel):
-    title: str = ""
+    title: str = ""        # project name (user-given at creation)
+    description: str = ""   # optional project description
+    visibility: str = "private"   # "private" (owner only) | "shared" (all users)
     role: str = ""         # detected hiring role (workspace bar + default name)
     messages: list = []
     documents: dict = {}   # workspace doc snapshot {order:[], content:{}}
+    panels: list = []      # per-assistant-turn {thinking, trace, score} for replay
+
+
+def _list_entry(rec: dict, fn: str, is_owner: bool) -> dict:
+    return {"thread_id": rec.get("thread_id") or fn[:-5],
+            "title": rec.get("title") or "Untitled",
+            "description": rec.get("description") or "",
+            "visibility": rec.get("visibility") or "private",
+            "owner": rec.get("owner") or "",
+            "is_owner": is_owner,
+            "role": rec.get("role") or "",
+            "updated_at": rec.get("updated_at") or 0,
+            "message_count": len(rec.get("messages") or [])}
 
 
 @app.get("/api/job2cool/chats")
 async def chats_list(request: Request):
-    d = _chat_user_dir(request)
+    me = _user_key(request)
     out = []
-    for fn in os.listdir(d):
+    # My private projects (existing per-user files default to private).
+    md = _chat_user_dir(request)
+    for fn in os.listdir(md):
         if not fn.endswith(".json"):
             continue
         try:
-            with open(os.path.join(d, fn)) as f:
-                t = json.load(f)
-            out.append({"thread_id": t.get("thread_id") or fn[:-5],
-                        "title": t.get("title") or "Untitled",
-                        "role": t.get("role") or "",
-                        "updated_at": t.get("updated_at") or 0,
-                        "message_count": len(t.get("messages") or [])})
+            with open(os.path.join(md, fn)) as f:
+                out.append(_list_entry(json.load(f), fn, True))
+        except Exception:  # noqa: BLE001
+            continue
+    # Shared projects (visible to everyone); is_owner gates edit/delete.
+    sd = _shared_dir()
+    for fn in os.listdir(sd):
+        if not fn.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(sd, fn)) as f:
+                rec = json.load(f)
+            out.append(_list_entry(rec, fn, rec.get("owner_key") == me))
         except Exception:  # noqa: BLE001
             continue
     out.sort(key=lambda x: x["updated_at"], reverse=True)
     return JSONResponse({"chats": out})
 
 
+def _find_project(tid: str, request: Request):
+    """Return (path, record, is_owner) for tid from the user's private dir or the
+    shared dir; (None, None, False) if not found / not visible to this user."""
+    me = _user_key(request)
+    priv = os.path.join(_chat_user_dir(request), tid + ".json")
+    if os.path.isfile(priv):
+        try:
+            return priv, json.load(open(priv)), True
+        except Exception:  # noqa: BLE001
+            return priv, {}, True
+    shar = os.path.join(_shared_dir(), tid + ".json")
+    if os.path.isfile(shar):
+        try:
+            rec = json.load(open(shar))
+        except Exception:  # noqa: BLE001
+            rec = {}
+        return shar, rec, (rec.get("owner_key") == me)
+    return None, None, False
+
+
 @app.get("/api/job2cool/chats/{tid}")
 async def chats_get(tid: str, request: Request):
     if not _TID_RE.match(tid):
         return JSONResponse({"error": "bad id"}, status_code=400)
-    p = os.path.join(_chat_user_dir(request), tid + ".json")
-    if not os.path.isfile(p):
+    path, rec, is_owner = _find_project(tid, request)
+    if not path:
         return JSONResponse({"error": "not found"}, status_code=404)
-    with open(p) as f:
-        return JSONResponse(json.load(f))
+    return JSONResponse({**rec, "is_owner": is_owner})
 
 
 @app.put("/api/job2cool/chats/{tid}")
 async def chats_put(tid: str, body: ChatThreadIn, request: Request):
     if not _TID_RE.match(tid):
         return JSONResponse({"error": "bad id"}, status_code=400)
-    p = os.path.join(_chat_user_dir(request), tid + ".json")
+    me = _user_key(request)
+    priv_p = os.path.join(_chat_user_dir(request), tid + ".json")
+    shar_p = os.path.join(_shared_dir(), tid + ".json")
+    shared = (body.visibility or "private").lower() == "shared"
+    existing = None
+    for pth in (priv_p, shar_p):
+        if os.path.isfile(pth):
+            try:
+                existing = json.load(open(pth))
+            except Exception:  # noqa: BLE001
+                existing = {}
+            break
+    # Can't edit a shared project owned by someone else.
+    if existing and existing.get("visibility") == "shared" \
+            and existing.get("owner_key") and existing.get("owner_key") != me:
+        return JSONResponse({"error": "forbidden — owned by another user"}, status_code=403)
     now = time.time()
-    created = now
-    if os.path.isfile(p):
-        try:
-            with open(p) as f:
-                created = json.load(f).get("created_at") or now
-        except Exception:  # noqa: BLE001
-            pass
     rec = {"thread_id": tid, "title": (body.title or "Untitled")[:120],
+           "description": (body.description or "")[:500],
+           "visibility": "shared" if shared else "private",
+           "owner": (existing or {}).get("owner") or _user_email(request),
+           "owner_key": (existing or {}).get("owner_key") or me,
            "role": (body.role or "")[:120],
-           "created_at": created, "updated_at": now, "messages": body.messages,
-           "documents": body.documents or {}}
-    tmp = p + ".tmp"
+           "created_at": (existing or {}).get("created_at") or now,
+           "updated_at": now, "messages": body.messages,
+           "documents": body.documents or {}, "panels": body.panels or []}
+    target = shar_p if shared else priv_p
+    tmp = target + ".tmp"
     with open(tmp, "w") as f:
         json.dump(rec, f, ensure_ascii=False)
-    os.replace(tmp, p)
-    return JSONResponse({"ok": True, "thread_id": tid, "updated_at": now})
+    os.replace(tmp, target)
+    # Visibility changed → remove the copy in the other location.
+    other = priv_p if shared else shar_p
+    if other != target and os.path.isfile(other):
+        try:
+            os.remove(other)
+        except OSError:
+            pass
+    return JSONResponse({"ok": True, "thread_id": tid, "updated_at": now,
+                         "visibility": rec["visibility"]})
 
 
 class ChatRenameIn(BaseModel):
     title: str = ""
+    description: str | None = None
 
 
 @app.patch("/api/job2cool/chats/{tid}")
 async def chats_rename(tid: str, body: ChatRenameIn, request: Request):
     if not _TID_RE.match(tid):
         return JSONResponse({"error": "bad id"}, status_code=400)
-    p = os.path.join(_chat_user_dir(request), tid + ".json")
-    if not os.path.isfile(p):
+    path, rec, is_owner = _find_project(tid, request)
+    if not path:
         return JSONResponse({"error": "not found"}, status_code=404)
-    with open(p) as f:
-        rec = json.load(f)
-    rec["title"] = (body.title or "Untitled")[:120]
-    tmp = p + ".tmp"
+    if not is_owner:
+        return JSONResponse({"error": "forbidden — only the owner can edit"}, status_code=403)
+    rec["title"] = (body.title or rec.get("title") or "Untitled")[:120]
+    if body.description is not None:
+        rec["description"] = (body.description or "")[:500]
+    rec["updated_at"] = time.time()
+    tmp = path + ".tmp"
     with open(tmp, "w") as f:
         json.dump(rec, f, ensure_ascii=False)
-    os.replace(tmp, p)
+    os.replace(tmp, path)
     return JSONResponse({"ok": True, "title": rec["title"]})
 
 
@@ -328,11 +411,13 @@ async def chats_rename(tid: str, body: ChatRenameIn, request: Request):
 async def chats_delete(tid: str, request: Request):
     if not _TID_RE.match(tid):
         return JSONResponse({"error": "bad id"}, status_code=400)
-    p = os.path.join(_chat_user_dir(request), tid + ".json")
-    if os.path.isfile(p):
-        os.remove(p)
-        return JSONResponse({"deleted": True})
-    return JSONResponse({"deleted": False}, status_code=404)
+    path, rec, is_owner = _find_project(tid, request)
+    if not path:
+        return JSONResponse({"deleted": False}, status_code=404)
+    if not is_owner:
+        return JSONResponse({"error": "forbidden — only the owner can delete"}, status_code=403)
+    os.remove(path)
+    return JSONResponse({"deleted": True})
 
 
 # --- Assistant (cv contract) + live-document buffers (owned by job2cool) ------
