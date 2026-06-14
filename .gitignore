@@ -1,1 +1,8 @@
 .venv_job2cool/
+
+# candidate-ingest host venv
+scripts/.venv-ingest/
+
+# CVs datasets
+data/candidates/
+data/candidates2/

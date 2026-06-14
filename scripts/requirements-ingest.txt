@@ -1,0 +1,5 @@
+# Host-side deps for scripts/ingest_candidates.py (run in an isolated venv):
+#   python3 -m venv scripts/.venv-ingest
+#   scripts/.venv-ingest/bin/pip install -r scripts/requirements-ingest.txt
+pyarrow>=15
+requests>=2.31

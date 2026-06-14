@@ -359,6 +359,7 @@
   <div class="navlist" id="navlist">
     <a class="navitem active" data-nav="workspace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Workspace</a>
     <a class="navitem" data-nav="chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 0 1 2-2h4.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</a>
+    <a class="navitem" data-nav="candidates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.2 16c.5-1.6 1.8-2.4 3.3-2.4S11.3 14.4 11.8 16"/><path d="M14 10h4M14 13h4"/></svg>Candidates</a>
     <a class="navitem" data-nav="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></svg>Agents</a>
     <a class="navitem" data-nav="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 8h6M8 12h8M8 16h5"/></svg>Skills</a>
     <a class="navitem" data-nav="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8 7.2 20l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.7 2.7-2.3-2.3z"/></svg>Tools</a>
@@ -396,6 +397,9 @@
 
   <!-- Chats view (list of the user's stored conversations) -->
   <div id="view-chats" class="viewpane" hidden></div>
+
+  <!-- Candidates view (browse the ingested CV corpus + per-CV detail panel) -->
+  <div id="view-candidates" class="viewpane" hidden></div>
 
   <!-- Agents view (agent_server presets job2cool uses + their templates) -->
   <div id="view-agents" class="viewpane" hidden>
@@ -642,14 +646,14 @@ function openAssistant(){
   if(!document.body.classList.contains('cvchat-open')){const l=document.querySelector('.cvchat-launcher');if(l)l.click();}
 }
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
-const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Projects'};
+const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Projects',candidates:'Candidates'};
 // Only one right-edge panel is ever open at a time. Hides every .j2c-side
 // panel except the one passed (exceptId); the chat panel closes itself.
 window.JOB2COOL_CLOSE_SIDE_PANELS=function(exceptId){
   document.querySelectorAll('.j2c-side').forEach(p=>{if(p.id!==exceptId)p.hidden=true;});
 };
 function showView(name){
-  ['workspace','kb','settings','skills','tools','agents','chats'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
+  ['workspace','kb','settings','skills','tools','agents','chats','candidates'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
   {const tt=$('#topTitle');if(tt)tt.textContent=VIEW_TITLES[name]||'';}
   document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===name));
   if(name==='settings')syncSettingsView();
@@ -658,12 +662,13 @@ function showView(name){
   if(name==='skills'||name==='tools'){window.JOB2COOL_MCP_OPEN&&window.JOB2COOL_MCP_OPEN(name);}
   if(name==='agents'){window.JOB2COOL_AGENTS_OPEN&&window.JOB2COOL_AGENTS_OPEN();}
   if(name==='chats'){window.JOB2COOL_CHATS_OPEN&&window.JOB2COOL_CHATS_OPEN();}
+  if(name==='candidates'){window.JOB2COOL_CANDIDATES_OPEN&&window.JOB2COOL_CANDIDATES_OPEN();}
 }
 // left-nav wiring: views switch the main pane; Assistant toggles the chat overlay; rest are placeholders.
 document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',e=>{
   e.preventDefault();const k=n.dataset.nav;
   if(k==='assistant')return openAssistant();
-  if(k==='workspace'||k==='kb'||k==='settings'||k==='skills'||k==='tools'||k==='agents'||k==='chats')return showView(k);
+  if(k==='workspace'||k==='kb'||k==='settings'||k==='skills'||k==='tools'||k==='agents'||k==='chats'||k==='candidates')return showView(k);
   toast(n.textContent.replace('soon','').trim()+' — coming soon');
 }));
 $('#newReq').onclick=()=>{ if(window.JOB2COOL_NEW_PROJECT) window.JOB2COOL_NEW_PROJECT(); };
@@ -703,6 +708,7 @@ render();
 <script src="static/js2c/mcp.js"></script>
 <script src="static/js2c/chats.js"></script>
 <script src="static/js2c/agents.js"></script>
+<script src="static/js2c/candidates.js"></script>
 <!-- cv-chat Assistant (chat + STT/TTS/avatar + Thinking/Graph/Score/citations) -->
 <script src="static/widget/vendor/onnxruntime-web/ort.wasm.min.js"></script>
 <script src="static/widget/vendor/vad/bundle.min.js"></script>

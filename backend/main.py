@@ -33,7 +33,7 @@ from pathlib import Path
 
 import httpx
 import socketio
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -584,6 +584,120 @@ async def score_answer(req: ScoreRequest):
                 "rationale": str(v.get("rationale") or "")[:800]}
     except Exception as e:
         return {"error": f"{type(e).__name__}: {e}"}
+
+
+# --- Candidates browser (owned: /api/job2cool/candidates) --------------------
+# Read-only list/detail over the ingested candidate-CV corpus
+# (jobs_candidates__corpus). Browse pages via noted-rag /list_records; free-text
+# search via noted-rag /search (semantic), enriched with full metadata by id.
+CANDIDATES_COLLECTION = os.getenv("CANDIDATES_COLLECTION", "jobs_candidates__corpus")
+
+
+def _cand_card(rec: dict) -> dict:
+    m = rec.get("metadata") or {}
+    text = rec.get("text") or ""
+    return {
+        "id": rec.get("id"),
+        "candidate_id": m.get("id") or "",
+        "position": m.get("position") or "",
+        "primary_keyword": m.get("primary_keyword") or "",
+        "english_level": m.get("english_level") or "",
+        "experience_years": m.get("experience_years"),
+        "snippet": text[:240],
+    }
+
+
+@app.get("/api/job2cool/candidates")
+async def candidates_list(offset: int = 0, limit: int = 30, q: str = "",
+                          primary_keyword: str = "", english_level: str = "",
+                          min_experience: int = -1):
+    """List candidate CVs. With `q`: semantic search (rerank floor disabled so
+    nearest matches always surface). Without `q`: paginated browse + optional
+    metadata filters (primary_keyword / english_level / min_experience)."""
+    limit = max(1, min(limit, 100))
+    q = (q or "").strip()
+
+    if q:
+        try:
+            # noted-rag /search caps top_k at 20; clamp so the browse page size
+            # (30) doesn't 422 the search path into empty results.
+            r = await _proxy_client.post(
+                f"{NOTED_RAG}/search",
+                json={"collection": CANDIDATES_COLLECTION, "query": q,
+                      "top_k": min(limit, 20), "rerank_min_score": 0.0})
+            chunks = r.json().get("chunks", []) if r.status_code == 200 else []
+        except Exception as e:  # noqa: BLE001
+            return {"mode": "search", "total": 0, "items": [], "error": str(e)}
+        # /search trims metadata, so re-fetch full metadata by id for the cards.
+        ids = [c.get("id") for c in chunks if c.get("id")]
+        by_id: dict = {}
+        if ids:
+            try:
+                rr = await _proxy_client.post(
+                    f"{NOTED_RAG}/list_records",
+                    json={"collection": CANDIDATES_COLLECTION, "ids": ids,
+                          "include_text": True})
+                for rec in (rr.json().get("records") or []):
+                    by_id[rec["id"]] = rec
+            except Exception:  # noqa: BLE001
+                pass
+        items = []
+        for c in chunks:
+            rec = by_id.get(c.get("id")) or {"id": c.get("id"), "metadata": {},
+                                             "text": c.get("text", "")}
+            card = _cand_card(rec)
+            card["score"] = round(float(c.get("score") or 0.0), 4)
+            items.append(card)
+        return {"mode": "search", "total": len(items), "items": items}
+
+    where_terms = []
+    if primary_keyword:
+        where_terms.append({"primary_keyword": primary_keyword})
+    if english_level:
+        where_terms.append({"english_level": english_level})
+    if min_experience >= 0:
+        where_terms.append({"experience_years": {"$gte": min_experience}})
+    where = where_terms[0] if len(where_terms) == 1 else (
+        {"$and": where_terms} if where_terms else None)
+
+    try:
+        r = await _proxy_client.post(
+            f"{NOTED_RAG}/list_records",
+            json={"collection": CANDIDATES_COLLECTION, "where": where,
+                  "limit": limit, "offset": offset, "include_text": True})
+        data = r.json()
+    except Exception as e:  # noqa: BLE001
+        return {"mode": "browse", "total": 0, "items": [], "error": str(e)}
+    items = [_cand_card(rec) for rec in (data.get("records") or [])]
+    return {"mode": "browse", "total": data.get("total", 0),
+            "offset": offset, "limit": limit, "items": items}
+
+
+@app.get("/api/job2cool/candidates/{cid}")
+async def candidate_detail(cid: str):
+    """Full detail for one candidate: structured fields + the whole CV text."""
+    try:
+        r = await _proxy_client.post(
+            f"{NOTED_RAG}/list_records",
+            json={"collection": CANDIDATES_COLLECTION, "ids": [cid],
+                  "include_text": True})
+        recs = (r.json().get("records") or []) if r.status_code == 200 else []
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"upstream: {e}")
+    if not recs:
+        raise HTTPException(status_code=404, detail="candidate not found")
+    rec = recs[0]
+    m = rec.get("metadata") or {}
+    return {
+        "id": rec.get("id"),
+        "candidate_id": m.get("id") or "",
+        "position": m.get("position") or "",
+        "primary_keyword": m.get("primary_keyword") or "",
+        "english_level": m.get("english_level") or "",
+        "experience_years": m.get("experience_years"),
+        "cv_chars": m.get("cv_chars"),
+        "cv": rec.get("text") or "",
+    }
 
 
 # --- reverse proxy: shell's read-only KB/Explorer/Document APIs -> noted ------

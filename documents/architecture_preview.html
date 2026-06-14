@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!-- Standalone preview of the Help & Support architecture/health diagram.
+     Open directly in a browser (file://) to iterate on layout & health dots
+     WITHOUT rebuilding the job2cool image. Loads the real renderer module
+     from ../frontend/js2c/architecture.js so what you see is what ships.
+     The "scenario" buttons feed mock health maps to setHealth(). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>job2cool — architecture preview</title>
+  <style>
+    :root{--ink:#1f2937;--muted:#94a3b8;--line:#e5e9f0}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#eef2f7;color:var(--ink)}
+    .frame{max-width:1040px;margin:24px auto;background:#fff;border:1px solid #dfe5ee;border-radius:14px;box-shadow:0 6px 30px rgba(15,23,42,.08);overflow:hidden}
+    .demo-bar{display:flex;gap:.5rem;align-items:center;padding:.7rem 1.3rem;border-bottom:1px solid #eef1f6;background:#fafbfd;flex-wrap:wrap}
+    .demo-bar b{font-size:12.5px;color:#64748b;margin-right:.3rem}
+    .demo-bar button{border:1px solid #e5e9f0;background:#fff;border-radius:8px;padding:.35rem .7rem;font:inherit;font-size:12px;cursor:pointer}
+    .demo-bar button:hover{border-color:#cfe6f7;background:#f6fbff}
+    .note{font-size:11px;color:#94a3b8;padding:.5rem 1.3rem;border-top:1px solid #eef1f6;background:#fafbfd}
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="demo-bar">
+      <b>Mock health:</b>
+      <button data-s="all-ok">all healthy</button>
+      <button data-s="mixed">mixed</button>
+      <button data-s="outage">engine outage</button>
+      <button data-s="unknown">all unknown</button>
+    </div>
+    <div id="arch-root"></div>
+    <div class="note">Panel renders at 1000×800 (viewBox), scaled responsively. Dashed-ring dots = containers
+      not probed by the backend health endpoint (proxy/identity/self). The ⚡ on noted-graph marks the Socket.IO
+      live-progress relay. Scope = job2cool's request-path dependencies only; noted's ingestion/training infra is excluded.</div>
+  </div>
+
+  <script src="../frontend/js2c/architecture.js"></script>
+  <script>
+    const A = window.JOB2COOL_ARCHITECTURE;
+    A.render(document.getElementById('arch-root'), { onRefresh: () => applyScenario('mixed') });
+
+    const ids = Object.keys(A.NODES);
+
+    function applyScenario(s) {
+      const m = {};
+      if (s === 'all-ok')  ids.forEach(id => m[id] = 'ok');
+      if (s === 'unknown') ids.forEach(id => m[id] = 'unknown');
+      if (s === 'mixed') {
+        ids.forEach(id => m[id] = 'ok');
+        m['noted-tools'] = 'degraded';      // optional dep flaky
+        m['websearch_server'] = 'down';
+        m['avatar_server'] = 'unknown';
+      }
+      if (s === 'outage') {
+        ids.forEach(id => m[id] = 'ok');
+        m['llama-vision'] = 'down';          // GPU host down …
+        m['agent_server'] = 'degraded';      // … so LLM degrades
+        m['noted-rag'] = 'degraded';
+        m['noted-graph'] = 'degraded';
+      }
+      A.setHealth(m);
+      A.setStatusText('mock scenario: ' + s);
+    }
+    document.querySelectorAll('.demo-bar button').forEach(b => b.onclick = () => applyScenario(b.dataset.s));
+    applyScenario('mixed');
+  </script>
+</body>
+</html>
