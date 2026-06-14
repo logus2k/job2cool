@@ -53,7 +53,7 @@
     root.innerHTML = `
       <div style="display:flex;flex:1;min-height:0">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-          <div class="kb-head"><button class="hbtn btnnew" id="mcp-new-tool">＋ New Tool</button><span class="kb-sub">Callable tools available to this app over MCP</span></div>
+          <div class="kb-head"><button class="hbtn btnnew" id="mcp-new-tool">＋ New Tool</button><span class="kb-sub">Tools available to the Assistant</span></div>
           <div id="mcp-tools-main" style="flex:1;min-width:0;overflow:auto;padding:1rem 1.3rem">
           ${tools.length ? `<table class="kb-doctable"><thead><tr><th>Name</th><th>Description</th><th>Tier</th><th>Impl</th><th>Enabled</th><th></th></tr></thead><tbody>${tools.map(t => `
             <tr>
@@ -163,7 +163,7 @@
     root.innerHTML = `
       <div style="display:flex;flex:1;min-height:0">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-          <div class="kb-head"><button class="hbtn btnnew" id="mcp-new-skill">＋ New Skill</button><span class="kb-sub">Reusable instruction templates (served over MCP as prompts)</span></div>
+          <div class="kb-head"><button class="hbtn btnnew" id="mcp-new-skill">＋ New Skill</button><span class="kb-sub">Reusable instruction templates</span></div>
           <div id="mcp-skills-main" style="flex:1;min-width:0;overflow:auto;padding:1rem 1.3rem">
           ${skills.length ? `<table class="kb-doctable"><thead><tr><th>Name</th><th>Description</th><th>Triggers</th><th>Priority</th><th>Enabled</th><th></th></tr></thead><tbody>${skills.map(s => `
             <tr>
@@ -173,7 +173,7 @@
               <td>${esc(s.priority == null ? 100 : s.priority)}</td>
               <td><input type="checkbox" data-toggle="${esc(s.name)}"${s.enabled !== false ? ' checked' : ''}></td>
               <td style="white-space:nowrap;text-align:right"><button class="hbtn" data-edit="${esc(s.name)}">Edit</button><button class="hbtn" data-del="${esc(s.name)}">Delete</button></td>
-            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${ART_SKILLS}</div><h3>No skills created yet</h3><p>Add reusable instruction templates served over MCP.</p></div>`}
+            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${ART_SKILLS}</div><h3>No skills created yet</h3><p>Add reusable instruction templates</p></div>`}
           </div>
         </div>
         ${sideMarkup('mcp-skill', 'Skill')}

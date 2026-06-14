@@ -2,3 +2,6 @@ fastapi==0.116.2
 uvicorn==0.35.0
 httpx==0.28.0
 pydantic==2.11.9
+# Socket.IO server (browser) + async client (to noted-graph) for the live KB
+# build-progress relay. The asyncio_client extra pulls aiohttp.
+python-socketio[asyncio_client]>=5.11.0

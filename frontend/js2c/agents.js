@@ -44,7 +44,7 @@
     root.innerHTML = `
       <div style="display:flex;flex:1;min-height:0">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-          <div class="kb-head"><button class="hbtn btnnew" id="ag-new">＋ New Agent</button><span class="kb-sub">agent_server presets that drive Diana — edit a template to change her behaviour</span></div>
+          <div class="kb-head"><button class="hbtn btnnew" id="ag-new">＋ New Agent</button><span class="kb-sub">Presets that drive agents behaviour</span></div>
           <div id="ag-main" style="flex:1;min-width:0;overflow:auto;padding:1rem 1.3rem">
           ${agents.length ? `<table class="kb-doctable"><thead><tr><th>Agent</th><th>Role</th><th>Memory</th><th></th></tr></thead><tbody>${agents.map(a => `
             <tr>

@@ -120,7 +120,7 @@
             <td>${Math.max(1, Math.floor((c.message_count || 0) / 2))}</td>
             <td>${esc(fmtWhen(c.updated_at))}</td>
             <td style="white-space:nowrap;text-align:right"><button class="hbtn" data-open="${esc(c.thread_id)}">Open</button><button class="hbtn" data-rename="${esc(c.thread_id)}">Rename</button><button class="hbtn" data-del="${esc(c.thread_id)}">Delete</button></td>
-          </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${EMPTY_ART}</div><h3>No saved chats yet</h3><p>Your conversations with Diana will appear here.</p></div>`}
+          </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${EMPTY_ART}</div><h3>No saved chats yet</h3><p>Your past conversations will appear here</p></div>`}
       </div>`;
     root.querySelector('#chats-new').onclick = () => { window.JOB2COOL_CHAT_NEW(); openChat(); };
     root.querySelectorAll('[data-open]').forEach(b => b.onclick = () => loadThread(b.dataset.open));

@@ -17,4 +17,5 @@ COPY frontend ./frontend
 
 EXPOSE 4920
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4920"]
+# Serve the Socket.IO-wrapped ASGI app (REST/SSE API + KB progress relay).
+CMD ["uvicorn", "main:asgi_app", "--host", "0.0.0.0", "--port", "4920"]

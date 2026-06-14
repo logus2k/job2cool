@@ -32,6 +32,7 @@ import time
 from pathlib import Path
 
 import httpx
+import socketio
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -41,6 +42,7 @@ import buffers
 import cache
 import orchestrator
 import services
+import socketio_relay
 
 # Judge with gemma-4 + explicit JSON (the cv_rag_judge preset's grammar 400s here).
 JUDGE_MODEL = os.getenv("JOB2COOL_JUDGE",
@@ -117,6 +119,13 @@ async def _seed_job2cool_agents():
         await services.ensure_agent_preset(client, "job2cool_orchestrator", orchestrator.INTRO_SYSTEM)
         await services.ensure_agent_preset(client, "job2cool_composer", orchestrator.SECTION_SYSTEM)
         await services.ensure_agent_preset(client, "job2cool_judge", JUDGE_SYSTEM)
+
+
+@app.on_event("startup")
+async def _start_socketio_relay():
+    """Connect the upstream Socket.IO client to the graph engine so KB build
+    progress streams to the browser (relayed by socketio_relay.sio)."""
+    await socketio_relay.start()
 
 
 # --- health / connectivity ---------------------------------------------------
@@ -608,3 +617,9 @@ async def index():
     if idx.is_file():
         return FileResponse(str(idx))
     return JSONResponse({"detail": "frontend not found"}, status_code=404)
+
+
+# Wrap the FastAPI app so uvicorn serves both the REST/SSE API and the Socket.IO
+# relay (KB build progress) on the same port. The container CMD runs
+# `main:asgi_app`. /socket.io is handled by Socket.IO; everything else by FastAPI.
+asgi_app = socketio.ASGIApp(socketio_relay.sio, other_asgi_app=app, socketio_path="socket.io")

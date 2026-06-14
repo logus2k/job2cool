@@ -73,6 +73,9 @@
   .hbtn:hover{border-color:var(--primary);color:var(--primary-d)}
   .hbtn.primary{background:var(--primary);border-color:var(--primary);color:var(--ink)}
   .hbtn.primary:hover{background:#ffd779}
+  /* peach accent for the heavy/destructive actions: Rebuild Graph, Download All, Upload Documents */
+  #exportAllBtn,#kb-rebuild,#kb-rebuild2,#kb-upload{background:#ffcc9b;border-color:#ffcc9b;color:#1d1d1d}
+  #exportAllBtn:hover,#kb-rebuild:hover,#kb-rebuild2:hover,#kb-upload:hover{background:#ffbd7e;border-color:#ffbd7e}
   /* "+ New …" buttons (New Domain/Chat/Agent/Tool/Skill) — green, matches New Request */
   .hbtn.btnnew{background:#b6e5b7;border-color:var(--primary);color:var(--primary-d)}
   .hbtn.btnnew:hover{background:#97dd99}
@@ -145,7 +148,7 @@
   .kb-doc{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
   .kb-doc-main{flex:1;min-width:0}
   .kb-doc-main b{font-size:13px}
-  .kb-chk{display:grid;grid-template-columns:18px 180px 56px 1fr;gap:.5rem;align-items:baseline;font-size:12px;padding:.28rem 0;border-top:1px solid #f1f2f6}
+  .kb-chk{display:grid;grid-template-columns:18px 220px 56px 1fr;gap:.5rem;align-items:baseline;font-size:12px;padding:.28rem 0;border-top:1px solid #f1f2f6}
   .kb-chk-ic{font-weight:700}
   .kb-chk.ok .kb-chk-ic{color:var(--ok)} .kb-chk.warn .kb-chk-ic{color:#b9760f} .kb-chk.error .kb-chk-ic{color:#b42318}
   .kb-chk-n{font-family:ui-monospace,monospace;color:var(--ink)}
@@ -402,7 +405,7 @@
 
   <!-- Settings view (native, not a modal) -->
   <div id="view-settings" class="viewpane" hidden>
-    <div class="kb-head"><span class="kb-sub">How the hiring package is generated</span></div>
+    <div class="kb-head"><span class="kb-sub">Application configuration settings</span></div>
     <div class="settings-wrap">
       <div class="kb-card">
         <div class="kb-card-h">Job Offer Generation</div>
@@ -516,7 +519,7 @@ function renderOverview(){
     col.innerHTML=`<div class="ov-empty">
       <div class="big">${PROG_ART}</div>
       <h3>No documents yet</h3>
-      <p>Your tailored hiring package will appear here.</p>
+      <p>Your tailored hiring package components will appear here</p>
     </div>`;
     return;
   }

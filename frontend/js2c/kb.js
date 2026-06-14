@@ -50,7 +50,12 @@
       document.body.appendChild(bg);
       const close = v => { bg.remove(); resolve(v); };
       bg.querySelector('[data-x]').onclick = () => close(null);
-      bg.onclick = e => { if (e.target === bg) close(null); };
+      // Close only on a genuine backdrop click — where the press STARTED on the
+      // backdrop. Otherwise selecting text in a field and releasing over the
+      // backdrop (the click target resolves to bg) would dismiss the modal.
+      let downTarget = null;
+      bg.addEventListener('mousedown', e => { downTarget = e.target; });
+      bg.addEventListener('click', e => { if (e.target === bg && downTarget === bg) close(null); });
       bg.querySelector('[data-ok]').onclick = () => {
         const out = {};
         bg.querySelectorAll('[data-k]').forEach(el => { out[el.dataset.k] = el.type === 'file' ? el.files : el.value; });
@@ -79,7 +84,7 @@
   function render() {
     const root = document.getElementById('view-kb'); if (!root) return;
     root.innerHTML = `
-      <div class="kb-head"><button class="hbtn btnnew" id="kb-new">＋ New Domain</button><span class="kb-sub">Company hiring knowledge · ${DOMAINS.length} domains</span></div>
+      <div class="kb-head"><button class="hbtn btnnew" id="kb-new">＋ New Domain</button><span class="kb-sub">Company hiring knowledge</span></div>
       <div class="kb-body">
         <div class="kb-list" id="kb-list"></div>
         <div class="kb-detail" id="kb-detail"></div>
@@ -106,6 +111,7 @@
   function selectDomain(id) {
     sel = id; docSel.clear();
     render();
+    watchDomain(sel);   // subscribe to this domain's live build progress
     if (!FMT[sel]) loadFmt(sel).then(() => { if (tab === 'knowledge') renderKnowledge(); });
     loadStatus(sel).then(() => { renderList(); if (tab === 'knowledge') renderKnowledge(); });
     if (tab === 'documents') loadDocs().then(renderDocuments);
@@ -179,14 +185,12 @@
         ${prog}
         <div class="kb-actions">
           <button class="hbtn primary" id="kb-rebuild" ${inProg ? 'disabled' : ''}>↻ Rebuild Graph</button>
-          ${inProg ? '<button class="hbtn" id="kb-refresh">⟳ Refresh</button>' : ''}
           <button class="hbtn" id="kb-diag">🩺 Run Diagnostics</button>
-          <span class="kb-note">${inProg ? 'Live progress over Socket.IO is pending — refresh to update.' : 'Full re-extraction.'}</span>
+          <span class="kb-note">${inProg ? 'Building… live progress' : 'Full re-extraction.'}</span>
         </div>
       </div>`;
     const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
     on('kb-rebuild', doRebuild); on('kb-rebuild2', doRebuild); on('kb-diag', doDiagnostics);
-    on('kb-refresh', refreshStatus);   // user-event refresh (interim until Socket.IO progress events)
     on('kb-resume', () => act('resume')); on('kb-abort', () => act('abort')); on('kb-recluster', () => act('recluster'));
   }
   async function act(op) {
@@ -271,14 +275,30 @@
     ], 'Upload');
     if (!r || !r.file || !r.file.length) return;
     toast('Uploading ' + r.file.length + ' file(s)…');
+    let anyOk = false;
     for (const f of r.file) {
       const fd = new FormData(); fd.append('file', f);
       let url = 'domains/' + enc(sel) + '/documents?mode=' + enc(r.mode || 'read_store');
       if (r.category) url += '&category=' + enc(r.category);
       if (r.chunking_profile) url += '&chunking_profile=' + enc(r.chunking_profile);
-      try { const rr = await fetch(api(url), { method: 'POST', body: fd }); if (!rr.ok) toast('Upload failed: ' + f.name); } catch (e) { toast('Upload error: ' + f.name); }
+      try {
+        const rr = await fetch(api(url), { method: 'POST', body: fd });
+        if (rr.ok) anyOk = true;
+        else { let d = ''; try { d = (await rr.json()).detail || ''; } catch (e) {} toast('Upload failed (' + rr.status + (d ? ': ' + d : '') + '): ' + f.name); }
+      } catch (e) { toast('Upload error: ' + f.name); }
     }
-    await loadDocs(); renderDocuments(); toast('Upload complete');
+    await loadDocs();
+    if (anyOk) {
+      // Jump to the Database tab so the live ingestion progress (streamed over
+      // Socket.IO as the engine builds the graph) is visible right away.
+      toast('Upload complete — building knowledge graph…');
+      tab = 'knowledge';
+      watchDomain(sel);            // ensure we're subscribed to this domain's progress room
+      await loadStatus(sel);       // seed the panel; kb:progress events take over from here
+      renderDetail();
+    } else {
+      renderDocuments(); toast('Upload complete');
+    }
   }
   async function docAction(action, path) {
     const doc = DOCS.find(d => d.path === path) || { path };
@@ -355,8 +375,13 @@
     if (r.description) params.set('description', r.description.trim());
     const resp = await fetch(api('domains?' + params.toString()), { method: 'POST' });
     if (!resp.ok) { toast('Create failed (' + resp.status + ')'); return; }
+    // Select by the domain_id the server actually created (it may normalise the
+    // slug) so a subsequent Upload targets the right domain — otherwise sel can
+    // stay on the previous/first domain and the upload 404s "unknown Domain".
+    let created = {}; try { created = await resp.json(); } catch (e) {}
+    const newId = created.domain_id || id;
     toast('Domain created'); await refreshAll();
-    if (DOMAINS.find(x => x.domain_id === id)) selectDomain(id);
+    selectDomain(newId);
   }
 
   // ---------- polling ----------
@@ -364,6 +389,7 @@
     await loadDomains();                                   // one fast call (~10ms)
     if (sel && !DOMAINS.find(x => x.domain_id === sel)) sel = null;
     if (!sel && DOMAINS.length) sel = DOMAINS[0].domain_id;
+    if (sel) watchDomain(sel);                             // subscribe to live build progress
     render();                                              // paint the list + detail shell IMMEDIATELY
     // Per-domain /status is ~0.2–0.8s each; don't block first paint on all of
     // them. Load the selected domain first (fills the open detail fastest), then
@@ -385,6 +411,34 @@
     if (!sel) return;
     await loadStatus(sel);
     renderList(); if (tab === 'knowledge') renderKnowledge();
+  }
+
+  // Live build progress over Socket.IO (graph engine -> job2cool relay -> here).
+  // Event-driven: we subscribe to the selected domain's room and update the
+  // status on each kb:progress event. No polling.
+  let _sock = null, _watching = null;
+  function ensureSocket() {
+    if (_sock || typeof io === 'undefined') return _sock;
+    const base = new URL('.', document.baseURI).pathname;   // '/job2cool/' or '/'
+    _sock = io(window.location.origin, { path: base + 'socket.io', transports: ['websocket', 'polling'] });
+    _sock.on('kb:progress', onProgress);
+    _sock.on('connect', () => { if (_watching) _sock.emit('join', { domain_id: _watching }); });
+    return _sock;
+  }
+  function watchDomain(id) {
+    const s = ensureSocket(); if (!s || !id) return;
+    _watching = id;
+    if (s.connected) s.emit('join', { domain_id: id });
+  }
+  function onProgress(msg) {
+    const dom = msg && msg.domain_id, pr = (msg && msg.progress) || {};
+    if (!dom || dom !== sel) return;
+    STATUS[sel] = STATUS[sel] || {};
+    STATUS[sel].graph = STATUS[sel].graph || {};
+    STATUS[sel].graph.progress = pr;
+    STATUS[sel].graph.rebuild_in_progress = !['idle', 'done', 'error', 'failed'].includes(pr.phase);
+    renderList(); if (tab === 'knowledge') renderKnowledge();
+    if (pr.phase === 'done') refreshStatus();   // one-shot reload for final counts (still event-driven)
   }
 
   // ---------- public hooks ----------
