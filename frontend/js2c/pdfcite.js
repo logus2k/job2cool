@@ -95,15 +95,17 @@
       await renderPages(body, doc, data);
 
       // Auto-adjust page width when the container's available area changes.
-      var lastW = body.clientWidth, busy = false, t = null;
+      // Coalesce bursts of resize callbacks to the next animation frame (an
+      // event, not a clock) — no setTimeout.
+      var lastW = body.clientWidth, busy = false, raf = 0;
       body._ro = new ResizeObserver(function () {
         var w = body.clientWidth;
         if (!w || Math.abs(w - lastW) < 8) return;
-        lastW = w; clearTimeout(t);
-        t = setTimeout(function () {
-          if (busy) return; busy = true;
+        lastW = w; if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(function () {
+          raf = 0; if (busy) return; busy = true;
           renderPages(body, doc, data).catch(function () {}).then(function () { busy = false; });
-        }, 140);
+        });
       });
       body._ro.observe(body);
     } catch (e) {

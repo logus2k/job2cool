@@ -3,7 +3,11 @@
 # COPY-ONLY: nothing in noted or cv is modified. See documents/project_plan.md.
 services:
   job2cool-backend:
-    build: ./backend
+    build:
+      # Context is the repo root so the image can bake in BOTH backend and
+      # frontend (frontend/ is a sibling of backend/, outside ./backend).
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: job2cool-backend
     ports:
       - "4920:4920"
@@ -24,8 +28,8 @@ services:
       JOB2COOL_DPO_MODEL: "ma2-360m-dpo-b01"
       JOB2COOL_DOMAINS: "jobs_onboard_devops,ai_and_jobs,prod_mng,sw_arch"
     volumes:
-      # Live-mount the frontend so the shell can be iterated without rebuilds.
-      - ./frontend:/app/frontend:ro
+      # Frontend is baked into the image (see Dockerfile) — no live mount, so
+      # the image is self-contained. Frontend changes now require a rebuild.
       # Persistent per-user chat threads (survive container restarts).
       - ./data:/app/data
     restart: unless-stopped

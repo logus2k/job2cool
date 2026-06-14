@@ -8,6 +8,8 @@
   const api = p => new URL('api/agents/' + (p || ''), document.baseURI).href;
   const esc = s => (s || '').toString().replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const toast = m => (window.toast ? window.toast(m) : void 0);
+  // Empty-state illustration (robot head + the shared blue star badge).
+  const EMPTY_ART = '<svg viewBox="0 0 210 150" fill="none"><rect x="52" y="40" width="106" height="74" rx="18" fill="#f1f7fc"/><path d="M104 50v-9" stroke="#a6d0ec" stroke-width="3.4" stroke-linecap="round"/><circle cx="104" cy="38" r="3.6" fill="#a6d0ec"/><rect x="74" y="50" width="60" height="46" rx="13" fill="#fff" stroke="#a6d0ec" stroke-width="3.4"/><path d="M68 68h6M136 68h6" stroke="#a6d0ec" stroke-width="3.4" stroke-linecap="round"/><circle cx="92" cy="70" r="4" fill="#a6d0ec"/><circle cx="116" cy="70" r="4" fill="#a6d0ec"/><path d="M93 84h22" stroke="#a6d0ec" stroke-width="3.4" stroke-linecap="round"/><circle cx="150" cy="40" r="20" fill="#2f9be6"/><path d="M150 29l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff"/></svg>';
   const PREFIX = 'job2cool_';
   const ROLE = {
     job2cool_orchestrator: 'Orchestrator — plans the package & reasoning',
@@ -50,7 +52,7 @@
               <td>${esc(ROLE[a.name] || '')}</td>
               <td><code style="font-size:11px">${esc(a.memory_policy || 'none')}</code></td>
               <td style="white-space:nowrap;text-align:right"><button class="hbtn" data-edit="${esc(a.name)}">Edit template</button><button class="hbtn" data-del="${esc(a.name)}">Delete</button></td>
-            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full">No job2cool agents yet. Click ＋ New Agent to add one.</div>`}
+            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${EMPTY_ART}</div><h3>No agents yet</h3><p>Create an agent template to shape how Diana works.</p></div>`}
           </div>
         </div>
         <div id="ag-side" class="j2c-side" hidden>

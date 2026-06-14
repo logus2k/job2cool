@@ -7,10 +7,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     JOB2COOL_FRONTEND_DIR=/app/frontend
 
-COPY requirements.txt .
+# Build context is the repo root (see docker-compose.yml) so paths are
+# repo-relative and the frontend can be baked in alongside the backend.
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY *.py .
+COPY backend/*.py .
+COPY frontend ./frontend
 
 EXPOSE 4920
 

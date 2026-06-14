@@ -1,0 +1,12 @@
+# Build context is the repo root (so backend + frontend can both be baked in).
+# Keep the context lean — only backend/ and frontend/ are needed in the image.
+.git
+.gitignore
+.claude
+.venv_job2cool
+data
+documents
+Report
+**/__pycache__
+*.pyc
+*.pyo

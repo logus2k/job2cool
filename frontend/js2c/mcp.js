@@ -8,6 +8,10 @@
   const esc = s => (s || '').toString().replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const toast = m => (window.toast ? window.toast(m) : void 0);
   let IMPLS = ['web_search'];
+  // Empty-state illustrations (themed line-art + the shared blue star badge).
+  const STAR = '<circle cx="150" cy="40" r="20" fill="#2f9be6"/><path d="M150 29l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff"/>';
+  const ART_SKILLS = '<svg viewBox="0 0 210 150" fill="none"><rect x="52" y="40" width="106" height="74" rx="18" fill="#f1f7fc"/><path d="M113 50l-24 32h17l-6 22 26-34h-19z" fill="#fff" stroke="#a6d0ec" stroke-width="3.4" stroke-linejoin="round"/>' + STAR + '</svg>';
+  const ART_TOOLS = '<svg viewBox="0 0 210 150" fill="none"><rect x="52" y="40" width="106" height="74" rx="18" fill="#f1f7fc"/><path transform="translate(80 47) scale(2.4)" d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8 7.2 20l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.7 2.7-2.3-2.3z" fill="#fff" stroke="#a6d0ec" stroke-width="1.5" stroke-linejoin="round"/>' + STAR + '</svg>';
 
   async function jget(p) { const r = await fetch(api(p), { cache: 'no-store' }); if (!r.ok) throw new Error(r.status); return r.json(); }
   async function jsend(p, method, body) {
@@ -63,7 +67,7 @@
                 <button class="hbtn" data-edit="${esc(t.name)}">Edit</button>
                 <button class="hbtn" data-del="${esc(t.name)}">Delete</button>
               </td>
-            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full">No tools yet. Click ＋ New Tool to add one.</div>`}
+            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${ART_TOOLS}</div><h3>No tools yet</h3><p>Add callable tools available to this app over MCP.</p></div>`}
           </div>
         </div>
         ${sideMarkup('mcp-tool', 'Test')}
@@ -169,7 +173,7 @@
               <td>${esc(s.priority == null ? 100 : s.priority)}</td>
               <td><input type="checkbox" data-toggle="${esc(s.name)}"${s.enabled !== false ? ' checked' : ''}></td>
               <td style="white-space:nowrap;text-align:right"><button class="hbtn" data-edit="${esc(s.name)}">Edit</button><button class="hbtn" data-del="${esc(s.name)}">Delete</button></td>
-            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full">No skills created yet.</div>`}
+            </tr>`).join('')}</tbody></table>` : `<div class="kb-empty full"><div class="empty-art">${ART_SKILLS}</div><h3>No skills created yet</h3><p>Add reusable instruction templates served over MCP.</p></div>`}
           </div>
         </div>
         ${sideMarkup('mcp-skill', 'Skill')}

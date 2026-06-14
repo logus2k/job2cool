@@ -11,8 +11,7 @@
 
   let DOMAINS = [];          // jobs_* domain records
   let sel = null;            // selected domain_id
-  let tab = 'knowledge';     // documents | knowledge | settings
-  let pollTimer = null;
+  let tab = 'documents';     // documents | knowledge | settings (Documents is the default)
   const STATUS = {};         // domain_id -> /status payload
   const FMT = {};            // domain_id -> format_breakdown
   let DOCS = [];             // current domain's documents
@@ -180,12 +179,14 @@
         ${prog}
         <div class="kb-actions">
           <button class="hbtn primary" id="kb-rebuild" ${inProg ? 'disabled' : ''}>↻ Rebuild Graph</button>
+          ${inProg ? '<button class="hbtn" id="kb-refresh">⟳ Refresh</button>' : ''}
           <button class="hbtn" id="kb-diag">🩺 Run Diagnostics</button>
-          <span class="kb-note">Full re-extraction.</span>
+          <span class="kb-note">${inProg ? 'Live progress over Socket.IO is pending — refresh to update.' : 'Full re-extraction.'}</span>
         </div>
       </div>`;
     const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
     on('kb-rebuild', doRebuild); on('kb-rebuild2', doRebuild); on('kb-diag', doDiagnostics);
+    on('kb-refresh', refreshStatus);   // user-event refresh (interim until Socket.IO progress events)
     on('kb-resume', () => act('resume')); on('kb-abort', () => act('abort')); on('kb-recluster', () => act('recluster'));
   }
   async function act(op) {
@@ -227,7 +228,9 @@
     const body = document.getElementById('kb-tabbody'); if (!body || tab !== 'documents') return;
     const q = docFilter.toLowerCase();
     const shown = DOCS.filter(d => !q || ((d.display_name || d.basename || d.path || '') + ' ' + (d.category || '')).toLowerCase().includes(q));
-    const bulk = docSel.size ? `<div class="kb-bulk"><b>${docSel.size} selected</b><button class="hbtn danger" id="kb-bulkdel">Delete selected</button></div>` : '';
+    // Bulk-delete controls live INLINE in the toolbar (right of Upload) so
+    // selecting rows never pushes the table down (no layout shift).
+    const bulk = docSel.size ? `<span class="kb-bulksel">${docSel.size} selected</span><button class="hbtn danger" id="kb-bulkdel">Delete selected</button>` : '';
     const rows = shown.map(d => `
       <tr>
         <td><input type="checkbox" data-p="${esc(d.path)}" ${docSel.has(d.path) ? 'checked' : ''}></td>
@@ -244,10 +247,10 @@
     body.innerHTML = `
       <div class="kb-toolbar">
         <button class="hbtn primary" id="kb-upload">⬆ Upload Document</button>
+        ${bulk}
         <input class="filter" id="kb-docfilter" placeholder="Filter by name or folder…" value="${esc(docFilter)}">
         <button class="hbtn" id="kb-docrefresh" title="Refresh">↻</button>
       </div>
-      ${bulk}
       ${shown.length ? `<table class="kb-doctable"><thead><tr><th></th><th>Name</th><th>Folder</th><th>Mode</th><th>Added</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`
         : `<div class="kb-empty">${DOCS.length ? 'No documents match the filter.' : 'No documents in this domain. Click Upload to add the first one.'}</div>`}`;
     document.getElementById('kb-upload').onclick = () => uploadDocs();
@@ -358,30 +361,37 @@
 
   // ---------- polling ----------
   async function refreshAll() {
-    await loadDomains();
-    await Promise.all(DOMAINS.map(d => loadStatus(d.domain_id)));
+    await loadDomains();                                   // one fast call (~10ms)
     if (sel && !DOMAINS.find(x => x.domain_id === sel)) sel = null;
-    if (sel && !FMT[sel]) await loadFmt(sel);
-    render();
+    if (!sel && DOMAINS.length) sel = DOMAINS[0].domain_id;
+    render();                                              // paint the list + detail shell IMMEDIATELY
+    // Per-domain /status is ~0.2–0.8s each; don't block first paint on all of
+    // them. Load the selected domain first (fills the open detail fastest), then
+    // stream the rest in — each updates its list chip as it lands.
+    // Only the chip + the knowledge tab depend on /status. Re-rendering the whole
+    // detail here would re-load the Documents tab a second time (double fetch).
+    const selP = sel ? loadStatus(sel).then(() => { renderList(); if (tab === 'knowledge') renderKnowledge(); }) : Promise.resolve();
+    if (sel) loadFmt(sel).then(() => { if (tab === 'knowledge') renderKnowledge(); });
+    const restP = Promise.all(DOMAINS.filter(d => d.domain_id !== sel)
+      .map(d => loadStatus(d.domain_id).then(() => renderList())));
+    await Promise.all([selP, restP]);
   }
-  function startPoll() {
-    stopPoll();
-    pollTimer = setInterval(async () => {
-      await Promise.all(DOMAINS.map(d => loadStatus(d.domain_id)));
-      renderList(); if (tab === 'knowledge') renderKnowledge();
-    }, 5000);
+  // No background polling. Status is loaded on real events — opening KB,
+  // selecting a domain, and once after a rebuild/resume/abort action — plus the
+  // Refresh control shown while a build is in progress. Live auto-advancing
+  // progress is deferred to a real engine-side SSE producer (the engine only
+  // exposes a pull-only /status today, so a timer here would just fake a stream).
+  async function refreshStatus() {
+    if (!sel) return;
+    await loadStatus(sel);
+    renderList(); if (tab === 'knowledge') renderKnowledge();
   }
-  function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
   // ---------- public hooks ----------
   window.JOB2COOL_KB_OPEN = async function () {
     const root = document.getElementById('view-kb'); if (!root) return;
     if (!DOMAINS.length) root.innerHTML = '<div class="kb-empty full">Loading knowledge base…</div>';
-    await refreshAll();
-    if (!sel && DOMAINS.length) sel = DOMAINS[0].domain_id;
-    if (sel && !FMT[sel]) await loadFmt(sel);
-    render();
-    startPoll();
+    await refreshAll();   // paints instantly after the domain list; statuses stream in
   };
-  window.JOB2COOL_KB_CLOSE = function () { stopPoll(); };
+  window.JOB2COOL_KB_CLOSE = function () { };
 })();
