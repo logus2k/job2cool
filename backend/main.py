@@ -233,7 +233,9 @@ def _chat_user_dir(request: Request) -> str:
 
 class ChatThreadIn(BaseModel):
     title: str = ""
+    role: str = ""         # detected hiring role (workspace bar + default name)
     messages: list = []
+    documents: dict = {}   # workspace doc snapshot {order:[], content:{}}
 
 
 @app.get("/api/job2cool/chats")
@@ -248,6 +250,7 @@ async def chats_list(request: Request):
                 t = json.load(f)
             out.append({"thread_id": t.get("thread_id") or fn[:-5],
                         "title": t.get("title") or "Untitled",
+                        "role": t.get("role") or "",
                         "updated_at": t.get("updated_at") or 0,
                         "message_count": len(t.get("messages") or [])})
         except Exception:  # noqa: BLE001
@@ -281,7 +284,9 @@ async def chats_put(tid: str, body: ChatThreadIn, request: Request):
         except Exception:  # noqa: BLE001
             pass
     rec = {"thread_id": tid, "title": (body.title or "Untitled")[:120],
-           "created_at": created, "updated_at": now, "messages": body.messages}
+           "role": (body.role or "")[:120],
+           "created_at": created, "updated_at": now, "messages": body.messages,
+           "documents": body.documents or {}}
     tmp = p + ".tmp"
     with open(tmp, "w") as f:
         json.dump(rec, f, ensure_ascii=False)
@@ -342,11 +347,21 @@ async def buffer_events_stream():
     """SSE stream of live-document changes (the reused shell subscribes here)."""
     async def gen():
         yield "event: hello\ndata: {}\n\n"
+        # Replay current buffers so a page refresh restores the workspace.
+        for ev in buffers.snapshot():
+            yield f"data: {json.dumps(ev)}\n\n"
         async for ev in buffers.subscribe():
             yield f"data: {json.dumps(ev)}\n\n"
     return StreamingResponse(
         gen(), media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.post("/api/buffers/clear")
+async def buffers_clear():
+    """Reset the workspace documents (called when the user starts a New Chat)."""
+    buffers.clear()
+    return JSONResponse({"ok": True})
 
 
 @app.post("/api/buffers/{buffer_id}/save")

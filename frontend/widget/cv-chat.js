@@ -2535,6 +2535,9 @@
                         if (obj.error) throw new Error(obj.error);
                         if (obj.meta) {
                             metaData = obj.meta;
+                            if (obj.meta.role && window.JOB2COOL_SET_ROLE) {
+                                try { window.JOB2COOL_SET_ROLE(obj.meta.role); } catch (e) {}
+                            }
                             continue;
                         }
                         if (obj.delta) {
@@ -4314,8 +4317,7 @@
                 'placeholder="Describe the hiring need…"></textarea>' +
                 '<button class="cvchat-iconbtn cvchat-send" type="submit" ' +
                 'aria-label="Send message">' + ICON.send + '</button>' +
-            '</form>' +
-            '<div class="cvchat-hint">AI-generated content may contain inaccuracies - please review before use.</div>';
+            '</form>';
 
         // Panel sits inside cvchat-root, fixed-positioned (overlays the page).
         // Launcher is inlined into the CV body between the header (with the

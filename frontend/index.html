@@ -10,11 +10,15 @@
 <style>
   :root{ --bg:#f6f7fb; --panel:#fff; --ink:#1e2330; --muted:#6b7280;
     --primary:#ffe19b; --primary-d:#101010; --primary-soft:#ffe19b;
-    --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); --topbar-h:58px; }
+    --ok:#157347; --line:#e6e8ef; --shadow:0 1px 3px rgba(20,24,40,.06); --topbar-h:58px; --statusbar-h:26px; }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
   body{font:14.5px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);
-       display:flex;height:100vh;overflow:hidden}
+       display:flex;height:100vh;overflow:hidden;padding-bottom:var(--statusbar-h)}
+  /* single global bottom status bar (like noted) */
+  .statusbar{position:fixed;left:0;right:0;bottom:0;height:var(--statusbar-h);display:flex;align-items:center;
+             justify-content:center;background:#fff3d8;border-top:1px solid var(--line);
+             color:var(--muted);font-size:11.5px;z-index:40}
   /* ---- left nav rail ---- */
   .sidenav{width:236px;flex:none;background:var(--panel);border-right:1px solid var(--line);
            display:flex;flex-direction:column;padding:.9rem .7rem .7rem}
@@ -49,8 +53,8 @@
   .profile .who b{display:block;font-size:13px;line-height:1.15}
   .profile .who span{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
   .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;padding-top:var(--topbar-h)}
-  /* Dock the Assistant panel below the top bar (was top:0). */
-  body .cvchat-panel{top:var(--topbar-h)}
+  /* Dock the Assistant panel below the top bar and above the status bar. */
+  body .cvchat-panel{top:var(--topbar-h);bottom:var(--statusbar-h)}
   header{display:flex;align-items:center;gap:.7rem;padding:.5rem 1.3rem;min-height:72px;background:var(--panel);
          border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
   .logo{height:56px;width:auto;display:block;border-radius:6px}
@@ -183,6 +187,8 @@
          border-bottom:1px solid var(--line)}
   .wsbar .wstitle{display:flex;align-items:center;gap:.55rem;min-width:0}
   .wsbar .wstitle b{font-size:18px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wsbar .ws-role{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+  .wsbar .ws-role[hidden]{display:none}
   .wsbar .spacer{flex:1}
 
   /* ---- All-Documents overview ---- */
@@ -244,13 +250,13 @@
   .prog-done{margin-top:1rem;text-align:center;border-top:1px solid var(--line);padding-top:1rem;display:flex;flex-direction:column;gap:.15rem}
   .prog-done b{color:var(--ink);font-size:14px}
   .prog-done span{color:var(--muted);font-size:12.5px}
-  .ws-footer{flex:none;text-align:center;color:var(--muted);font-size:11.5px;padding:.55rem;border-top:1px solid var(--line);background:var(--panel)}
   @media(max-width:760px){.prog-grid{flex-direction:column}.prog-art{display:none}}
 
-  .tabbar{display:flex;gap:.2rem;padding:.4rem .6rem 0;background:var(--panel);border-bottom:1px solid var(--line);overflow:auto}
-  .tab{padding:.5rem .9rem;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
-       color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap}
-  .tab.active{background:var(--bg);color:var(--ink);border-color:var(--line)}
+  .tabbar{display:flex;gap:1.6rem;padding:0 1.3rem;background:var(--panel);border-bottom:1px solid var(--line)}
+  .tab{padding:.8rem .1rem;cursor:pointer;color:var(--muted);font-weight:600;font-size:13.5px;white-space:nowrap;
+       border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:#2f9be6;border-bottom-color:#2f9be6}
   .tab.busy::after{content:" •";color:var(--primary)}
   .docpane{display:flex;align-items:stretch;flex:1;min-height:0}
   .doc-col{flex:1;min-width:0;overflow:auto;padding:1.2rem}
@@ -351,6 +357,7 @@
 <div class="main">
   <div id="view-workspace" class="viewpane">
     <div class="wsbar">
+      <div class="ws-role" id="wsRole" hidden></div>
       <div class="spacer"></div>
       <button class="hbtn" id="shareBtn" title="Share">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.4M8.3 13.3l7.4 4.4"/></svg>
@@ -366,7 +373,6 @@
       <div class="doc-col" id="doccol"></div>
       <div class="pdf-col" id="pdfcol" hidden></div>
     </div>
-    <div class="ws-footer">AI generated content. Please review and customize before use.</div>
   </div>
 
   <!-- Knowledge Base view (consolidated Domain Manager + Monitor) -->
@@ -401,6 +407,7 @@
   </div>
 </div>
 
+<div class="statusbar">AI generated content. Please review and customize before use.</div>
 <div class="toast" id="toast"></div>
 <div id="printarea"></div>
 
@@ -417,7 +424,7 @@ const COPY_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const ALL='All Documents';
 const MAIN=['Job Offer','Technical Interviews','Onboarding Plan','Cultural & Team Fit'];
 const ORDER=Object.fromEntries(MAIN.map((t,i)=>[t,i]));
-const doc={order:[],content:{},active:ALL,offerView:'gemma'};
+const doc={order:[],content:{},active:ALL,offerView:'gemma',role:''};
 const isPending=c=>!c||/_Generating…_|_Pending…_/.test(c);
 
 // per-deliverable overview-card metadata (icon + one-line description)
@@ -436,7 +443,7 @@ const DESC={
 const DOC_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 const ICON_CLASS={'Job Offer':'c-offer','Onboarding Plan':'c-onboard','Technical Interviews':'c-tech','Cultural & Team Fit':'c-culture'};
 const STEP_SUB={'Job Offer':'Creating the comprehensive job offer document','Onboarding Plan':'Designing the 30-60-90 day onboarding experience','Technical Interviews':'Building the technical assessment framework','Cultural & Team Fit':'Creating the cultural fit evaluation framework'};
-const PROG_ART='<svg viewBox="0 0 210 150" fill="none"><rect x="58" y="36" width="78" height="98" rx="10" fill="#f3f2fb" stroke="#e6e8ef" transform="rotate(-8 97 85)"/><rect x="70" y="30" width="78" height="98" rx="10" fill="#faf9ff" stroke="#e6e8ef" transform="rotate(-3 109 79)"/><rect x="80" y="26" width="78" height="98" rx="10" fill="#fff" stroke="#e6e8ef"/><rect x="92" y="44" width="50" height="6" rx="3" fill="#e7e9f2"/><rect x="92" y="58" width="40" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="72" width="50" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="86" width="34" height="6" rx="3" fill="#eef0f5"/><circle cx="150" cy="40" r="20" fill="#6d4cf2"/><path d="M150 29l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff"/></svg>';
+const PROG_ART='<svg viewBox="0 0 210 150" fill="none"><rect x="58" y="36" width="78" height="98" rx="10" fill="#eef5fb" stroke="#e6e8ef" transform="rotate(-8 97 85)"/><rect x="70" y="30" width="78" height="98" rx="10" fill="#f6fbfe" stroke="#e6e8ef" transform="rotate(-3 109 79)"/><rect x="80" y="26" width="78" height="98" rx="10" fill="#fff" stroke="#e6e8ef"/><rect x="92" y="44" width="50" height="6" rx="3" fill="#e7e9f2"/><rect x="92" y="58" width="40" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="72" width="50" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="86" width="34" height="6" rx="3" fill="#eef0f5"/><circle cx="150" cy="40" r="20" fill="#2f9be6"/><path d="M150 29l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff"/></svg>';
 
 function shownFor(title){
   if(title==='Job Offer'&&doc.offerView==='ma2'&&doc.content['Job Offer (MA2)']!=null) return 'Job Offer (MA2)';
@@ -523,7 +530,7 @@ function renderOverview(){
   const stepsHtml=steps.map(s=>`<div class="step ${s.done?'done':(s.active?'active':'')}">
       <span class="dot">${s.done?'✓':''}</span><div class="step-tx"><b>${esc(s.label)}</b>${s.sub?`<span>${esc(s.sub)}</span>`:''}</div></div>`).join('');
   col.innerHTML=`<div class="overview">
-    <div class="ov-sub">${allDone?'All documents generated by AI based on your request.':'Generating your hiring package — documents appear as Diana completes them.'}</div>
+    ${allDone?'':'<div class="ov-sub">Generating your hiring package — documents appear as Diana completes them.</div>'}
     <div class="cards">${cards}</div>
     <div class="progwrap"><h4>Generation Progress</h4>
       <div class="prog-grid"><div class="steps">${stepsHtml}</div><div class="prog-art">${PROG_ART}</div></div>
@@ -540,6 +547,7 @@ function updateWsBar(){
   const ea=$('#exportAllBtn'),sh=$('#shareBtn');
   const ready=items.some(n=>!isPending(doc.content[n]));
   if(ea)ea.disabled=!ready; if(sh)sh.disabled=!ready;
+  const wr=$('#wsRole');if(wr){const r=(doc.role||'').trim();wr.textContent=r?(r+' · Hiring Package'):'';wr.hidden=!r;}
 }
 // Export All: print every completed deliverable (one per page) -> Save as PDF.
 function exportAll(){
@@ -595,7 +603,13 @@ window.JOB2COOL_OPEN_PDF=function(data){
 function closePdf(){const col=$('#pdfcol');col.hidden=true;col.innerHTML='';$('#docpane').classList.remove('split');}
 
 // reset tabs at the start of a new turn (hook called by cv-chat on send)
-window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';render();};
+window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';doc.role='';render();};
+// Detected role -> workspace bar (and chat default name, via chats.js).
+window.JOB2COOL_SET_ROLE=function(role){doc.role=(role||'').trim();if(typeof render==='function')render();};
+window.JOB2COOL_GET_ROLE=function(){return doc.role||'';};
+// Workspace doc snapshot get/set — used by chats.js to persist docs with the thread.
+window.JOB2COOL_GET_DOCS=function(){return{order:doc.order.slice(),content:Object.assign({},doc.content),role:doc.role||''};};
+window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.order.slice():[];doc.content=(d&&d.content&&typeof d.content==='object')?Object.assign({},d.content):{};doc.role=(d&&typeof d.role==='string')?d.role:'';doc.active=ALL;doc.offerView='gemma';closePdf();render();};
 
 // live document via buffer SSE -> tabs
 (function(){const es=new EventSource('api/buffers/events/stream');

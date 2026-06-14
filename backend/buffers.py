@@ -55,6 +55,19 @@ def _fanout(buf: DocBuffer) -> None:
             pass
 
 
+def clear() -> None:
+    """Drop all buffers — e.g. when the user starts a New Chat, so the workspace
+    (and the snapshot replayed on reconnect) resets to empty."""
+    _buffers.clear()
+
+
+def snapshot() -> list[dict]:
+    """Current state of every buffer as doc_changed events. Replayed on each new
+    SSE connection so a page refresh restores the workspace (buffers persist
+    server-side, but the stream otherwise only carries NEW events)."""
+    return [_doc_payload(b) for b in _buffers.values()]
+
+
 async def subscribe():
     """Async generator of doc events for one SSE client."""
     q: asyncio.Queue = asyncio.Queue()

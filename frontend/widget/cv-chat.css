@@ -1012,7 +1012,7 @@ body.cvchat-resizing {
 
 .cvchat-inputbar {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 6px;
     padding: 10px 20px 5px 20px;
     border-top: 1px solid var(--cv-border);
