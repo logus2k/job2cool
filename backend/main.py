@@ -10,7 +10,6 @@ flow over noted's shared services on noted-network:
                           ma2-360m-dpo-b01 model drafts the job offer.
   - noted-rag   (:8200)   dense vector retrieval (per-domain `<id>__corpus`).
   - noted-graph (:5523)   knowledge-graph retrieval / synthesis.
-  - noted-tools (:7702)   MCP user-tool host (optional).
   - noted       (:8123)   KB/Explorer + document-file APIs (read-only reuse).
 
 Serving model: this backend serves the (stripped) noted shell statically and
@@ -80,7 +79,6 @@ JUDGE_SYSTEM = (
 AGENT_SERVER  = os.getenv("AGENT_SERVER_URL",  "http://agent_server:7701")
 NOTED_RAG     = os.getenv("NOTED_RAG_URL",     "http://noted-rag:8200")
 NOTED_GRAPH   = os.getenv("NOTED_GRAPH_URL",   "http://noted-graph:5523")
-NOTED_TOOLS   = os.getenv("NOTED_TOOLS_URL",   "http://noted-tools:7702")
 NOTED_BACKEND = os.getenv("NOTED_BACKEND_URL", "http://noted:8123")
 # Shared MCP tool/skill host. The frontend Skills/Tools admin UI talks to it
 # through this backend (which holds the admin token so the browser never does).
@@ -153,7 +151,6 @@ async def health():
         ("agent_server", f"{AGENT_SERVER}/v1/models"),
         ("noted-rag",    f"{NOTED_RAG}/health"),
         ("noted-graph",  f"{NOTED_GRAPH}/health"),
-        ("noted-tools",  f"{NOTED_TOOLS}/health"),
         ("noted",        f"{NOTED_BACKEND}/api/domains"),
     ]
     async with httpx.AsyncClient() as client:

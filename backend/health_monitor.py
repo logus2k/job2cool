@@ -58,7 +58,6 @@ TARGETS: list[tuple[str, str]] = [
     ("agent_server",   os.getenv("HM_AGENT_URL",    "http://agent_server:7701/v1/models")),
     ("kb-service",     os.getenv("HM_KB_URL",       "http://kb-service:8080/health")),
     ("mcp-service",    os.getenv("HM_MCP_URL",      "http://mcp-service:8080/health")),
-    ("noted-tools",    os.getenv("HM_TOOLS_URL",    "http://noted-tools:7702/health")),
     ("noted-rag",      os.getenv("HM_RAG_URL",      "http://noted-rag:8200/health")),
     ("noted-graph",    os.getenv("HM_GRAPH_URL",    "http://noted-graph:5523/health")),
     ("noted",          os.getenv("HM_NOTED_URL",    "http://noted:8123/api/domains")),
@@ -67,6 +66,8 @@ TARGETS: list[tuple[str, str]] = [
     ("stt_server",     os.getenv("HM_STT_URL",      "http://stt_server:2700/health")),
     ("tts_server",     os.getenv("HM_TTS_URL",      "http://tts_server:7700/health")),
     ("avatar_server",  os.getenv("HM_AVATAR_URL",   "http://avatar_server:7800/")),
+    ("proxy_server",   os.getenv("HM_PROXY_URL",    "http://proxy_server:80/")),
+    ("oauth2-proxy",   os.getenv("HM_OAUTH_URL",    "http://oauth2-proxy:4180/ping")),
 ]
 
 _snapshot: dict = {"ts": 0, "statuses": {}}
@@ -110,6 +111,9 @@ async def probe_all() -> dict[str, str]:
     pairs = await asyncio.gather(*(_probe_one(_client, c, u) for c, u in TARGETS))
     statuses = {c: s for c, s in pairs}
     statuses["websearch_server"] = await _probe_websearch_via_mcp(_client)
+    # Self: we're running to emit this, so we're up. If the backend dies, no push
+    # arrives at all and the client's watchdog decays the whole board to red.
+    statuses["job2cool-backend"] = "ok"
     return statuses
 
 

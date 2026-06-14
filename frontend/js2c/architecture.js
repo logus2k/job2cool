@@ -18,7 +18,7 @@
  * fetched on open and on an explicit Refresh click by the host view. */
 (function () {
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const W = 1000, H = 800;
+  const W = 1000, H = 940;
 
   const STATUS = {
     ok:       { fill: '#22c55e', label: 'Healthy' },
@@ -36,55 +36,64 @@
 
   // --- node model: id (= container name), placement, network, probe flag -----
   const NODES = {
-    'job2cool-backend': { x: 385, y: 178, w: 230, h: 64, net: 'app',     label: 'job2cool-backend', sub: 'App orchestrator · FastAPI', port: ':4920', probe: false, big: true },
+    'browser':          { x: 395, y: 4,   w: 162, h: 46, net: 'edge',    label: 'Browser', sub: 'end user · cv-chat widget', client: true },
 
-    'proxy_server':     { x: 292, y: 80,  w: 180, h: 64, net: 'edge',    label: 'proxy_server',  sub: 'nginx · public origin · auth', port: ':80/443', probe: false },
-    'oauth2-proxy':     { x: 528, y: 80,  w: 180, h: 64, net: 'edge',    label: 'oauth2-proxy',  sub: 'Google auth → X-Forwarded-*', port: ':4180', probe: false },
+    'job2cool-backend': { x: 385, y: 218, w: 230, h: 64, net: 'app',     label: 'job2cool-backend', sub: 'App orchestrator · FastAPI', port: ':4920', probe: true, big: true },
 
-    'agent_server':     { x: 138, y: 284, w: 160, h: 64, net: 'noted',   label: 'agent_server',  sub: 'LLM API · gemma-4 · ma2-dpo', port: ':7701', probe: true },
-    'kb-service':       { x: 326, y: 284, w: 160, h: 64, net: 'noted',   label: 'kb-service',    sub: 'KB gateway · /rag /graph', port: ':4940', probe: true },
-    'mcp-service':      { x: 514, y: 284, w: 160, h: 64, net: 'mcp',     label: 'mcp-service',   sub: 'Tools / Skills host', port: ':4950', probe: true },
-    'noted-tools':      { x: 702, y: 284, w: 160, h: 64, net: 'noted',   label: 'noted-tools',   sub: 'MCP user-tools · optional', port: ':7702', probe: true },
+    'proxy_server':     { x: 292, y: 100,  w: 180, h: 64, net: 'edge',    label: 'proxy_server',  sub: 'nginx · public origin · auth', port: ':80/443', probe: true },
+    'oauth2-proxy':     { x: 528, y: 100,  w: 180, h: 64, net: 'edge',    label: 'oauth2-proxy',  sub: 'Google auth → X-Forwarded-*', port: ':4180', probe: true },
 
-    'websearch_server': { x: 730, y: 378, w: 168, h: 64, net: 'mcp',     label: 'websearch_server', sub: 'web_search · Camoufox', port: ':4960', probe: true },
+    'agent_server':     { x: 210, y: 344, w: 160, h: 64, net: 'noted',   label: 'agent_server',  sub: 'LLM API · gemma-4 · ma2-dpo', port: ':7701', probe: true },
+    'kb-service':       { x: 420, y: 344, w: 160, h: 64, net: 'noted',   label: 'kb-service',    sub: 'KB gateway · /rag /graph', port: ':4940', probe: true },
+    'mcp-service':      { x: 630, y: 344, w: 160, h: 64, net: 'mcp',     label: 'mcp-service',   sub: 'Tools / Skills host', port: ':4950', probe: true },
 
-    'noted-rag':        { x: 218, y: 474, w: 168, h: 64, net: 'noted',   label: 'noted-rag',     sub: 'Vector retrieval · ChromaDB', port: ':8201', probe: true },
-    'noted-graph':      { x: 416, y: 474, w: 168, h: 64, net: 'noted',   label: 'noted-graph',   sub: 'Knowledge-graph retrieval ⚡', port: ':5523', probe: true },
-    'noted':            { x: 614, y: 474, w: 168, h: 64, net: 'noted',   label: 'noted',         sub: 'KB / document files', port: ':8123', probe: true },
+    'websearch_server': { x: 730, y: 458, w: 168, h: 64, net: 'mcp',     label: 'websearch_server', sub: 'web_search · Camoufox', port: ':4960', probe: true },
 
-    'llama-vision':     { x: 270, y: 580, w: 240, h: 64, net: 'noted',   label: 'llama-vision',  sub: 'GPU host · gemma-4 + bge-m3 + reranker', port: ':8500', probe: true },
-    'noted-arcadedb':   { x: 560, y: 580, w: 170, h: 64, net: 'noted',   label: 'noted-arcadedb', sub: 'Graph persistence', port: ':2480', probe: true },
+    'noted-rag':        { x: 218, y: 574, w: 168, h: 64, net: 'noted',   label: 'noted-rag',     sub: 'Vector retrieval · ChromaDB', port: ':8201', probe: true },
+    'noted-graph':      { x: 416, y: 574, w: 168, h: 64, net: 'noted',   label: 'noted-graph',   sub: 'Knowledge-graph retrieval ⚡', port: ':5523', probe: true },
+    'noted':            { x: 614, y: 574, w: 168, h: 64, net: 'noted',   label: 'noted',         sub: 'KB / document files', port: ':8123', probe: true },
 
-    'stt_server':       { x: 220, y: 686, w: 160, h: 64, net: 'logus2k', label: 'stt_server',    sub: 'Speech-to-text', port: ':2700', probe: true },
-    'tts_server':       { x: 420, y: 686, w: 160, h: 64, net: 'logus2k', label: 'tts_server',    sub: 'Text-to-speech', port: ':7700', probe: true },
-    'avatar_server':    { x: 620, y: 686, w: 160, h: 64, net: 'logus2k', label: 'avatar_server', sub: 'Talking avatar', port: ':7800', probe: true },
+    'llama-vision':     { x: 270, y: 700, w: 240, h: 64, net: 'noted',   label: 'llama-vision',  sub: 'GPU host · gemma-4 + bge-m3 + reranker', port: ':8500', probe: true },
+    'noted-arcadedb':   { x: 560, y: 700, w: 170, h: 64, net: 'noted',   label: 'noted-arcadedb', sub: 'Graph persistence', port: ':2480', probe: true },
+
+    'stt_server':       { x: 220, y: 826, w: 160, h: 64, net: 'logus2k', label: 'stt_server',    sub: 'Speech-to-text', port: ':2700', probe: true },
+    'tts_server':       { x: 420, y: 826, w: 160, h: 64, net: 'logus2k', label: 'tts_server',    sub: 'Text-to-speech', port: ':7700', probe: true },
+    'avatar_server':    { x: 620, y: 826, w: 160, h: 64, net: 'logus2k', label: 'avatar_server', sub: 'Talking avatar', port: ':7800', probe: true },
   };
 
   // Group/tier labels (small caps above each cluster).
   const GROUPS = [
-    { x: 292, y: 72,  t: 'Edge & Identity' },
-    { x: 385, y: 170, t: 'Application' },
-    { x: 138, y: 276, t: 'Direct dependencies' },
-    { x: 730, y: 370, t: 'mcp tool backend' },
-    { x: 218, y: 466, t: 'KB engine stack · via kb-service' },
-    { x: 270, y: 572, t: 'Model & graph store' },
+    // all tier labels left-aligned in one vertical column (same x).
+    { x: 68, y: 92,  t: 'Edge & Identity' },
+    { x: 68, y: 210, t: 'Application' },
+    { x: 68, y: 336, t: 'Direct dependencies' },
+    { x: 68, y: 450, t: 'mcp tool backend' },
+    { x: 68, y: 566, t: 'KB engine stack · via kb-service' },
+    { x: 68, y: 692, t: 'Model & graph store' },
+    { x: 68, y: 812, t: 'Voice · via proxy origin' },
   ];
 
   // Faint enclosing panel for the voice cluster.
   const PANELS = [
-    { x: 206, y: 678, w: 580, h: 80, t: 'Voice · via proxy origin' },
+    { x: 206, y: 818, w: 580, h: 80, t: '' },
   ];
 
   // --- edges (call paths). via:'left' routes through a left side channel.
   // gapY forces the horizontal-run y for an elbow (to clear other nodes). -----
   const EDGES = [
+    { a: 'browser', b: 'proxy_server' },                           // user enters via nginx
     { a: 'oauth2-proxy', b: 'proxy_server', side: true },          // auth_request
     { a: 'proxy_server', b: 'job2cool-backend' },
+    // voice is reached Browser→proxy→stt/tts/avatar (not via the backend); the
+    // proxy routes /stt /tts /avatar to them. Routed down a left bus to the
+    // bottom voice cluster so the lines don't cross the whole diagram.
+    { a: 'proxy_server', b: 'stt_server', via: 'voicebus', dashed: true },
+    { a: 'proxy_server', b: 'tts_server', via: 'voicebus', dashed: true },
+    { a: 'proxy_server', b: 'avatar_server', via: 'voicebus', dashed: true },
     { a: 'job2cool-backend', b: 'agent_server' },
     { a: 'job2cool-backend', b: 'kb-service' },
     { a: 'job2cool-backend', b: 'mcp-service' },
-    { a: 'job2cool-backend', b: 'noted-tools', dashed: true },     // optional
-    { a: 'mcp-service', b: 'websearch_server', dashed: true, gapY: 368 },
+    { a: 'mcp-service', b: 'websearch_server', dashed: true, gapY: 430 },
     { a: 'kb-service', b: 'noted-rag' },
     { a: 'kb-service', b: 'noted-graph' },
     { a: 'kb-service', b: 'noted' },
@@ -114,6 +123,10 @@
       const ax = a.x, ay = a.y + a.h / 2, bx = b.x, by = b.y + b.h / 2;
       return `M ${ax} ${ay} L ${LEFT_CH} ${ay} L ${LEFT_CH} ${by} L ${bx} ${by}`;
     }
+    if (e.via === 'voicebus') {   // proxy → down a far-left bus → up into each voice node
+      const ax = cx(a), bx = cx(b);
+      return `M ${ax} ${a.y + a.h} L ${ax} 200 L 16 200 L 16 790 L ${bx} 790 L ${bx} ${b.y}`;
+    }
     const ax = cx(a), ay = a.y + a.h, bx = cx(b), by = b.y;
     const my = e.gapY != null ? e.gapY : (ay + by) / 2;
     return `M ${ax} ${ay} L ${ax} ${my} L ${bx} ${my} L ${bx} ${by}`;
@@ -121,6 +134,14 @@
 
   function drawNode(svg, id, n) {
     const g = el('g', {});
+    if (n.client) {   // the user's browser — not a container: no health dot/port
+      g.appendChild(el('rect', { x: n.x, y: n.y, width: n.w, height: n.h, rx: 11,
+        fill: '#f8fafc', stroke: '#cbd5e1', 'stroke-width': 1.3, 'stroke-dasharray': '5 4' }));
+      g.appendChild(el('text', { x: n.x + 15, y: n.y + 20, class: 'n-l' }, n.label));
+      g.appendChild(el('text', { x: n.x + 15, y: n.y + 35, class: 'n-s' }, n.sub));
+      svg.appendChild(g);
+      return;
+    }
     g.appendChild(el('rect', { x: n.x, y: n.y, width: n.w, height: n.h, rx: 11,
       fill: '#ffffff', stroke: n.big ? '#e7c948' : '#e5e9f0', 'stroke-width': n.big ? 2 : 1.2,
       filter: 'url(#nshadow)' }));
@@ -148,7 +169,7 @@
         </filter>
       </defs>
       <style>
-        .arch-svg{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#fcfdff;border-radius:12px}
+        .arch-svg{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#ffffff;border-radius:12px}
         .n-l{font-weight:600;font-size:12.5px;fill:#1f2937}
         .n-l.big{font-size:15px}
         .n-s{font-size:10px;fill:#6b7280}
@@ -168,21 +189,18 @@
       if (p.t) svg.appendChild(el('text', { x: p.x + 14, y: p.y + 16, class: 'pan-l' }, p.t.toUpperCase()));
     });
 
-    // title + status legend
-    svg.appendChild(el('text', { x: 24, y: 30, class: 'a-title' }, 'job2cool — service map'));
-    svg.appendChild(el('text', { x: 24, y: 46, class: 'a-sub' }, 'request-path dependencies & live health'));
-    ['ok', 'degraded', 'down', 'unknown'].forEach((k, i) => {
-      const x = 560 + i * 112;
-      svg.appendChild(el('circle', { cx: x, cy: 34, r: 6, fill: STATUS[k].fill }));
-      svg.appendChild(el('text', { x: x + 12, y: 38, class: 'leg' }, STATUS[k].label));
+    // legends — both vertical at top-right, label to the right of each marker.
+    const LMARK = 840, LLABEL = 858;
+    ['ok', 'degraded', 'down', 'unknown'].forEach((k, i) => {   // status: dots
+      const y = 30 + i * 22;
+      svg.appendChild(el('circle', { cx: LMARK, cy: y, r: 6, fill: STATUS[k].fill }));
+      svg.appendChild(el('text', { x: LLABEL, y: y + 4, class: 'leg' }, STATUS[k].label));
     });
-
-    // network legend (upper-left, clear of the edge band)
     [['app', 'this app'], ['noted', 'noted-network'], ['logus2k', 'logus2k-net'], ['mcp', 'mcp_internal'], ['edge', 'edge/identity']]
-      .forEach((nv, i) => {
-        const y = 92 + i * 18;
-        svg.appendChild(el('rect', { x: 24, y: y - 9, width: 12, height: 12, rx: 3, fill: NET[nv[0]] }));
-        svg.appendChild(el('text', { x: 42, y: y + 1, class: 'leg' }, nv[1]));
+      .forEach((nv, i) => {                                     // networks: swatches
+        const y = 132 + i * 22;
+        svg.appendChild(el('rect', { x: LMARK - 6, y: y - 6, width: 12, height: 12, rx: 3, fill: NET[nv[0]] }));
+        svg.appendChild(el('text', { x: LLABEL, y: y + 4, class: 'leg' }, nv[1]));
       });
 
     // edges (under nodes)
@@ -208,17 +226,17 @@
     wrap.className = 'arch-wrap';
     wrap.innerHTML = `
       <style>
-        /* fill the Help view and vertically center the block; safe-center
-           falls back to top-align (no clipping) when the viewport is short. */
-        .arch-wrap{padding:1rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;
-          flex:1;min-height:0;justify-content:safe center;overflow:auto}
+        /* fill the Help view; the toolbar stays pinned at top and only the
+           graph (.arch-stage) centers vertically in the space below it. */
+        .arch-wrap{padding:1rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;flex:1;min-height:0}
         .arch-bar{display:flex;align-items:center;gap:.7rem}
         .arch-bar h3{margin:0;font-size:15px;color:var(--ink,#1f2937)}
         .arch-bar .sp{flex:1}
         .arch-status{font-size:12px;color:var(--muted,#94a3b8)}
         .arch-refresh{border:1px solid var(--line,#e5e9f0);background:#fff;border-radius:8px;padding:.4rem .8rem;font:inherit;font-size:12.5px;cursor:pointer}
         .arch-refresh:hover{border-color:#cfe6f7;background:#f6fbff}
-        .arch-stage{max-width:1000px;width:100%;margin:0 auto}
+        .arch-stage{flex:1;min-height:0;max-width:1000px;width:100%;margin:0 auto;
+          display:flex;flex-direction:column;justify-content:safe center;overflow:auto}
         /* "live feed" watchdog: each push restarts archDecay; if pushes stop,
            the browser's own animation clock carries it green→yellow→orange→red,
            and the animationend EVENT fires goStale(). No JS timer involved. */
@@ -234,7 +252,7 @@
         }
       </style>
       <div class="arch-bar">
-        <h3>Architecture &amp; health</h3>
+        <h3>Infrastructure Live Monitoring</h3>
         <span class="sp"></span>
         <span class="arch-fresh" id="arch-fresh"><i></i><b>connecting…</b></span>
         <span class="arch-status" id="arch-status"></span>
