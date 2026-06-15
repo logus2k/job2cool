@@ -365,13 +365,28 @@ body.cvchat-resizing {
 .cvchat-progress .cvp-steps { display: flex; flex-direction: column; gap: 0.5rem; }
 .cvchat-progress .cvp-step { display: flex; align-items: center; gap: 0.6rem; font-size: 12.5px; color: #8a93a3; }
 .cvchat-progress .cvp-dot {
-    width: 18px; height: 18px; border-radius: 50%; border: 2px solid #e2e6ee; flex: none;
-    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 0.5px solid #e2e6ee;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
 }
 .cvchat-progress .cvp-tx { display: flex; flex-direction: column; line-height: 1.25; }
 .cvchat-progress .cvp-tx span { font-size: 11px; color: #9aa3b2; }
-.cvchat-progress .cvp-step.done { color: #1f2733; }
-.cvchat-progress .cvp-step.done .cvp-dot { background: #157347; border-color: #157347; color: #fff; }
+.cvchat-progress .cvp-step.done {
+    color: #1f2733;
+    align-items: flex-start;
+}
+.cvchat-progress .cvp-step.done .cvp-dot {
+    background: #439a71;
+    border-color: #689f85;
+    color: #fff;
+}
 .cvchat-progress .cvp-step.active { color: #101010; font-weight: 600; }
 .cvchat-progress .cvp-step.active .cvp-dot { border-color: #101010; box-shadow: 0 0 0 3px #eef5fb; }
 .cvchat-progress .cvp-done { margin-top: 0.7rem; font-size: 12px; font-weight: 600; color: #157347; }

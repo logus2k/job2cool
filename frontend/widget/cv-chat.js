@@ -2549,8 +2549,12 @@
         var t0 = performance.now();
         var tFirst = null;
 
-        // job2cool: reset the document tabs at the start of each new turn.
-        try { if (window.JOB2COOL_NEW_TURN) window.JOB2COOL_NEW_TURN(); } catch (e) {}
+        // job2cool: do NOT wipe the workspace on a new turn — documents accumulate
+        // within a project. New or regenerated deliverables merge in by name via the
+        // buffer SSE (and auto-focus); a full reset happens only on New Project /
+        // delete (which call JOB2COOL_NEW_TURN directly). Snapshot current content so
+        // a regeneration keeps the prior version (Current/Previous toggle).
+        try { if (window.JOB2COOL_TURN_START) window.JOB2COOL_TURN_START(); } catch (e) {}
 
         fetch(API + '/chat', {
             method: 'POST',
@@ -3653,6 +3657,13 @@
         }
     }
 
+    // Seconds of video that must be buffered AHEAD of the playhead before we
+    // (re)start playback after an underrun. The avatar stream can starve when
+    // job2cool runs its heavy multi-section generation on the shared GPU; a
+    // bigger cushion makes it resume once, smoothly, instead of strobing on
+    // every byte (the "pauses several times" effect). Tune here.
+    var AVATAR_CUSHION = 0.6;
+
     // Fires once per appendBuffer's updateend. Detects new range openings
     // (timeline gaps - the per-chunk-duration-mismatch signature) and
     // logs them as they happen.
@@ -3688,6 +3699,7 @@
                     try {
                         sb.addEventListener('updateend', function ue() {
                             sb.removeEventListener('updateend', ue);
+                            if (avatar.tryResume) avatar.tryResume('append');   // resume once the cushion rebuilds
                             resolve();
                         }, { once: true });
                         sb.appendBuffer(bytes);
@@ -3841,13 +3853,19 @@
             if (!avatar.sb || !avatar.sb.buffered.length) return;
             var buf = avatar.sb.buffered;
             var endT = buf.end(buf.length - 1);
-            if (endT - avatarVideo.currentTime < 0.15) return;   // still underrun
+            if (endT - avatarVideo.currentTime < AVATAR_CUSHION) return;   // wait for a healthy cushion
             avatarVideo.play().catch(function (e) {
                 console.warn('[cvchat avatar] auto-resume play() rejected:', e.message);
             });
         }
+        avatar.tryResume = tryResume;
         avatarVideo.addEventListener('canplay', function () { tryResume('canplay'); });
         avatarVideo.addEventListener('canplaythrough', function () { tryResume('canplaythrough'); });
+        // On underrun, pause and hold until AVATAR_CUSHION rebuilds (via tryResume on
+        // append/canplay), so a starved stream resumes once instead of strobing.
+        avatarVideo.addEventListener('waiting', function () {
+            if (avatar.started && !avatarVideo.paused) { try { avatarVideo.pause(); } catch (e) {} }
+        });
         avatarVideo.addEventListener('error', function (e) {
             var err = avatarVideo.error;
             console.warn('[cvchat avatar] video error: code=', err && err.code,
@@ -4216,7 +4234,7 @@
                 console.log('[cvchat greet] awaiting first chunk before greeting...');
                 waitForAvatarChunks(1).then(function () {
                     console.log('[cvchat greet] first chunk arrived, calling speak()');
-                    speak(GREETING_TEXT, 'greeting');
+                    speak(greetingSpoken(), 'greeting');
                 });
             }
             return ok;
@@ -4285,9 +4303,68 @@
         "Hi! I'm Diana, your HR Assistant. What kind of role are you looking to fill?",
         "I'm Diana, your HR Assistant. What would you like to create today?",
         "Hello, I'm Diana, your HR Assistant. How can I help you hire?",
-        "Hi! I'm Diana, your HR Assistant. Ready when you are — what are we hiring for?"
+        "Hi! I'm Diana, your HR Assistant. Ready when you are. What are we hiring for?"
     ];
     var GREETING_TEXT = GREETING_TEXTS[Math.floor(Math.random() * GREETING_TEXTS.length)];
+    // Project-aware EXTRA parts only (a project/role is open). One of these is
+    // appended to a random base greeting's intro -> ~20x20 combinations, no
+    // duplicated "I'm Diana" intro. {role} is filled with the project name.
+    var PROJECT_EXTRAS = [
+        "Want the full hiring package for {role}, or a specific document?",
+        "Shall I prepare the full package for {role}, or just one document?",
+        "Ready to work on {role}. Full package, or a single document?",
+        "Let's build the pack for {role}. Everything, or one document?",
+        "For {role}, would you like the whole package or a specific part?",
+        "Working on {role}? I can do the full package or one document.",
+        "{role} it is. The complete pack, or a single piece?",
+        "I can prepare everything for {role}, or just the document you need.",
+        "Let's get started on {role}. Full package, or a specific document?",
+        "For {role}: the full hiring pack, or one document to start?",
+        "Ready when you are on {role}. Everything, or a specific document?",
+        "Shall we put together the full package for {role}, or one document?",
+        "{role} coming up. The whole pack, or a single document?",
+        "Happy to help with {role}. Full package, or just one part?",
+        "Let's tackle {role}. The complete package, or a specific document?",
+        "For {role}, I can generate the full pack or any single document.",
+        "On {role} today? Full package, or a document of your choice?",
+        "Ready to prepare {role}. Everything at once, or one document?",
+        "Let's work on {role}. The full package or a single document?",
+        "{role}, got it. The full hiring package, or a specific document?"
+    ];
+    var DIANA = "I'm Diana, your HR Assistant.";
+    // Insert the signed-in user's first name into a greeting's salutation (keeping
+    // the salutation variety: "Hi António!", "Welcome António!", …); prepend a
+    // "Hello {name}!" when the line has no leading salutation.
+    function personalize(text, first) {
+        if (!first) return text;
+        if (/^(Hi there|Hi|Hello|Hey|Welcome)\b/i.test(text)) {
+            return text.replace(/^(Hi there|Hi|Hello|Hey|Welcome)[!,.]*\s*/i, function (_m, s) { return s + ' ' + first + '! '; });
+        }
+        return 'Hello ' + first + '! ' + text;
+    }
+    function greetingLine() {
+        var cfg = window.JOB2COOL_CONFIG || {};
+        var first = ((cfg.user_name || '').trim().split(/\s+/)[0]) || '';
+        var proj = (cfg.project_name || '').trim();
+        if (proj) {
+            // Reuse a random base greeting's INTRO (salutation + "I'm Diana...") and
+            // append a random project EXTRA -> ~20x20 combinations, no repetition.
+            var base = GREETING_TEXTS[Math.floor(Math.random() * GREETING_TEXTS.length)];
+            var i = base.indexOf(DIANA);
+            var intro = i >= 0 ? base.slice(0, i + DIANA.length) : DIANA;
+            var extra = PROJECT_EXTRAS[Math.floor(Math.random() * PROJECT_EXTRAS.length)].replace('{role}', proj);
+            return personalize(intro, first) + ' ' + extra;
+        }
+        // No project context: a random base greeting, personalised by name.
+        return personalize(GREETING_TEXT, first);
+    }
+    // A SHORT line for speech (TTS / avatar). The shown greeting can be longer than
+    // what we speak; this keeps the spoken intro brief (the per-turn replies use the
+    // orchestrator's <voice> tag for the same reason).
+    function greetingSpoken() {
+        var first = (((window.JOB2COOL_CONFIG || {}).user_name || '').trim().split(/\s+/)[0]) || '';
+        return (first ? 'Hi ' + first + '. ' : 'Hi. ') + "I'm Diana, your HR Assistant. Ready when you are.";
+    }
 
     function openPanel() {
         // Only one right-edge panel open at a time: opening the chat closes any
@@ -4296,7 +4373,7 @@
         document.body.classList.add('cvchat-open');
         if (!state.greeted) {
             state.greeted = true;
-            addMessage('assistant', renderMarkdown(GREETING_TEXT));
+            addMessage('assistant', renderMarkdown(greetingLine()));
         }
         requestAnimationFrame(function () { if (input) input.focus(); });
     }

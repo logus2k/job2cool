@@ -1,0 +1,8 @@
+# Eval harness deps. Config (a) (base SmolLM2-360M) runs locally via transformers;
+# (b)/(c)/judge are HTTP-only.
+#
+# Install torch CPU-only (a 360M model needs no GPU and the GPU is busy serving):
+#   pip install -r requirements-eval.txt --extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers>=4.44
+requests

@@ -68,6 +68,7 @@
   window.JOB2COOL_CHAT_NEW = function () {
     threadId = null; currentTitle = ''; currentDescription = '';
     currentVisibility = 'shared'; currentReadonly = false; titleUserSet = false;
+    if (window.JOB2COOL_SET_PROJECT_NAME) window.JOB2COOL_SET_PROJECT_NAME('');
     if (window.JOB2COOL_CHAT_RESET) window.JOB2COOL_CHAT_RESET();
     try { fetch(new URL('api/buffers/clear', document.baseURI).href, { method: 'POST' }); } catch (e) {}
   };
@@ -116,6 +117,7 @@
     threadId = genId();
     currentTitle = r.name; currentDescription = r.description;
     currentVisibility = r.visibility; currentReadonly = false; titleUserSet = true;
+    if (window.JOB2COOL_SET_PROJECT_NAME) window.JOB2COOL_SET_PROJECT_NAME(r.name);
     if (window.JOB2COOL_CHAT_RESET) window.JOB2COOL_CHAT_RESET();
     try { await fetch(new URL('api/buffers/clear', document.baseURI).href, { method: 'POST' }); } catch (e) {}
     if (window.showView) window.showView('workspace');
@@ -129,6 +131,7 @@
     try { t = await (await fetch(api('job2cool/chats/' + id), { cache: 'no-store' })).json(); }
     catch (e) { toast('Could not load project'); return; }
     threadId = id; currentTitle = t.title || ''; titleUserSet = true;
+    if (window.JOB2COOL_SET_PROJECT_NAME) window.JOB2COOL_SET_PROJECT_NAME(currentTitle);
     currentDescription = t.description || '';
     currentVisibility = t.visibility || 'private';
     currentReadonly = (currentVisibility === 'shared' && t.is_owner === false);   // shared, not mine → view-only
@@ -147,7 +150,8 @@
       });
       if (!rr.ok) { toast(rr.status === 403 ? 'Only the owner can edit' : 'Save failed'); return; }
     } catch (e) { toast('Save failed'); return; }
-    if (id === threadId) { currentTitle = r.name; currentDescription = r.description; titleUserSet = true; }
+    if (id === threadId) { currentTitle = r.name; currentDescription = r.description; titleUserSet = true;
+      if (window.JOB2COOL_SET_PROJECT_NAME) window.JOB2COOL_SET_PROJECT_NAME(r.name); }
     renderList();
   }
   async function delThread(id) {
@@ -166,6 +170,7 @@
       try { await fetch(new URL('api/buffers/clear', document.baseURI).href, { method: 'POST' }); } catch (e) {}
       if (window.JOB2COOL_NEW_TURN) window.JOB2COOL_NEW_TURN();   // reset doc state + re-render the empty Workspace
       currentTitle = ''; titleUserSet = false;
+      if (window.JOB2COOL_SET_PROJECT_NAME) window.JOB2COOL_SET_PROJECT_NAME('');
     }
     renderList();
   }
@@ -198,12 +203,11 @@
       </tr>`;
     }).join('');
     root.innerHTML = `
-      <div class="kb-head"><button class="hbtn btnnew" id="chats-new">＋ New Project</button><span class="kb-sub">Your projects and shared team projects</span></div>
+      <div class="kb-head"><span class="kb-sub">Your projects and shared team projects</span></div>
       <div style="padding:1rem 1.3rem">
         ${chats.length ? `<table class="kb-doctable"><thead><tr><th>Project</th><th>Visibility</th><th>Turns</th><th>Updated</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
           : `<div class="kb-empty full"><div class="empty-art">${EMPTY_ART}</div><h3>No projects yet</h3><p>Create one with ＋ New Project</p></div>`}
       </div>`;
-    root.querySelector('#chats-new').onclick = () => { if (window.JOB2COOL_NEW_PROJECT) window.JOB2COOL_NEW_PROJECT(); };
     root.querySelectorAll('[data-open]').forEach(b => b.onclick = () => loadThread(b.dataset.open));
     root.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { const c = chats.find(x => x.thread_id === b.dataset.edit); editProject(b.dataset.edit, c || {}); });
     root.querySelectorAll('[data-del]').forEach(b => b.onclick = () => delThread(b.dataset.del));

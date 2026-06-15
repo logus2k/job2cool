@@ -174,12 +174,20 @@ SECTIONS = [
     },
     {
         "key": "interview", "title": "Technical Interviews",
-        "query": "technical interview questions evaluation criteria for {need}",
+        "query": "technical interview questions evaluation criteria model answers for {need}",
         "instruction": (
-            "Write a **Technical Interview** plan for this role: 4-6 themed areas, "
-            "each with 2-3 example questions and what a strong answer shows, plus "
-            "a short scoring rubric. Ground it in the evidence where relevant. "
-            "Markdown, level-3 headings (###). Do not repeat the section title."),
+            "Write a **Technical Interview** guide for this role that a "
+            "NON-TECHNICAL interviewer can run (e.g. a first-pass / triage "
+            "screen): 4-6 themed areas, each with 2-3 questions. For EVERY "
+            "question include, as labelled sub-points: **Question**; **Expected "
+            "answer** — a concise model answer in plain language stating the key "
+            "points a correct response must contain, so a non-technical "
+            "interviewer can check the candidate against it; and **Look for / "
+            "red flags** — what a strong answer sounds like versus a weak or "
+            "incorrect one. End with a short scoring rubric. Ground it in the "
+            "evidence where relevant. Markdown, level-3 (###) headings for the "
+            "themed areas with a clear sub-structure per question; do not repeat "
+            "the section title."),
     },
     {
         "key": "onboarding", "title": "Onboarding Plan",
@@ -315,15 +323,16 @@ def _extract_think(text: str) -> str:
 
 
 async def _resolve_need(client: httpx.AsyncClient, history: list[dict],
-                        message: str) -> str:
+                        message: str, project_name: str = "") -> str:
     """Make the latest message self-contained using the conversation, so a
     follow-up like 'also find interview questions' inherits the role and skills
-    from earlier turns. This is the context that cv keeps and job2cool was
-    dropping. Falls back to the raw message."""
+    from earlier turns. The active project's name is folded in too, so a first
+    message like 'I need a technical interview for this role' resolves the role
+    from the project even with no prior turns. Falls back to the raw message."""
     turns = [h for h in (history or []) if isinstance(h, dict) and h.get("content")]
-    if not turns:
-        return message
     lines: list[str] = []
+    if project_name:
+        lines.append(f"This project is for hiring a {project_name} (the target role).")
     for m in turns[-6:]:
         who = "User" if m.get("role") == "user" else "Diana"
         txt = _strip_blocks(m.get("content"))
@@ -358,6 +367,11 @@ async def run_chat(message: str, history: list[dict],
     use_ma2 = "ma2" in offer_sources
     use_gemma_offer = "gemma" in offer_sources
     use_rag_offer = "rag" in offer_sources
+    # The active project's name (often the role being hired for, e.g. "Test
+    # Automation Engineer") and the logged-in user's name, forwarded by the
+    # widget in `config`. Used as a role hint and to greet the user by name.
+    project_name = (config.get("project_name") or "").strip()
+    user_name = (config.get("user_name") or "").strip()
     need = (message or "").strip()
     if not need:
         yield _sse({"delta": "Tell me the hiring need and I'll build the pack."})
@@ -366,10 +380,14 @@ async def run_chat(message: str, history: list[dict],
 
     async with httpx.AsyncClient() as client:
         # 0) Resolve the message against the conversation (memory/context) ---
-        need = await _resolve_need(client, history, need)
+        need = await _resolve_need(client, history, need, project_name)
 
         # 1) Role + domain + requested deliverables --------------------------
         role = await _role_label(client, need)
+        if not role and project_name:
+            # The project name itself often names the role (e.g. "Test
+            # Automation Engineer") — use it before asking the user.
+            role = await _role_label(client, project_name)
         if not role:
             # No identifiable position (in this message or the conversation) ->
             # ASK which role, do not invent one or generate anything.
@@ -543,7 +561,7 @@ async def run_chat(message: str, history: list[dict],
         # 4) Closing chat note (grounding + gaps + nudge) + turn cache --------
         turn_id = hashlib.sha1((need + str(total_chunks)).encode()).hexdigest()[:12]
         remaining = [s["title"] for s in SECTIONS if s["key"] not in set(requested)]
-        note = _closing_note(role, names, domain, remaining)
+        note = _closing_note(role, names, domain, remaining, user_name)
         yield _sse({"delta": "\n\n" + note})
 
         cache.put_turn(turn_id, question=need,
@@ -594,14 +612,16 @@ def _humanize_list(items: list[str]) -> str:
 
 
 def _closing_note(role: str, deliverables: str, domain: str,
-                  remaining: list[str]) -> str:
+                  remaining: list[str], user_name: str = "") -> str:
     """Diana's brief chat note AFTER the document(s) are written. It deliberately
     does NOT recap the document content (that lives in the mid pane) and makes NO
     evidence claims (so it cannot hallucinate): it confirms what landed in the
     workspace and nudges the next deliverable. The substance — and its grounded,
     clickable citations — lives in the document itself."""
     are = "are" if "," in deliverables else "is"
-    lead = (f"Done — the **{deliverables}** for a {role} {are} in your workspace"
+    first = user_name.strip().split()[0] if user_name.strip() else ""
+    hi = f"{first}, the" if first else "Done — the"
+    lead = (f"{hi} **{deliverables}** for a {role} {are} in your workspace"
             + (f", grounded in `{domain}`" if domain else "") + ".")
     nudge = ""
     human = _humanize_list([r.lower() for r in remaining])

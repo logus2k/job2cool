@@ -6,3 +6,6 @@ scripts/.venv-ingest/
 # CVs datasets
 data/candidates/
 data/candidates2/
+
+# eval harness venv
+testing/.venv-eval/

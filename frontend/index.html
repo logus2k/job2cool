@@ -56,7 +56,19 @@
   .profile .who{min-width:0;text-align:right}
   .profile .who b{display:block;font-size:13px;line-height:1.15}
   .profile .who span{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
-  .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;padding-top:var(--topbar-h)}
+  /* Persistent Assistant (Diana) toggle: lives in the bar below the top bar, at its
+     far right, in EVERY area. Anchored to .main (which is squeezed left when Diana
+     opens) so it always sits at the content's right edge and stays clickable. */
+  .asst-badge{position:absolute;top:calc(var(--topbar-h) + 15px);right:1.1rem;z-index:6;
+              display:flex;align-items:center;gap:.45rem;border:1px solid #ffcc9b;
+              background:#ffcc9b;border-radius:9px;padding:.1rem .9rem .1rem .9rem;cursor:pointer;
+              font-size:13px;font-weight:600;color:#1d1d1d;white-space:nowrap}
+  .asst-badge img{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:none;background:#f1f7fc}
+  .asst-badge:hover{background:#ffbd7e;border-color:#ffbd7e}
+  body.cvchat-open .asst-badge{display:none}
+  /* badge hidden while Diana is open -> reclaim the reserved right padding so no blank gap remains */
+  body.cvchat-open .wsbar,body.cvchat-open .kb-head{padding-right:1.3rem}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;padding-top:var(--topbar-h);position:relative}
   /* Dock the Assistant panel below the top bar and above the status bar. */
   body .cvchat-panel{top:var(--topbar-h);bottom:var(--statusbar-h)}
   header{display:flex;align-items:center;gap:.7rem;padding:.5rem 1.3rem;min-height:72px;background:var(--panel);
@@ -88,7 +100,7 @@
   /* ---- main-pane views ---- */
   .viewpane{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
   .viewpane[hidden]{display:none}
-  .kb-head{display:flex;align-items:center;gap:.6rem;padding:.8rem 1.3rem;border-bottom:1px solid var(--line);background:var(--panel)}
+  .kb-head{display:flex;align-items:center;gap:.6rem;padding:.8rem 150px .8rem 1.3rem;min-height:64px;border-bottom:1px solid var(--line);background:var(--panel);box-sizing:border-box}
   .kb-head b{font-size:18px;letter-spacing:-.2px}
   .kb-head .kb-sub{color:var(--muted);font-size:12.5px}
   .kb-spacer{flex:1}
@@ -199,12 +211,16 @@
   .kbdlg .foot{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1.1rem}
 
   /* ---- workspace top bar (persistent above the tabs) ---- */
-  .wsbar{display:flex;align-items:center;gap:.6rem;padding:.7rem 1.3rem;min-height:64px;background:var(--panel);
+  .wsbar{display:flex;align-items:center;gap:.6rem;padding:.7rem 150px .7rem 1.3rem;min-height:64px;background:var(--panel);
          border-bottom:1px solid var(--line)}
   .wsbar .wstitle{display:flex;align-items:center;gap:.55rem;min-width:0}
   .wsbar .wstitle b{font-size:18px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wsbar .ws-project{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50%}
+  .wsbar .ws-project.placeholder{font-size:12.5px;font-weight:400;color:var(--muted);letter-spacing:0}
+  .wsbar .ws-project[hidden]{display:none}
   .wsbar .ws-role{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
   .wsbar .ws-role[hidden]{display:none}
+  .wsbar .ws-project:not([hidden]) + .ws-role:not([hidden])::before{content:"·";color:var(--muted);font-weight:400;margin-right:.6rem}
   .wsbar .spacer{flex:1}
 
   /* ---- All-Documents overview ---- */
@@ -372,8 +388,12 @@
 </nav>
 <div class="topbar"><b class="topbar-title" id="topTitle">Workspace</b><div class="sp"></div><div class="profile"><div class="who"><b id="meName">HR Manager</b><span id="meEmail">Signing in…</span></div><div class="av" id="meAv"></div></div></div>
 <div class="main">
+  <!-- Persistent Assistant (Diana) toggle: anchored to the content region so it sits
+       at the right of each area's sub-bar (and tracks the squeeze when Diana opens). -->
+  <button class="asst-badge" id="asstToggle" title="Show or hide Diana, your Assistant" aria-label="Toggle Assistant"><span>Assistant</span><img src="static/widget/diana.png" alt=""></button>
   <div id="view-workspace" class="viewpane">
     <div class="wsbar">
+      <b class="ws-project" id="wsProject" hidden></b>
       <div class="ws-role" id="wsRole" hidden></div>
       <div class="spacer"></div>
       <button class="hbtn primary" id="exportAllBtn" title="Download all documents">
@@ -443,7 +463,12 @@ const COPY_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const ALL='All Documents';
 const MAIN=['Job Offer','Technical Interviews','Onboarding Plan','Cultural & Team Fit'];
 const ORDER=Object.fromEntries(MAIN.map((t,i)=>[t,i]));
-const doc={order:[],content:{},active:ALL,offerView:'gemma',role:''};
+const doc={order:[],content:{},active:ALL,offerView:'gemma',role:'',prev:{},pview:{}};
+// Version history (Option B): doc.prev[name] = the immediately-prior content kept
+// when a deliverable is improved/regenerated in place; doc.pview[name] = 'cur'|'prev'.
+// _preTurn snapshots content at the start of a turn so the SSE handler can stash the
+// prior version exactly once when a regeneration's first chunk arrives.
+let _preTurn={},_snapped=new Set();
 const isPending=c=>!c||/_Generating…_|_Pending…_/.test(c);
 
 // per-deliverable overview-card metadata (icon + one-line description)
@@ -468,10 +493,10 @@ function shownFor(title){
   if(title==='Job Offer'&&doc.offerView==='ma2'&&doc.content['Job Offer (MA2)']!=null) return 'Job Offer (MA2)';
   return title;
 }
-function copyMD(name){navigator.clipboard.writeText(doc.content[name]||'').then(()=>toast('Markdown copied')).catch(()=>toast('Copy failed'));}
-function exportPDF(name){
+function copyMD(name,override){navigator.clipboard.writeText(override!=null?override:(doc.content[name]||'')).then(()=>toast('Markdown copied')).catch(()=>toast('Copy failed'));}
+function exportPDF(name,override){
   // Print the document in place (no extra tab) -> browser Save-as-PDF, like cv.
-  const pa=$('#printarea');pa.innerHTML=md2html(doc.content[name]||'');
+  const pa=$('#printarea');pa.innerHTML=md2html(override!=null?override:(doc.content[name]||''));
   const prev=document.title;document.title=name;            // sensible filename
   function after(){document.title=prev;pa.innerHTML='';window.removeEventListener('afterprint',after);}
   window.addEventListener('afterprint',after);
@@ -502,21 +527,36 @@ function render(){
   updateWsBar();
   if(doc.active===ALL||!doc.active){renderOverview();return;}
   const col=$('#doccol');
-  const showName=shownFor(doc.active);
-  const content=doc.content[showName]||'';
-  const pending=isPending(content);
-  const hasMa2=doc.active==='Job Offer'&&doc.content['Job Offer (MA2)']!=null;
+  const name=doc.active;
+  const hasPrev=doc.prev[name]!=null;
+  const onPrev=hasPrev&&doc.pview[name]==='prev';
+  // Version toggle (Current / Previous) — shown when an improved-in-place doc kept a prior version.
+  const vseg=hasPrev?`<span class="seg">
+      <button class="${!onPrev?'on':''}" data-pv="cur">Current</button>
+      <button class="${onPrev?'on':''}" data-pv="prev">Previous</button></span>`:'';
+  // Source toggle (Gemma/MA2) — only on the CURRENT Job Offer.
+  const hasMa2=!onPrev&&name==='Job Offer'&&doc.content['Job Offer (MA2)']!=null;
   const seg=hasMa2?`<span class="seg">
       <button class="${doc.offerView==='gemma'?'on':''}" data-v="gemma">Gemma</button>
       <button class="${doc.offerView==='ma2'?'on':''}" data-v="ma2">MA2</button></span>`:'';
+  const showName=onPrev?null:shownFor(name);
+  const shown=onPrev?(doc.prev[name]||''):(doc.content[showName]||'');
+  const pending=isPending(shown);
+  const verBtns=onPrev?`<button class="iconbtn" id="v-restore" title="Make this the current version" style="width:auto;padding:0 .5rem;font-size:11px">Restore</button><button class="iconbtn" id="v-discard" title="Delete this previous version" style="width:auto;padding:0 .5rem;font-size:11px">Discard</button>`:'';
   col.innerHTML=`<div class="docwrap">
-      <div class="doctool"><span class="ttl">${esc(doc.active)}</span>${seg}
+      <div class="doctool"><span class="ttl">${esc(name)}</span>${vseg}${seg}${verBtns}
         <button class="iconbtn" id="t-copy" title="Copy Markdown">${COPY_ICON}</button>
         <button class="iconbtn" id="t-pdf" title="Export to PDF">${PDF_ICON}</button></div>
-      <div class="docbody${pending?' pending':''}">${pending?'Generating…':(_citeMap=new Map(),md2html(citeBadges(content)))}</div></div>`;
-  col.querySelector('#t-copy').onclick=()=>copyMD(showName);
-  col.querySelector('#t-pdf').onclick=()=>exportPDF(showName);
-  col.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
+      <div class="docbody${pending?' pending':''}">${pending?'Generating…':(_citeMap=new Map(),md2html(citeBadges(shown)))}</div></div>`;
+  col.querySelector('#t-copy').onclick=()=>copyMD(name,shown);
+  col.querySelector('#t-pdf').onclick=()=>exportPDF(name,shown);
+  col.querySelectorAll('.seg button[data-v]').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
+  col.querySelectorAll('.seg button[data-pv]').forEach(b=>b.onclick=()=>{doc.pview[name]=b.dataset.pv;render();});
+  if(onPrev){
+    // Restore: swap current<->previous (non-destructive; the displaced version stays as Previous).
+    col.querySelector('#v-restore').onclick=()=>{const t=doc.content[name];doc.content[name]=doc.prev[name];doc.prev[name]=t;doc.pview[name]='cur';document.dispatchEvent(new CustomEvent('job2cool:docschanged'));render();};
+    col.querySelector('#v-discard').onclick=()=>{delete doc.prev[name];delete doc.pview[name];document.dispatchEvent(new CustomEvent('job2cool:docschanged'));render();};
+  }
 }
 
 // "All Documents" overview: deliverable cards + generation-progress stepper.
@@ -559,14 +599,21 @@ function renderOverview(){
   col.querySelectorAll('.kebab').forEach(b=>b.onclick=()=>exportPDF(b.dataset.pdf));
 }
 
-// workspace top bar: status pill + enable/disable Download All
+// workspace bar: project name + detected role + enable/disable Download All
+let wsProjectName='';
 function updateWsBar(){
   const items=doc.order;
   const ea=$('#exportAllBtn');
   const ready=items.some(n=>!isPending(doc.content[n]));
   if(ea)ea.disabled=!ready;
-  const wr=$('#wsRole');if(wr){const r=(doc.role||'').trim();wr.textContent=r;wr.hidden=!r;}
+  const wp=$('#wsProject');if(wp){const has=!!wsProjectName;wp.textContent=has?wsProjectName:'Project documents';wp.hidden=false;wp.classList.toggle('placeholder',!has);}
+  const wr=$('#wsRole');if(wr){let r=(doc.role||'').trim();
+    // Don't repeat the role when the project name already is the role.
+    if(r&&wsProjectName&&r.toLowerCase()===wsProjectName.trim().toLowerCase())r='';
+    wr.textContent=r;wr.hidden=!r;}
 }
+// Set/clear the active project name shown in the Workspace bar (called by chats.js).
+window.JOB2COOL_SET_PROJECT_NAME=function(name){wsProjectName=(name||'').trim();if(window.JOB2COOL_CONFIG)window.JOB2COOL_CONFIG.project_name=wsProjectName;updateWsBar();};
 // Export All: print every completed deliverable (one per page) -> Save as PDF.
 function exportAll(){
   const names=doc.order.filter(n=>!isPending(doc.content[n]));
@@ -614,19 +661,31 @@ window.JOB2COOL_OPEN_PDF=function(data){
 function closePdf(){const col=$('#pdfcol');col.hidden=true;col.innerHTML='';$('#docpane').classList.remove('split');}
 
 // reset tabs at the start of a new turn (hook called by cv-chat on send)
-window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';doc.role='';render();};
+window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';doc.role='';doc.prev={};doc.pview={};render();};
+// Start of a turn (no wipe): snapshot current content so a regeneration can stash
+// the prior version once, when its first chunk arrives (see the buffer SSE handler).
+window.JOB2COOL_TURN_START=function(){_preTurn=Object.assign({},doc.content);_snapped=new Set();};
 // Detected role -> workspace bar (and chat default name, via chats.js).
 window.JOB2COOL_SET_ROLE=function(role){doc.role=(role||'').trim();if(typeof render==='function')render();};
 window.JOB2COOL_GET_ROLE=function(){return doc.role||'';};
 // Workspace doc snapshot get/set — used by chats.js to persist docs with the thread.
-window.JOB2COOL_GET_DOCS=function(){return{order:doc.order.slice(),content:Object.assign({},doc.content),role:doc.role||''};};
-window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.order.slice():[];doc.content=(d&&d.content&&typeof d.content==='object')?Object.assign({},d.content):{};doc.role=(d&&typeof d.role==='string')?d.role:'';doc.active=ALL;doc.offerView='gemma';closePdf();render();};
+window.JOB2COOL_GET_DOCS=function(){return{order:doc.order.slice(),content:Object.assign({},doc.content),role:doc.role||'',prev:Object.assign({},doc.prev)};};
+window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.order.slice():[];doc.content=(d&&d.content&&typeof d.content==='object')?Object.assign({},d.content):{};doc.role=(d&&typeof d.role==='string')?d.role:'';doc.prev=(d&&d.prev&&typeof d.prev==='object')?Object.assign({},d.prev):{};doc.pview={};doc.active=ALL;doc.offerView='gemma';closePdf();render();};
 
 // live document via buffer SSE -> tabs
 (function(){const es=new EventSource('api/buffers/events/stream');
   es.onmessage=ev=>{try{const p=JSON.parse(ev.data);
     if(!(p&&p.type==='doc_changed'&&p.doc))return;
-    const name=p.doc.name;doc.content[name]=p.doc.content||'';
+    const name=p.doc.name;
+    // Version history: the first time a turn regenerates an existing, completed
+    // deliverable, keep its prior content as the "Previous" version before the new
+    // one overwrites it. (Once per name per turn; _snapped/_preTurn set on turn start.)
+    if((name in ORDER)&&!_snapped.has(name)){
+      _snapped.add(name);
+      const prior=_preTurn[name];
+      if(prior!=null&&!isPending(prior)){doc.prev[name]=prior;doc.pview[name]='cur';}
+    }
+    doc.content[name]=p.doc.content||'';
     document.dispatchEvent(new CustomEvent('job2cool:docschanged'));   // event-driven persist hook (chats.js)
     if(name==='Job Offer (MA2)'){ if(doc.active==='Job Offer')render(); return; }
     if(!(name in ORDER))return;                       // ignore unknown buffers
@@ -638,7 +697,7 @@ window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.ord
 
 // settings -> window.JOB2COOL_CONFIG (read by the patched cv-chat). Settings is
 // now a main-pane view (not a modal), so we just sync the checkboxes on entry.
-window.JOB2COOL_CONFIG={offer_sources:['ma2','gemma','rag']};
+window.JOB2COOL_CONFIG={offer_sources:['ma2','gemma','rag'],project_name:'',user_name:''};
 function syncSettingsView(){const s=window.JOB2COOL_CONFIG.offer_sources;
   $('#cfg-ma2').checked=s.includes('ma2');$('#cfg-gemma').checked=s.includes('gemma');$('#cfg-rag').checked=s.includes('rag');}
 $('#cfg-save').onclick=()=>{const s=[];if($('#cfg-ma2').checked)s.push('ma2');if($('#cfg-gemma').checked)s.push('gemma');if($('#cfg-rag').checked)s.push('rag');
@@ -648,6 +707,14 @@ $('#cfg-save').onclick=()=>{const s=[];if($('#cfg-ma2').checked)s.push('ma2');if
 function openAssistant(){
   if(!document.body.classList.contains('cvchat-open')){const l=document.querySelector('.cvchat-launcher');if(l)l.click();}
 }
+// Persistent top-bar badge: toggle the Assistant panel open/closed. The badge's
+// active styling is driven purely by the `cvchat-open` body class, so it stays in
+// sync however the panel is opened or closed.
+function toggleAssistant(){
+  if(document.body.classList.contains('cvchat-open')){ if(window.JOB2COOL_CHAT_CLOSE) window.JOB2COOL_CHAT_CLOSE(); }
+  else openAssistant();
+}
+(function(){const b=document.getElementById('asstToggle');if(b)b.onclick=toggleAssistant;})();
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
 const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Projects',candidates:'Candidates',help:'Help & Support'};
 // Only one right-edge panel is ever open at a time. Hides every .j2c-side
@@ -686,6 +753,7 @@ $('#exportAllBtn').onclick=exportAll;
     if(me&&me.authenticated&&me.email){
       const name=me.display_name||me.email.split('@')[0];
       nameEl.textContent=name;emailEl.textContent=me.email;
+      if(window.JOB2COOL_CONFIG)window.JOB2COOL_CONFIG.user_name=name;
       if(me.picture){
         avEl.textContent='';
         avEl.style.backgroundImage=`url("${me.picture}")`;
