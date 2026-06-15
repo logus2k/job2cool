@@ -1,0 +1,79 @@
+{
+  "id": "T04",
+  "kind": "offer",
+  "prompt": "Write a job description for a senior frontend engineer who knows React and TypeScript.",
+  "a": {
+    "text": "Create an HTML file with the following content:\n\n1) A short bio of your name (50 characters or less).\n   - Include any relevant experience you have that relates to this position/job postings requirements such as education level(s), years working at company etc...\n 2) Your resume should include all required skills listed below along side their descriptions if applicable e.g.:\n    * JavaScript\n      + 3+ Years Experience\n        |-\n          **JavaScript Fundamentals**\n            + Basic knowledge on how JS works & its syntax\n              <br>\n                `<b>`Example</b><i></i>\n                  // Example code snippet using ES6 features like arrow functions\n                    var myFunction = () => {\n                      console.log(\"Hello World\");\n                        return \"This is what I am doing\";\n                     };\n               </code>\n             \n   ```html\n     .jsx{\n         width:\"48%\", height:'7rem', marginTop:-9px}\n       body > h1 {\n           color : #fff ;\n           textAlign : center , fontSize : '2em' \n        backgroundColor : '#eee'; \n    }\n    \n    p {\n        paddingLeft: 1%;\n        \n        display: flex !important;\n\n        justifyContent: spaceAfter! important;\n        \n    }\n\n    div#resume_container {\n        borderRadius: 10px;\n        boxShadow: none;\n    \n        maxWidth: 100vw;\n        minHeight: auto;\n        overflowY: hidden;\n        lineHeight: normal;\n            \n        alignItems:center;\n                \n        /*backgroundImage:{width:\"auto\"}}};    \n                        \n                            img {\n                                float: left;\n                                \n                                    opacity: 0.5;\n                                    \n                                        transformOrigin: top right;\n                                        \n                                            zIndex: 1000;\n                                            \n                                                visibility: visible;\n                                                        \n                                                    animationName: fadeInAnimation;\n                                                        animationsize: medium;\n                                                                    duration: 1s;\n                                                                                                     \n                                   transitionDuration: 1s;                                                        \n                              \n                          \n                             imageBackgroundAlpha: 0.5;\n                             \n                      \n                  \n                          @keyframes fadein {\n                                  from {}\n                                      alpha: 0.5;\n                                      \n                                          },\n                                          \n                                              To{}\n                                               alpha: 1;\n                                                  })`;\n\n    \n    \n    ",
+    "latency_s": 8.69,
+    "judge": {
+      "structural_completeness": 1,
+      "faithfulness_to_request": 1,
+      "language_quality": 1,
+      "repetition_free": 1,
+      "rationale": "The offer provides HTML/CSS code for a resume, not a job description for a Senior Frontend Engineer."
+    }
+  },
+  "b": {
+    "text": "# Senior Front End Engineer (React)\n\n## Summary\nWe are looking for experienced engineers to contribute significantly towards the development of complex user interfaces within our platform solutions. The ideal candidate possesses deep knowledge of modern web technologies like JavaScript/TypeScript and is eager to work on high-quality backend services alongside client teams. This role requires strong technical leadership while collaborating closely with product owners and business stakeholders.\n\n## Required Skills\n- Expert proficiency in ReactJS framework\n- Strong understanding of Typescript programming language\n- Experience working with state management libraries such as Redux or MobX\n- Familiarity with serverless frameworks including AWS Lambda and Cloud Functions\n- Knowledge of microservices architecture concepts\n- Ability to design robust data structures using type systems\n- Proficiency in developing reusable code modules from scratch\n- Understanding of architectural patterns used by large enterprise platforms\n\n## Responsibilities\n- Lead projects involving advanced software engineering skills at an upper level\n- Collaborate extensively with project managers, developers, designers, and clients across various stages\n- Design, develop, test, deploy, monitor, maintain, optimize, and enhance core application features\n- Contribute actively during all phases of requirements gathering through final delivery planning sessions\n- Ensure timely completion of tasks according to defined timelines and deliverables set forth by SREs\n- Participate directly in defining system architectures based upon specific customer needs\n- Serve as part of cross-functional team environments where direct communication between leads occurs frequently\n- Actively participate in Agile ceremonies throughout the entire lifecycle of assigned initiatives",
+    "latency_s": 13.49,
+    "judge": {
+      "structural_completeness": 5,
+      "faithfulness_to_request": 5,
+      "language_quality": 4,
+      "repetition_free": 4,
+      "rationale": "All required sections are present. It strongly emphasizes React and TypeScript, though some backend/architecture mentions slightly dilute the frontend focus."
+    }
+  },
+  "c": {
+    "chat_text": "<think># Understanding the Request\nThe user is asking me to write a job description for a \"senior frontend engineer who knows React and TypeScript.\" However, the user also specifies that I am *only* generating the \"Job Offer\" deliverable, despite asking for a job description. I must adhere to the strict instruction: \"You are generating ONLY these deliverables: Job Offer.\"\n\n# Role and Seniority Signals\nThe role is \"Senior Frontend Engineer.\" This implies a high level of experience, technical leadership, and autonomy. The required skills are React and TypeScript, which are modern, high-demand technologies.\n\n# Deliverable Focus\nThe user explicitly stated: \"(You are generating ONLY these deliverables: Job Offer. Confirm exactly these in your reply — do not promise a full package unless all four are listed.)\" Therefore, I must focus solely on creating the Job Offer document, not the JD itself, even though the prompt started by asking for a JD.\n\n# Shaping the Job Offer\nSince I do not have a specific knowledge base provided in this turn, I must use generic, high-quality corporate standards for a Senior Frontend Engineer job offer. The offer must reflect the seniority level (competitive salary, advanced benefits, growth opportunities) and the technical focus (React/TypeScript).\n\n# Grounding in Company Knowledge\nI must assume standard company practices for compensation and benefits, emphasizing the technical rigor expected of a senior role. I will structure the offer professionally.</think>\n\n<voice>Sure. I'm preparing the job offer for a Senior Frontend Engineer now. I'll write it into the document for you.</voice>\n\n_Role: **Senior Frontend Engineer** · grounding in `jobs_onboard_frontend`._\n\n\nDone — the **Job Offer** for a Senior Frontend Engineer is in your workspace, grounded in `jobs_onboard_frontend`. Want me to prepare the technical interviews, onboarding plan, or cultural & team fit next?",
+    "meta": {
+      "turn_id": "4c09aa68286b",
+      "buffers": [
+        "5c5272382ffd"
+      ],
+      "deliverables": [
+        "Job Offer"
+      ],
+      "offer_ma2": true,
+      "role": "Senior Frontend Engineer",
+      "domain": "jobs_onboard_frontend",
+      "retrieved_chunks": 4,
+      "retrieved_entities": 67,
+      "retrieved_edges": 385,
+      "cited_chunks": 4,
+      "cited_entities": 2,
+      "cited_edges": 0,
+      "avg_similarity": 0.0
+    },
+    "buffers": {
+      "Job Offer": "# Job Offer\n\n### Summary\nWe are looking for experienced engineers to contribute significantly towards the development of complex, high-performance web applications using modern technologies like JavaScript/TypeScript frameworks. The ideal candidate is a strong team player who thrives in challenging projects and can drive technical solutions from concept through to production deployment. This role requires someone capable of working independently while contributing actively within an agile environment.\n\n### Required Skills\n* Expert proficiency with React framework for building user interfaces (UI/UX)\n* Strong knowledge of TypeScript programming language syntax, type systems, modules, and generators\n* Familiarity with modern JavaScript frameworks such as NextJS or Gatsby is a plus\n* Experience working within an Agile development lifecycle including Scrum methodologies\n* Ability to write clean code adhering to SOLID principles (Inversion Principle) and following modern coding standards such as proper `type vs interface` usage [markdown_chunk:56b028785ef7].\n* Knowledge of backend technologies like React Native for native mobile experiences\n* Proficiency in version control systems using Git and CI/CD pipelines such as Jenkins or Azure DevOps\n* Understanding of high-performance web sites essential knowledge for front-end engineers [E:concept:high performance web sites essential knowledge for front-end engineers].\n\n### Responsibilities\n* Develop, design, deploy, test, maintain, optimize, and evolve complex web applications from concept to production.\n* Collaborate with cross-functional teams including Product Owners (POs), QA Engineers, Design Teams, and Backend Developers on project delivery timelines.\n* Contribute actively in a team setting while driving technical solutions for client projects using Agile methodologies.\n* Ensure code quality through adherence to SOLID principles across the development lifecycle, focusing on architectural patterns [E:concept:architectural patterns].\n* Participate fully during daily standups with management as well as weekly retrospectives within teams.\n* Communicate effectively both verbally and written, ensuring high levels of clarity in all interactions.\n\n### What we offer\nWe offer a dynamic environment where your technical expertise is valued, opportunities for continuous learning, and the chance to work on cutting-edge, high-impact projects.\n\n**Sources:** [markdown_chunk:56b028785ef7] [markdown_chunk:4b76a4cf06ff] [markdown_chunk:04fd0cfc2c49] [markdown_chunk:89765b8117cf]",
+      "Job Offer (MA2)": "# Job Offer (MA2)\n\n# Senior Front End Engineer (React)\n\n## Summary\nWe are looking for experienced engineers to contribute significantly towards the development of complex, high-performance web applications using modern technologies like JavaScript/TypeScript frameworks. The ideal candidate is a strong team player who thrives in challenging projects and can drive technical solutions from concept through to production deployment. This role requires someone capable of working independently while contributing actively within an agile environment.\n\n## Required Skills\n- Expert proficiency with React framework for building user interfaces (UI/UX)\n- Strong knowledge of TypeScript programming language syntax, type systems, modules, and generators\n- Familiarity with modern JavaScript frameworks such as NextJS or Gatsby is a plus\n- Experience working within an Agile development lifecycle including Scrum methodologies\n- Ability to write clean code adhering to SOLID principles (Inversion Principle)\n- Knowledge of backend technologies like React Native for native mobile experiences\n- Proficiency in version control systems using Git and CI/CD pipelines such as Jenkins or Azure DevOps\n\n## Responsibilities\n- Develop, design, deploy, test, maintain, optimize, and evolve complex web applications from concept to production.\n- Collaborate with cross-functional teams including Product Owners (POs), QA Engineers, Design Teams, and Backend Developers on project delivery timelines.\n- Contribute actively in a team setting while driving technical solutions for client projects using Agile methodologies.\n- Ensure code quality through adherence to SOLID principles across the development lifecycle.\n- Participate fully during daily standups with management as well as weekly retrospectives within teams.\n- Communicate effectively both verbally and written, ensuring high levels of clarity in all interactions."
+    },
+    "latency_s": 17.92,
+    "judge": {
+      "structural_completeness": 5,
+      "faithfulness_to_request": 5,
+      "language_quality": 4,
+      "repetition_free": 4,
+      "rationale": "The JD is comprehensive and covers all requested skills (React, TypeScript). It is slightly verbose and includes extraneous backend/mobile mentions."
+    },
+    "score_answer": {
+      "turn_id": "4c09aa68286b",
+      "faithfulness": 0.95,
+      "answer_relevance": 1.0,
+      "rationale": "The generated Job Offer is highly faithful to the source material, drawing directly from the 'Specialist offer draft Diana refines' section. The only minor deduction is the inclusion of 'Understanding of high-performance web sites essential knowledge for front-end engineers' in the Required Skills, which is a concept from the knowledge base but not explicitly listed as a requirement in the draft, though it is related to the role's context. Overall, the document perfectly addresses the core technical requirements of React and TypeScript as requested by the user."
+    },
+    "citation_stats": {
+      "citations": 5,
+      "resolvable": 5
+    }
+  },
+  "wash_out": {
+    "winner_A_is_MA2": "B",
+    "raw": [
+      "B",
+      "A"
+    ],
+    "strict_agree": true
+  }
+}

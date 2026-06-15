@@ -1,0 +1,79 @@
+{
+  "id": "T02",
+  "kind": "full",
+  "prompt": "We're looking for a DevOps engineer with Kubernetes and CI/CD experience.",
+  "a": {
+    "text": "* A new developer will be hired to work on the following tasks:\n  * 1) Create an environment of your choice (e.g., AWS EC2 instance or Docker container).\n    - This should include all necessary tools such as docker-compose etc..\n      + You can use any tool you like but it must have at least one command that is used by other commands within this postion! For example if we want our app running locally then `docker run --rm` would suffice while using something more complex might require additional arguments e.g.:\n        ```bash\n          # Run local server\n            $ ./server_local.sh &> /dev/null\n              | tee logfile >&2\n                [OK] Server started successfully...\n                  ...and now what?\n                    We need someone who knows how to build up these environments from scratch so they don't rely too heavily upon third party packages which may break when deployed elsewhere due to changes made there later down stream....\n                      The goal here being not just building out some basic infrastructure quickly without having much knowledge about deployment strategies yet; rather focus first around getting things working before moving onto anything else :)\n                        So let's start off simple enough where I'll give them instructions based on their previous experiences i'm sure most people know exactly what needs doing right away :D\n                            First thing needed obviously going into production mode is access control mechanisms between different services involved hence why security checks come next followed closely behind configuration management systems\n                          Next step after securing everything properly comes along way towards making certain components available via API calls instead of hard coded URLs\n                              Then once those two steps done lets move forward further ahead ensuring proper logging functionality has been implemented\n                                Now since logs aren’t always easy to read through manually its important also ensure good error handling mechanism exists\n                                    Finally last bit coming together ensures no unnecessary data gets lost during backups\n                                        And finally lastly make absolutely sane assumptions regarding database usage\n                                            Lastly another point worth mentioning again especially given recent events involving SQL injection attacks was keeping databases cleanly separated\n                                            ",
+    "latency_s": 8.72,
+    "judge": {
+      "structural_completeness": 2,
+      "faithfulness_to_request": 1,
+      "language_quality": 2,
+      "repetition_free": 3,
+      "rationale": "The offer is unstructured and vague. It mentions environment setup but lacks specific Kubernetes/CI/CD requirements requested."
+    }
+  },
+  "b": {
+    "text": "# DevOps Engineer K8s\n\n## Summary\nWe need experienced engineers to drive the development of our cloud infrastructure solutions from concept through deployment. The ideal candidate is passionate about automation frameworks like Kubernetes and capable of working collaboratively within an agile team environment. This role requires strong technical skills alongside excellent communication abilities.\n\n## Required Skills\n- Expert proficiency in Kubectl (Kubernetes)\n- Experience using Git version control systems such as Github or Bitbucket\n- Familiarity with Continuous Integration & Delivery tools including Jenkins and TeamCity\n- Knowledge of Containerization technologies utilizing Docker\n- Understanding of Infrastructure as Code concepts via Terraform\n- Ability to configure and manage container orchestration platforms like kubeadm\n- Proficiency with Source Control Management Systems like GitHub Actions\n- Competency in implementing build pipelines leveraging CI/CD toolchains\n\n## Responsibilities\n- Develop and maintain complex software applications built on Kubernetes environments\n- Collaborate closely with teams across Agile methodologies while adhering strictly to SDLC processes\n- Utilize automated testing suites provided by CI/CD ecosystems during project execution\n- Ensure all deployed services adhere accurately according to defined standards at every stage of lifecycle\n- Participate actively in daily meetings involving cross-functional stakeholders\n- Contribute regularly towards setting up new projects based upon organizational needs",
+    "latency_s": 11.0,
+    "judge": {
+      "structural_completeness": 5,
+      "faithfulness_to_request": 5,
+      "language_quality": 5,
+      "repetition_free": 4,
+      "rationale": "All requested areas (Kubernetes, CI/CD) are covered thoroughly. Structure is excellent, though some skill overlap exists."
+    }
+  },
+  "c": {
+    "chat_text": "<think># Understanding the Hiring Need\nThe user requires a DevOps Engineer who specializes in Kubernetes and CI/CD. This defines the core technical requirements for the role.\n\n# Role and Seniority Signals\nThe request is specific about technical skills (Kubernetes, CI/CD) but does not specify seniority. Given the nature of modern DevOps roles, I will assume a mid-to-senior level position to ensure the job offer is competitive and detailed.\n\n# Deliverables Requested\nThe user explicitly requested only the \"Job Offer\" and instructed me to confirm exactly this. I must not promise the full package (technical interviews, onboarding, cultural fit).\n\n# Shaping the Job Offer\nI need to draft a professional job offer document. This offer must be grounded in the company knowledge base (which I am simulating access to) regarding compensation bands, benefits, and standard employment terms for a DevOps Engineer.\n\n# Grounding in Company Knowledge\nI will ensure the offer reflects standard company practices for technical roles, including competitive salary ranges and relevant benefits packages (e.g., remote work flexibility, professional development budget).</think>\n\n<voice>Sure. I'm preparing the job offer for a DevOps engineer now. I'll write it into the document for you.</voice>\n\n_Role: **DevOps engineer** · grounding in `jobs_onboard_devops`._\n\n\nDone — the **Job Offer** for a DevOps engineer is in your workspace, grounded in `jobs_onboard_devops`. Want me to prepare the technical interviews, onboarding plan, or cultural & team fit next?",
+    "meta": {
+      "turn_id": "8dbf05ac5d64",
+      "buffers": [
+        "3e03ca45ad97"
+      ],
+      "deliverables": [
+        "Job Offer"
+      ],
+      "offer_ma2": true,
+      "role": "DevOps engineer",
+      "domain": "jobs_onboard_devops",
+      "retrieved_chunks": 16,
+      "retrieved_entities": 67,
+      "retrieved_edges": 167,
+      "cited_chunks": 6,
+      "cited_entities": 0,
+      "cited_edges": 0,
+      "avg_similarity": 0.0
+    },
+    "buffers": {
+      "Job Offer": "# Job Offer\n\n### Summary\nWe are seeking experienced engineers to join our development team focused on building robust, high-performance cloud services using containerization technologies like Kubernetes [markdown_chunk:2f677fe8512f]. The ideal candidate is eager to work in a fast-paced environment and contribute significantly towards the successful deployment of new features into production systems. This role requires strong technical skills with an eye for continuous improvement within agile frameworks such as Scrum or Kanban, aligning with the cultural movement that stresses collaboration and automation of software delivery [markdown_chunk:5712eaba99d8].\n\n### Required Skills\n*   Expert proficiency in containerization technologies like Kubernetes (K8s)\n*   Experience using CI/CD pipelines, including Git and Jenkins\n*   Familiarity with cloud platforms utilizing services like AWS ECS, EC2, S3, etc., along with Terraform for infrastructure as code provisioning\n*   Knowledge of DevOps practices such as monitoring systems setup on Kubernetes clusters (K8s) or Docker Swarm/Docker Compose\n*   Experience configuring and managing CI tools including GitLab, Jenkins, Azure Service Fabric, and GitHub Actions\n*   Ability to work within an agile development lifecycle using Scrum or Kanban methodologies\n*   Proficiency in version control systems like GIT for code management purposes (e.g., pull requests)\n\n### Responsibilities\n*   Participate actively as part of a team working on cloud services delivery projects utilizing Kubernetes and CI/CD principles\n*   Contribute to the development, testing, deployment, monitoring, scaling, and optimization processes within an agile framework\n*   Collaborate with cross-functional teams including QA engineers during all stages of project lifecycle execution\n*   Ensure high quality standards across both production environments (e.g., Kubernetes clusters) as well as internal services deployed via CI/CD pipelines\n*   Contribute to the continuous improvement and evolution of DevOps practices within a team environment\n\n### What we offer\nWe offer a dynamic environment where your contributions directly influence the reliability and speed of our services. You will be empowered to drive continuous improvement (Kaizen) and collaborate with top-tier engineering teams to shape the future of our cloud infrastructure.\n\n**Sources:** [markdown_chunk:7594791e1e12] [markdown_chunk:b345593e9f1a] [markdown_chunk:83ec6d166e28] [markdown_chunk:7b2b2a761e14]",
+      "Job Offer (MA2)": "# Job Offer (MA2)\n\n# DevOps Engineer (Kubernetes)\n\n## Summary\nWe are seeking experienced engineers to join our development team focused on building robust, high-performance cloud services using containerization technologies like Kubernetes. The ideal candidate is eager to work in a fast-paced environment and contribute significantly towards the successful deployment of new features into production systems. This role requires strong technical skills with an eye for continuous improvement within agile frameworks such as Scrum or Kanban.\n\n## Required Skills\n- Expert proficiency in containerization technologies like Kubernetes (K8s)\n- Experience using CI/CD pipelines, including Git and Jenkins\n- Familiarity with cloud platforms utilizing services like AWS ECS, EC2, S3, etc., along with Terraform for infrastructure as code provisioning\n- Knowledge of DevOps practices such as monitoring systems setup on Kubernetes clusters (K8s) or Docker Swarm/Docker Compose\n- Experience configuring and managing CI tools including GitLab, Jenkins, Azure Service Fabric, and GitHub Actions\n- Ability to work within an agile development lifecycle using Scrum or Kanban methodologies\n- Proficiency in version control systems like GIT for code management purposes (e.g., pull requests)\n\n## Responsibilities\n- Participate actively as part of a team working on cloud services delivery projects utilizing Kubernetes and CI/CD principles\n- Contribute to the development, testing, deployment, monitoring, scaling, and optimization processes within an agile framework\n- Collaborate with cross-functional teams including QA engineers during all stages of project lifecycle execution\n- Ensure high quality standards across both production environments (e.g., Kubernetes clusters) as well as internal services deployed via CI/CD pipelines\n- Contribute to the continuous improvement and evolution of DevOps practices within a team environment\n\n## Requirements\n- 3+ years of experience in containerization technologies, including K8s or Docker Swarm environments (e.g., ECS), along with at least one year working on CI tools like GitLab/Jenkins\n- At least two months of hands-on deployment and monitoring expertise using Kubernetes clusters (K8s) is preferred\n- Experience configuring infrastructure as code for cloud platform providers such as AWS or Azure"
+    },
+    "latency_s": 20.19,
+    "judge": {
+      "structural_completeness": 5,
+      "faithfulness_to_request": 5,
+      "language_quality": 5,
+      "repetition_free": 4,
+      "rationale": "The offer is comprehensive, covering Kubernetes and CI/CD well. Minor repetition in K8s mentions slightly reduces the score."
+    },
+    "score_answer": {
+      "turn_id": "8dbf05ac5d64",
+      "faithfulness": 1.0,
+      "answer_relevance": 1.0,
+      "rationale": "The generated job offer is highly faithful to the source material, as nearly every requirement and responsibility listed is directly supported by the 'Specialist offer draft Diana refines' section. The offer successfully addresses the user's request for a DevOps engineer with Kubernetes and CI/CD experience by detailing specific required skills and responsibilities. The inclusion of 'continuous improvement (Kaizen)' is supported by the source material's mention of continuous improvement and DevOps Kaizen."
+    },
+    "citation_stats": {
+      "citations": 6,
+      "resolvable": 6
+    }
+  },
+  "wash_out": {
+    "winner_A_is_MA2": "A",
+    "raw": [
+      "A",
+      "B"
+    ],
+    "strict_agree": true
+  }
+}

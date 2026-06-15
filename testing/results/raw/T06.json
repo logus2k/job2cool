@@ -1,0 +1,79 @@
+{
+  "id": "T06",
+  "kind": "offer",
+  "prompt": "Create a job offer for a security engineer with pentesting and SIEM experience.",
+  "a": {
+    "text": "* A short description of the role (10-25 words)\n  * What is your current position?\n    - [ ] You have been working as an analyst or developer at this company since 3 years ago now!\n      + How long do you work here every day/weekday(s)?\n        |   Weekdays:\n          |    Mon to Fri\n            |    8am – Midnight\n              • Do they provide lunch breaks during that time frame ?\n                Yes No\n                  Why not :\n                    > I don’t like eating outside on my own so it would be nice if we could eat together once per week\n                      So what kind of food does their cafeteria serve / restaurant nearby where can people get takeout from when there isn't any local restaurants available near us\n                        The location should also include how far away our office will need to drive each way depending upon which direction one wants to go towards campus\n                          If possible please specify whether its within walking distance OR by car\n\n      **If no answer provided then leave blank**\n\n    <br>\n    4+ Years Experience In Security Analysis & Development\n\n    6 months Pentest Timeframe\n\n  </p><h2 id=\"post\">Post</h2></div>`;\n\n\t// Create HTML code using markdown syntax\n\t var html = `<pre class='code' style= 'font-family:' \"Helvetica Neue\", Helvetica , Arial,' font-size':\"7px', line-height:\"9pt'\" data-lang='en_US' lang='en_US' title=\"\">${html}</pre>`;\n\n\t // Add CSS stylesheet file into body tag \n\tvar cssFilePath = './css';\n\t\n\tif ($('body').hasClass(\"noCSS\")) {\n\t\t $('.noCSSTag')\n\t\t\t .remove();\n\t\t\n\t } else {\n\n\t\t $(document).ready((function() {\n\t\t\t\t document.getElementById('mainContentDiv').innerHTML += '<link rel=\"stylesheet\" href=\"'+cssFilePath+'\"/>'\n\t\t\t\t\t })()) ;\t\t \n\n\t\t\t return true;\n\n\n",
+    "latency_s": 8.2,
+    "judge": {
+      "structural_completeness": 1,
+      "faithfulness_to_request": 1,
+      "language_quality": 1,
+      "repetition_free": 1,
+      "rationale": "The provided text is not a job offer but a mix of unrelated code snippets and survey questions. It fails to meet the core request."
+    }
+  },
+  "b": {
+    "text": "# Security Engineer Offer\n\n## Summary\nWe need experienced professionals to join our team focused on securing critical infrastructure systems against cyber threats. This role involves hands-on development of penetration testing tools while working within an environment dedicated solely to incident response capabilities. The ideal candidate thrives in challenging environments where they can contribute directly towards system hardening initiatives from the initial detection through to remediation execution.\n\n## Required Skills\n- Pentest/Security Information & Event Management (SIem) expertise\n- Experience using vulnerability scanners like Nessus or Wireshark\n- Knowledge of intrusion prevention solutions such as IDSs and IPSes\n- Familiarity with network monitoring platforms including NetFlow and Zabbix\n- Proficiency in Linux operating systems\n- Understanding of cloud services used by organizations globally\n- Ability to develop custom software components based upon project requirements\n\n## Responsibilities\n- Develop new products designed specifically for use during Incident Response activities\n- Participate actively throughout all phases of product lifecycle management\n- Contribute significantly toward building robust security frameworks aligned with NIST standards\n- Collaborate closely alongside IT staff members across various roles\n- Ensure timely delivery of high quality work according to defined timelines\n- Work effectively both independently and collaboratively under supervision when necessary\n- Utilize technical skillsets consistently at meetings and client events",
+    "latency_s": 10.98,
+    "judge": {
+      "structural_completeness": 5,
+      "faithfulness_to_request": 5,
+      "language_quality": 4,
+      "repetition_free": 4,
+      "rationale": "All requested sections are present. The offer strongly addresses pentesting and SIEM experience, though the language could be slightly more polished."
+    }
+  },
+  "c": {
+    "chat_text": "<think># Understanding the Hiring Need\nThe user needs a job offer for a specific role: Security Engineer. The required experience includes Pentesting and SIEM. The output must strictly be the Job Offer document.\n\n# Role and Seniority Signals\nThe title is \"Security Engineer.\" Given the specific, advanced skills (Pentesting, SIEM), this role likely requires mid-to-senior level expertise, suggesting a professional/experienced level in the job offer.\n\n# Requested Deliverables\nOnly the Job Offer is requested. I must confirm this limitation in the response.\n\n# Shaping the Job Offer\nThe job offer needs to be professional, clearly outlining the role, responsibilities, required skills (Pentesting/SIEM), compensation structure (placeholder), and benefits, grounded in general company standards for technical roles.\n\n# Grounding in Company Knowledge Base\nI will use standard company templates for job offers, ensuring the language aligns with a high-tech, security-focused environment.</think>\n\n<voice>Sure. I'm preparing the job offer for a Security Engineer now. I'll write it into the document for you.</voice>\n\n_Role: **Security Engineer** · grounding in `jobs_onboard_security`._\n\n\nDone — the **Job Offer** for a Security Engineer is in your workspace, grounded in `jobs_onboard_security`. Want me to prepare the technical interviews, onboarding plan, or cultural & team fit next?",
+    "meta": {
+      "turn_id": "b72f02537999",
+      "buffers": [
+        "fc06af52d7f5"
+      ],
+      "deliverables": [
+        "Job Offer"
+      ],
+      "offer_ma2": true,
+      "role": "Security Engineer",
+      "domain": "jobs_onboard_security",
+      "retrieved_chunks": 10,
+      "retrieved_entities": 67,
+      "retrieved_edges": 286,
+      "cited_chunks": 4,
+      "cited_entities": 8,
+      "cited_edges": 0,
+      "avg_similarity": 0.0
+    },
+    "buffers": {
+      "Job Offer": "# Job Offer\n\n### Summary\nWe are seeking experienced Security Engineers to join our team, focusing on securing critical infrastructure and cloud platforms such as AWS or Azure. The ideal candidate is passionate about penetration testing techniques and leveraging specialized tools, including SIEM solutions, for incident response and monitoring. This role requires a proactive individual eager to contribute directly to the development of new attack detection capabilities and ensuring compliance with security objectives [E:concept:security objectives].\n\n### Required Skills\n* Proven expertise in penetration testing methodologies and execution.\n* Deep knowledge of SIEM solutions for monitoring, threat detection, and incident response.\n* Experience securing critical infrastructure and cloud environments (AWS/Azure).\n* Strong understanding of security controls, including input validation/filtering controls [E:concept:input validation/filtering controls] and authentication & access control [E:concept:authentication & access control].\n* Familiarity with various security testing methods, such as Penetration Testing, Manual Inspections, and Code Review [E:concept:security testing methods].\n\n### Responsibilities\n* Participate directly in the entire security development lifecycle, from initial requirement gathering to final deployment.\n* Conduct comprehensive security assessments, including penetration testing and configuration review and testing [E:concept:configuration review and testing].\n* Develop and implement new attack detection capabilities within an agile, cross-functional team structure.\n* Validate security requirements and controls by testing for security flaws [E:concept:security flaws], ensuring adherence to positive requirements [E:concept:positive requirements].\n* Perform specialized security checks, such as testing for HTTP Methods and XST [E:concept:testing for http methods and xst] and input validation/filtering controls [E:concept:input validation/filtering controls].\n\n### What we offer\nWe offer opportunities where you can actively participate from start to finish, contributing significantly throughout all phases of project execution. You will be working within an agile, cross-functional team structure with flexible work schedules and travel opportunities.\n\n**Sources:** [markdown_chunk:a8fc11323eb6] [markdown_chunk:23d1012845b5] [markdown_chunk:c30257dd2198] [markdown_chunk:380382a0eb7e]",
+      "Job Offer (MA2)": "# Job Offer (MA2)\n\n# Security Engineer (Pentest/SIem)\n\n## Summary\nWe are seeking experienced professionals to join our security team focused on securing critical infrastructure systems, including cloud platforms like AWS or Azure. The ideal candidate is passionate about penetration testing techniques while leveraging specialized tools such as SIEM solutions for incident response and monitoring purposes. This role requires a proactive individual eager to contribute directly in the development of new attack detection capabilities within an agile environment.\n\n## Offer\nWe offer opportunities where you can actively participate from start to finish, contributing significantly throughout all phases of project execution. The first step is receiving a brief recruiter request followed by writing clear and professional job posting content using Markdown syntax. Applications are sent for selection via email after submission.\n\n### Offering\n- Participating directly in the entire security development lifecycle (from initial requirement gathering to final deployment)\n- Contributing actively from start until completion of assigned tasks\n- Working within an agile, crossfunctional team structure with flexible work schedules and travel opportunities"
+    },
+    "latency_s": 18.43,
+    "judge": {
+      "structural_completeness": 5,
+      "faithfulness_to_request": 5,
+      "language_quality": 4,
+      "repetition_free": 3,
+      "rationale": "The offer covers all requested areas (pentesting, SIEM, Security Engineer). Structure is good, but some repetition exists in responsibilities."
+    },
+    "score_answer": {
+      "turn_id": "b72f02537999",
+      "faithfulness": 0.95,
+      "answer_relevance": 1.0,
+      "rationale": "The job offer successfully incorporates the requested experience in pentesting and SIEM, which is directly supported by the specialist draft. It also grounds several technical requirements, such as input validation/filtering controls and authentication & access control, using the company knowledge base. A minor deduction is applied because the offer mentions 'ensuring compliance with security objectives' without explicitly linking it to the concept of 'security objectives' from the source material, although the concept is strongly implied."
+    },
+    "citation_stats": {
+      "citations": 4,
+      "resolvable": 4
+    }
+  },
+  "wash_out": {
+    "winner_A_is_MA2": "B",
+    "raw": [
+      "B",
+      "A"
+    ],
+    "strict_agree": true
+  }
+}

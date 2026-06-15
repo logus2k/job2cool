@@ -11,9 +11,9 @@ system-only capability metrics and the qualitative worked examples for the repor
 |---|---|
 | [`evaluation_suite.md`](evaluation_suite.md) | The suite: configs, the fixed prompt set (12 cases), metrics, and the exact execution procedure |
 | [`run_eval.py`](run_eval.py) | The harness that executes the suite and writes raw results to `results/raw/` |
-| [`results/summary.md`](results/summary.md) | Aggregate result tables — **placeholders to fill** (this is what feeds report §5.2) |
-| [`results/per_case_results.md`](results/per_case_results.md) | Per-case outputs + scores — **placeholders to fill** |
-| [`results/wash_out.md`](results/wash_out.md) | MA2-draft vs Gemma-composed offer A/B — **placeholders to fill** (report §7 wash-out) |
+| [`aggregate_results.py`](aggregate_results.py) | Aggregates `results/raw/*.json` → `results/testing_results.md` |
+| [`results/testing_results.md`](results/testing_results.md) | **The consolidated results** — Table 1 (a/b/c isolation), Table 2 (system metrics), Table 3 (wash-out), per-case detail. Feeds report §5/§7 |
+| `results/raw/{ID}.json` | Per-case raw outputs (offers, MA2 drafts, deliverables, scores) |
 
 ## Status
 

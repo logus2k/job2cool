@@ -178,7 +178,9 @@ SECTIONS = [
         "instruction": (
             "Write a **Technical Interview** guide for this role that a "
             "NON-TECHNICAL interviewer can run (e.g. a first-pass / triage "
-            "screen): 4-6 themed areas, each with 2-3 questions. For EVERY "
+            "screen). Include 6-9 questions grouped into themed areas, UNLESS "
+            "the hiring need asks for a specific number of questions, in which "
+            "case produce exactly that many. For EVERY "
             "question include, as labelled sub-points: **Question**; **Expected "
             "answer** — a concise model answer in plain language stating the key "
             "points a correct response must contain, so a non-technical "

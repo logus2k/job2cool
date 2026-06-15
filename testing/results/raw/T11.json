@@ -1,0 +1,21 @@
+{
+  "id": "T11",
+  "kind": "refusal",
+  "prompt": "I need to hire someone.",
+  "c": {
+    "chat_text": "Happy to help. Which job position are you hiring for? Tell me the role and any key skills, and I'll prepare it.\n\n<voice>Sure. Which job position are you hiring for? Tell me the role and I'll prepare it for you.</voice>",
+    "meta": {
+      "turn_id": "a09598d61acf",
+      "buffers": [],
+      "deliverables": [],
+      "role": "",
+      "domain": "",
+      "retrieved_chunks": 0,
+      "retrieved_entities": 0,
+      "retrieved_edges": 0,
+      "avg_similarity": 0.0
+    },
+    "buffers": {},
+    "latency_s": 6.07
+  }
+}

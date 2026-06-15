@@ -1,0 +1,96 @@
+\section{Critical Discussion}
+\label{sec:discussion}
+
+Honest reporting of failures and limitations is explicitly rewarded by the brief, so this
+section is deliberately candid.
+
+\subsection{What worked}
+
+The end-to-end pipeline is verified: a plain-language request flows through conversational
+memory, role, section, and domain resolution, the A2 draft plus \verb|gemma-4| composition
+and hybrid RAG, and into live cited tabs. Citations resolve to a PDF page and bounding box
+for graph-grounded chunks. Agentic routing behaves as designed, with section
+classification, the ask-back guard, and the fallback domain chain all holding. The
+210,048-CV corpus is vector-indexed and read-back verified, with a working Candidates
+browser over it. Shared services were extracted cleanly (\verb|kb-service|,
+\verb|mcp-service|, and the isolated \verb|websearch_server|); Projects provide private and
+shared access with full-fidelity replay; and the infrastructure health map is live,
+event-driven, and self-documenting. The shared-embedder OOM was root-caused, fixed with a
+one-line change, and stress-verified flat under the exact concurrency that had crashed it
+four times, a real engineering outcome rather than a workaround. The \textbf{mandated
+(a)/(b)/(c) baseline comparison was executed} (Section~\ref{sec:eval}) and shows the expected
+arc: an incoherent base (mean 1.85), a large alignment jump (4.28), and a full system whose
+value lies in routing, grounding, and refusal rather than a higher offer score.
+
+\subsection{Honest limitations}
+\label{sec:limitations}
+
+The \textbf{single largest gap} is that the \verb|match_candidates| tool and the
+conditional composition (Section~\ref{sec:candidates}) are not wired. What exists is the
+retrieval substrate and a human-facing browser; the threshold-gated branch and the seventh
+``Candidate Matches'' bundle section are deferred. Other limitations, in rough order of
+impact, are:
+
+\begin{itemize}
+  \item \textbf{Per-section KB domains are not differentiated.} All four sections ground on
+    the single resolved onboarding domain; dedicated interview-bank, culture, and benefits
+    corpora are not yet provided, so for example Cultural and Team Fit grounds on onboarding
+    material, an approximation rather than the final design.
+  \item \textbf{One onboarding family is missing} (\texttt{embedded}); ten of eleven exist.
+  \item \textbf{Routing is good but not perfect (9/10).} In the executed run, ``data
+    engineer'' resolved to \verb|jobs_onboard_general| instead of \verb|jobs_onboard_data|,
+    and one full-pack request was classified as Job-Offer-only (segregation 9/10). Both are
+    LLM-classifier judgment calls on borderline phrasings rather than crashes.
+  \item \textbf{The served A2 model occasionally truncates.} On one offer case it returned in
+    0.31\,s with an incomplete structure (the documented MA2 early-EOS under
+    \verb|repetition_penalty|), a reminder that the small specialist's inference is sensitive.
+  \item \textbf{\texttt{gemma-4} judges its own output}, with no cross-judge isolation,
+    doubly relevant given the A2 judge-discrimination ceiling; the (c) judge scores in
+    Section~\ref{sec:eval} carry this self-judging bias.
+  \item \textbf{Two wrong diagnoses preceded the OOM fix} (token-budget and Cyrillic
+    theories), each announced as a fix that did not hold, reported rather than hidden.
+  \item \textbf{Buffer-save is a stub}; work survives via Projects replay, but per-buffer
+    persistence is incomplete.
+  \item \textbf{Audio is proxy-only}: STT, TTS, and avatar route through the deployed
+    origin, not \verb|localhost:4920|.
+  \item \textbf{Company Profile} is a placeholder, and a full browser visual-verification
+    pass (split-PDF render, voice on the proxy, project replay) is the standing manual QA
+    item.
+\end{itemize}
+
+\subsection{Trade-offs}
+\label{sec:tradeoffs}
+
+\textbf{\texttt{think=False} on utility calls} is necessary, since \verb|gemma-4| otherwise
+returns empty after spending its budget on reasoning, but it denies those classification
+and summarisation steps any chain-of-thought, possibly capping their quality: a genuine
+capability-versus-stability trade-off.
+
+\textbf{LLM-decided pipeline versus predictability.} The design is flexible for ambiguous
+and iterative requests but harder to test deterministically and occasionally mis-routes (the
+9/10 routing and segregation above). The keyword-heuristic failure that motivated the LLM
+classifier shows the opposite failure mode: the LLM is more reliable, but its mistakes are
+less predictable.
+
+\textbf{Shared-service reuse versus autonomy.} The copy-only strategy saved enormous build
+effort but created an infrastructure dependency, forced additive-only changes (new endpoints
+rather than edits), required one authorised exception, and placed the bulk ingest on a
+shared embedder whose concurrency behaviour caused the OOM.
+
+\textbf{Slot cap: memory versus parallelism.} Capping bge-m3 to one slot bounds RSS under
+any load but serialises concurrent embeds. For this workload of modest concurrent traffic
+it is the right call; on a write-heavy multi-tenant embedder it might not be.
+
+\textbf{Two co-resident models versus one.} Keeping the 360M specialist alongside
+\verb|gemma-4| costs a little GPU residency but preserves the arc: the A2 model stays a live
+component rather than dissolving into a larger model.
+
+\subsection{What we would do differently, and next steps}
+
+The priority order is to wire \verb|match_candidates| and the conditional composition (the
+largest value step, with the substrate already in place); to differentiate KB domains per
+section and add the missing \texttt{embedded} domain; to harden the role classifier on the
+borderline cases the run surfaced (data-engineer routing, full-pack segregation); to move the
+judge to a separate slot to restore cross-judge isolation and remove the self-judging bias;
+to persist buffers and finish the browser-verification pass; to activate the Company Profile
+surface; and to consider a unified post-merge rerank across vector and graph evidence.

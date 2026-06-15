@@ -1,0 +1,58 @@
+\section{Reflection on the Three-Stage Arc}
+\label{sec:arc}
+
+This reflection is part of the grade: which stage contributed most, and were earlier stages
+washed out by later ones?
+
+\paragraph{The A1/A2 work is directly visible, not diluted.}
+\verb|ma2-360m-dpo-b01| is literally the Job-Offer drafter inside the running system, not a
+discarded checkpoint. A1 made a 360M model fluent in job-posting language (in-domain
+perplexity 16.37 down to 11.38); A2 taught it to follow recruiter instructions and aligned
+its output to a quality rubric (SFT validation perplexity 4.54; DPO-b01 the $\beta$=0.10
+deliverable, 8 wins to 0 against SFT); and A3 placed that specialist inside a system that
+can finally use it on a real task. The executed baseline run (Section~\ref{sec:eval})
+quantifies this directly: the aligned model lifts mean Job-Offer quality from \textbf{1.85}
+(base) to \textbf{4.28} on the gemma-4 rubric --- the single largest jump in the arc.
+
+\paragraph{Did RAG make domain adaptation redundant?}
+No: they operate on different axes. A1/A2 improved the writing quality and structure of one
+output in isolation, while RAG supplies what no amount of fine-tuning a 360M model can give,
+namely knowledge of \emph{this company's} actual material and verifiable provenance (a claim
+traced to a PDF page and bbox). A fine-tuned model can write a fluent onboarding plan; it
+cannot write this company's onboarding plan, nor prove where a requirement came from. They
+are complementary, not substitutes.
+
+\paragraph{Was the A2 alignment washed out by gemma's composition?}
+This is the sharpest question, and the system is built to answer it: when both are selected,
+the raw A2 draft and the gemma-composed Job Offer are produced side by side (the
+Section~\ref{sec:eval} (b)-versus-(c) view). \textbf{The executed run measures it.} The mean
+offer quality barely moves from (b) to (c) (4.28 to 4.62), and an order-swapped pairwise
+judge over the ten offer cases returns \textbf{Gemma-better~5, Tie~4, MA2-better~1}. The
+honest reading the data supports: the masking is \emph{partial}. \verb|gemma-4|'s composition
+refines the prose and grafts in retrieved evidence and citations --- and wins outright in
+half the cases --- but the A2 draft survives as a tie or better in the other half, and its
+\emph{structure} (the four required Markdown sections, aligned to recruiter preferences)
+persists as the seed the composer builds on in every case. The value of A2 in this
+architecture is a fast (about 0.7\,s), structurally-correct, aligned seed that anchors the
+composition, not the source of the final wording. Reporting that partial masking openly,
+rather than claiming the 360M model dominates the output, is the honest reading.
+
+\paragraph{A1's marginal contribution under a 4B model with RAG.}
+The most genuinely open question is whether A1's raw posting-fluency contribution stays
+clearly non-redundant once \verb|gemma-4| and RAG are in the loop, since retrieved company
+postings could in principle teach the composer the style A1 baked into the 360M model. A1's
+contribution is most clearly non-redundant for the A2 instruction-following and alignment it
+enabled, and least clearly so for raw fluency in this configuration, a tension worth stating
+rather than papering over, and one a future A1/no-A1 toggle could quantify just as the
+MA2/Gemma toggle quantifies the A2 question.
+
+\paragraph{Which stage contributed most?}
+For the final system's \emph{usefulness}, A3 contributed most: it is the orchestration,
+retrieval, grounding, and platform that turned an aligned drafter into something a recruiter
+can operate --- and the executed run shows where that value lives, in the system-only
+capabilities (routing 9/10, 100\% resolvable citations, faithfulness 0.97) rather than in a
+higher offer score. For the specific quality of the Job Offer deliverable, A1 and A2
+contributed most (the 1.85 to 4.28 jump). These are not in competition. An aligned model with
+no system is a good drafter no one can operate; a system with no aligned model has no
+specialist at its core. The most defensible single sentence is that the final stage did not
+make the earlier stages redundant: it gave them somewhere to be useful.

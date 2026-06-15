@@ -99,25 +99,28 @@ def run_dpo(prompt: str) -> dict: return _generate("dpo", prompt)     # config (
 def run_full(message: str, history: list, config: dict) -> dict:
     t0 = time.time()
     deltas, meta, progress = [], {}, []
-    with requests.post(f"{J2C}/api/chat", stream=True, timeout=600,
-                       json={"message": message, "history": history, "config": config}) as r:
-        r.raise_for_status()
-        for line in r.iter_lines(decode_unicode=True):
-            if not line or not line.startswith("data:"):
-                continue
-            payload = line[5:].strip()
-            if payload == "[DONE]":
-                break
-            try:
-                ev = json.loads(payload)
-            except Exception:
-                continue
-            if "delta" in ev:
-                deltas.append(ev["delta"])
-            elif "meta" in ev:
-                meta = ev["meta"]
-            elif "progress" in ev:
-                progress.append(ev["progress"])
+    try:
+        with requests.post(f"{J2C}/api/chat", stream=True, timeout=(10, 240),
+                           json={"message": message, "history": history, "config": config}) as r:
+            r.raise_for_status()
+            for line in r.iter_lines(decode_unicode=True):
+                if not line or not line.startswith("data:"):
+                    continue
+                payload = line[5:].strip()
+                if payload == "[DONE]":
+                    break
+                try:
+                    ev = json.loads(payload)
+                except Exception:
+                    continue
+                if "delta" in ev:
+                    deltas.append(ev["delta"])
+                elif "meta" in ev:
+                    meta = ev["meta"]
+                elif "progress" in ev:
+                    progress.append(ev["progress"])
+    except Exception as e:  # noqa: BLE001 — keep partial meta + still read buffers
+        meta.setdefault("_stream_error", f"{type(e).__name__}: {e}")
     buffers = read_buffers()
     return {"chat_text": "".join(deltas), "meta": meta, "buffers": buffers,
             "latency_s": round(time.time() - t0, 2)}
@@ -130,23 +133,22 @@ def clear_buffers() -> None:
         pass
 
 def read_buffers() -> dict:
-    """Snapshot the server-side live-doc buffers (deliverable name -> content)."""
+    """Snapshot the server-side live-doc buffers (deliverable name -> content).
+    The endpoint replays the finite snapshot then blocks on subscribe, so we read
+    until the short read-timeout drains it; any error returns what we collected."""
     out = {}
     try:
-        with requests.get(f"{J2C}/api/buffers/events/stream", stream=True, timeout=8) as r:
+        with requests.get(f"{J2C}/api/buffers/events/stream", stream=True, timeout=(10, 6)) as r:
             for line in r.iter_lines(decode_unicode=True):
                 if line and line.startswith("data:"):
                     try:
                         ev = json.loads(line[5:].strip())
                     except Exception:
                         continue
-                    name = ev.get("name")
-                    if name and "content" in ev:
-                        out[name] = ev["content"]
-                # snapshot is finite; stop once we've drained the replayed set
-                elif line == "" and out:
-                    break
-    except requests.exceptions.Timeout:
+                    doc = ev.get("doc") or {}
+                    if doc.get("name") and "content" in doc:
+                        out[doc["name"]] = doc["content"]
+    except Exception:  # noqa: BLE001 — read timeout after the snapshot drains, or a drop
         pass
     return out
 
