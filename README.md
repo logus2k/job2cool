@@ -95,10 +95,6 @@ stack (each repo has its own `docker-compose.yml` and README).
 **Third-party image** (pulled automatically by the noted stack, not cloned):
 **ArcadeDB** (`noted-arcadedb`, used by noted-graph).
 
-> Not required to run job2cool: `noted-tools` (a former MCP host, no longer called) and
-> the `cv` repo (job2cool's chat widget originated there but is vendored into
-> `frontend/widget/`, so the cv repo is not a runtime dependency).
->
 > Running job2cool **behind a domain** (TLS, Google login, voice routing) additionally
 > needs an nginx reverse proxy and an oauth2-proxy; those are deployment concerns and
 > are not required to replicate the app locally.

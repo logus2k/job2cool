@@ -9,3 +9,4 @@ data/candidates2/
 
 # eval harness venv
 testing/.venv-eval/
+delivery/

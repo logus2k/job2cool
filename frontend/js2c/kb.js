@@ -113,7 +113,9 @@
     render();
     watchDomain(sel);   // subscribe to this domain's live build progress
     if (!FMT[sel]) loadFmt(sel).then(() => { if (tab === 'knowledge') renderKnowledge(); });
-    loadStatus(sel).then(() => { renderList(); if (tab === 'knowledge') renderKnowledge(); });
+    // Lazy + cached: only fetch this domain's /status the first time it's opened
+    // (the explicit Refresh control and kb:progress events force-refresh it).
+    if (!STATUS[sel]) loadStatus(sel).then(() => { renderList(); if (tab === 'knowledge') renderKnowledge(); });
     if (tab === 'documents') loadDocs().then(renderDocuments);
   }
 
@@ -391,16 +393,14 @@
     if (!sel && DOMAINS.length) sel = DOMAINS[0].domain_id;
     if (sel) watchDomain(sel);                             // subscribe to live build progress
     render();                                              // paint the list + detail shell IMMEDIATELY
-    // Per-domain /status is ~0.2–0.8s each; don't block first paint on all of
-    // them. Load the selected domain first (fills the open detail fastest), then
-    // stream the rest in — each updates its list chip as it lands.
-    // Only the chip + the knowledge tab depend on /status. Re-rendering the whole
-    // detail here would re-load the Documents tab a second time (double fetch).
-    const selP = sel ? loadStatus(sel).then(() => { renderList(); if (tab === 'knowledge') renderKnowledge(); }) : Promise.resolve();
-    if (sel) loadFmt(sel).then(() => { if (tab === 'knowledge') renderKnowledge(); });
-    const restP = Promise.all(DOMAINS.filter(d => d.domain_id !== sel)
-      .map(d => loadStatus(d.domain_id).then(() => renderList())));
-    await Promise.all([selP, restP]);
+    // Lazy /status: load ONLY the selected domain's status (in the background),
+    // and load each other domain's status when it is first selected. We do NOT
+    // fan out /status to every domain on open — jobs_candidates alone enumerates
+    // 210k CVs (~5s) and would otherwise stall the whole list. Chips for
+    // not-yet-opened domains show "—" until selected; results are cached so
+    // re-opening a domain is instant.
+    if (sel && !STATUS[sel]) loadStatus(sel).then(() => { renderList(); if (tab === 'knowledge') renderKnowledge(); });
+    if (sel && !FMT[sel]) loadFmt(sel).then(() => { if (tab === 'knowledge') renderKnowledge(); });
   }
   // No background polling. Status is loaded on real events — opening KB,
   // selecting a domain, and once after a rebuild/resume/abort action — plus the

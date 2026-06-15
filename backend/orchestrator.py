@@ -242,6 +242,24 @@ def _candidate_query(docs: dict, project_name: str, fallback: str):
     return (query or project_name), "the requested role"
 
 
+_CV_BULLET = re.compile(r"^(\s*)[•‣◦●▪·–]\s+")
+_CV_LISTITEM = re.compile(r"^\s*([-*]|\d+\.)\s+")
+
+
+def _normalize_cv_md(text: str) -> str:
+    """Make a raw CV render as Markdown: convert bullet glyphs (•, ‣, ◦, …) to '-',
+    and insert a blank line before a list run so `marked` renders it as a real list
+    (CVs often place bullets directly under an intro line with no blank line)."""
+    out: list[str] = []
+    for ln in (text or "").replace("\r\n", "\n").split("\n"):
+        ln = _CV_BULLET.sub(r"\1- ", ln)
+        if (_CV_LISTITEM.match(ln) and out and out[-1].strip()
+                and not _CV_LISTITEM.match(out[-1])):
+            out.append("")
+        out.append(ln)
+    return "\n".join(out)
+
+
 def _candidates_doc_body(cands: list[dict], basis: str) -> str:
     """Render matched candidates as a Workspace-document body (Markdown, without
     the leading title — the caller prepends `# Candidates`)."""
@@ -265,7 +283,7 @@ def _candidates_doc_body(cands: list[dict], basis: str) -> str:
             bits.append(f"**English:** {c['english_level']}")
         if bits:
             parts.append("  ·  ".join(bits))
-        cv = (c.get("cv") or c.get("snippet") or "").strip()
+        cv = _normalize_cv_md((c.get("cv") or c.get("snippet") or "").strip())
         if cv:
             parts.append("")
             parts.append("**CV**")
@@ -714,12 +732,16 @@ async def _match_candidates(client: httpx.AsyncClient, message: str, history: li
         if role.lower() not in query.lower():
             query = f"{role}. {query}".strip()
         basis = f"the {role} role"
+    # Show the same chat-side "Generation Progress" card as document generation, so
+    # matching candidates feels like a first-class deliverable.
+    yield _sse({"progress": {"steps": [{"title": CANDIDATES_TITLE, "state": "active"}]}})
     cands = await services.search_candidates(client, query, top_k=3)
     body = f"# {CANDIDATES_TITLE}\n\n{_candidates_doc_body(cands, basis)}"
     # Always create a fresh buffer (= a new tab that opens and focuses), exactly
     # like the composed deliverables — documents accumulate, and this avoids a
     # silent no-op when an orphaned same-named buffer lingers in the global store.
     bid = buffers.create(name=CANDIDATES_TITLE, initial_content=body).buffer_id
+    yield _sse({"progress": {"steps": [{"title": CANDIDATES_TITLE, "state": "done"}]}})
     if cands:
         note = (f"Done — I've put the top {len(cands)} **{CANDIDATES_TITLE}** "
                 f"(ranked against {basis}) in your workspace.")
