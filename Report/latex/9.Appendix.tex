@@ -1,0 +1,103 @@
+\section*{Appendices}
+\addcontentsline{toc}{section}{Appendices}
+
+\subsection*{A\quad Running the system and reproducibility}
+
+\begin{verbatim}
+# Backend + baked frontend (deployed against the shared stack)
+docker compose up -d --build job2cool-backend
+
+# Candidate ingestion (isolated venv, idempotent, resumable)
+python3 -m venv scripts/.venv-ingest
+scripts/.venv-ingest/bin/pip install -r scripts/requirements-ingest.txt
+scripts/.venv-ingest/bin/python scripts/ingest_candidates.py   # full 210k
+#   --limit N   smoke-test with N rows
+\end{verbatim}
+
+Full features (including audio) are at \verb|https://logus2k.com/job2cool|; base features at
+\verb|http://localhost:4920|. A one-time prerequisite for the ingest is the embedder
+slot-cap (\verb|"parallel": 1| in \verb|agent_server/data/agent_config.json|,
+Section~\ref{sec:perf}), without which a concurrent-load run can OOM the host.
+
+\paragraph{Connection to the A1/A2 artifacts.} The A1/A2 work lives at
+\verb|~/env/iscte/atlm_pro/outputs/|: A1 is the merged LoRA checkpoint
+(\verb|mp1-360m/merged/|, seed 42), and A2 the DPO deliverable (\verb|ma2-360m-dpo-b01/|).
+job2cool consumes the A2 model as a served, quantised GGUF on \verb|agent_server|,
+referenced via \verb|JOB2COOL_DPO_MODEL|, so the chain from raw SmolLM2-360M, to the A1
+merge, to A2 DPO, to the served drafter is explicit and traceable.
+
+\paragraph{Seeds and reproducibility note.} A1/A2 training used seed 42 throughout; GPU
+training is not bit-for-bit deterministic (under 1\% perplexity variance observed). The
+ingest record IDs are deterministic (\verb|cand-{uuid}|), so the 210,048-CV corpus
+reproduces from the same Parquet plus the documented sub-50-character drop rule. Two
+components cannot be replicated exactly: the judge is an LLM (\verb|gemma-4| with a JSON
+rubric), so its scores are not bit-exact and it judges its own output, an auxiliary signal
+that is not in the generation path; and quantised inference and model-router residency are
+not bit-for-bit reproducible, though the slot-cap bounds memory deterministically.
+
+\subsection*{B\quad Backend-owned API surface}
+
+\verb|job2cool-backend| owns these prefixes; everything else proxies to
+\verb|kb-service| or \verb|noted|:
+
+\begin{itemize}
+  \item \verb|POST /api/chat| (SSE orchestration)
+  \item \verb|GET /api/buffers/events/stream| and \verb|POST /api/buffers/{id}/save| (stub)
+  \item \verb|GET /api/citation/{tag}|
+  \item \verb|POST /api/graph_trace| and \verb|POST /api/score_answer|
+  \item \verb|GET /api/job2cool/me| (authenticated identity)
+  \item \verb|GET|, \verb|PUT|, \verb|PATCH|, \verb|DELETE| on \verb|/api/job2cool/chats[/{id}]| (Projects)
+  \item \verb|GET /api/job2cool/candidates[/{id}]| (browse, search, detail)
+  \item \verb|/api/agents/*| and \verb|/api/mcp/*| (presets; tools and skills)
+\end{itemize}
+
+The two additive \verb|noted-rag| endpoints built for the candidate ingest (copy-only
+respected) are \verb|POST /upsert_records| and \verb|POST /list_records|.
+
+\subsection*{C\quad Configuration (environment variables)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{5.4cm}p{4.2cm}p{4.4cm}}
+\toprule
+\textbf{Variable} & \textbf{Default} & \textbf{Role} \\
+\midrule
+\texttt{JOB2COOL\_GEMMA\_MODEL}    & \texttt{gemma-4}             & Orchestrator / composer \\
+\texttt{JOB2COOL\_DPO\_MODEL}      & \texttt{ma2-360m-dpo-b01}    & A1+A2 Job Offer drafter \\
+\texttt{JOB2COOL\_JUDGE}           & \texttt{gemma-4}             & RAGAS judge \\
+\texttt{JOB2COOL\_QUERY\_REWRITER} & \texttt{cv\_query\_rewriter} & Vector-query rewriter preset \\
+\texttt{JOB2COOL\_DOMAINS}         & \texttt{jobs\_onboard\_devops, ...} & Citation-resolver fallback list \\
+\texttt{AGENT\_SERVER\_URL}        & \texttt{http://agent\_server:7701} & LLM endpoint \\
+\texttt{NOTED\_RAG\_URL}           & \texttt{http://kb-service:8201}    & Vector retrieval + upsert \\
+\texttt{NOTED\_GRAPH\_URL}         & \texttt{http://kb-service:5523}    & Graph retrieval \\
+\texttt{NOTED\_BACKEND\_URL}       & \texttt{http://kb-service:8123}    & KB management gateway \\
+\texttt{MCP\_SERVICE\_URL} / \texttt{MCP\_ADMIN\_TOKEN} & \texttt{mcp-service} & Tools / skills host \\
+\texttt{CANDIDATES\_COLLECTION}    & \texttt{jobs\_candidates\_\_corpus} & Candidate vector collection \\
+\texttt{HEALTH\_PROBE\_INTERVAL}   & \texttt{10}\,s               & Health monitor cadence \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{D\quad Request-path containers and module inventory}
+
+\textbf{Request-path containers (15, verified live):} \verb|proxy_server|,
+\verb|oauth2-proxy|, \verb|job2cool-backend|, \verb|agent_server|, \verb|llama-vision|,
+\verb|kb-service|, \verb|mcp-service|, \verb|websearch_server|, \verb|noted-rag|,
+\verb|noted-graph|, \verb|noted-arcadedb|, \verb|noted|, \verb|stt_server|,
+\verb|tts_server|, and \verb|avatar_server|. Excluded from the request path (KB ingestion
+and ops only): \verb|noted|'s Airflow, Postgres, Redis, MLflow, MinIO, and Evidently.
+
+\textbf{Backend modules (\texttt{backend/}):} \verb|main.py|, \verb|orchestrator.py|,
+\verb|services.py|, \verb|buffers.py|, \verb|cache.py|, \verb|health_monitor.py|, and
+\verb|socketio_relay.py|. \textbf{Frontend (\texttt{frontend/js2c/}):} \verb|kb.js|,
+\verb|agents.js|, \verb|mcp.js|, \verb|chats.js|, \verb|candidates.js|, \verb|help.js|,
+\verb|architecture.js|, \verb|pdfcite.js|, \verb|sidepanel.js|, and \verb|widget/cv-chat.js|.
+\textbf{Scripts:} \verb|ingest_candidates.py| and \verb|requirements-ingest.txt|.
+
+\subsection*{E\quad Knowledge-base domains (verified live)}
+
+\textbf{Onboarding (10 of 11 populated):} \verb|jobs_onboard_| families for architect,
+backend, data, devops, frontend, general, ml\_ai, mobile, qa, and security; missing:
+\texttt{embedded}. \textbf{Candidates:} \verb|jobs_candidates| (210,048 vectors,
+vector-only). \textbf{Thematic (sample):} \verb|jobs_eng_culture|, \verb|ai_and_jobs|,
+\verb|prod_mng|, and \verb|sw_arch|, plus research corpora.

@@ -1,0 +1,270 @@
+\section{System Design}
+
+The assignment requires at least two course techniques layered on top of the A1
+fine-tuning and A2 alignment (which do not themselves count). job2cool integrates four,
+each mapped to a named course bucket and each solving a problem the aligned model cannot
+solve on its own: retrieval-augmented generation (Section~\ref{sec:rag}), tool use and
+agentic orchestration (Section~\ref{sec:agentic}), LLM-as-a-judge
+(Section~\ref{sec:judge}), and performance optimisation (Section~\ref{sec:perf}). A
+candidate-matching layer (Section~\ref{sec:candidates}) deepens the first two, and
+chain-of-thought reasoning (Section~\ref{sec:cot}) is present as a supporting fifth. The
+components are not independent add-ons. The agentic layer decides \emph{when} to call the
+A2 drafter and \emph{what} to retrieve; RAG supplies the evidence and the citations the
+composition is grounded in; the judge measures whether that grounding held; and
+performance optimisation is what lets the orchestrator, specialist, embedder, and reranker
+run together on one GPU and ingest the corpus the retrieval depends on.
+
+\subsection{Architecture Overview}
+
+job2cool follows an $\alpha$-adapter pattern: \verb|job2cool-backend| (FastAPI) preserves
+the exact server-sent-events chat contract that the Diana widget expects, while
+orchestrating across shared services it neither owns nor modifies. The backend owns a
+fixed set of API prefixes and reverse-proxies every other call to \verb|kb-service|, a
+knowledge-base gateway that composes the management and document APIs of the underlying
+engines (\verb|noted-rag|, \verb|noted-graph|, and \verb|noted-arcadedb|) and falls
+through to \verb|noted| only for source-PDF file serving. Model inference runs on
+\verb|agent_server| (llama.cpp), and tools and skills are hosted by \verb|mcp-service|. An
+nginx reverse proxy (\verb|proxy_server|) behind \verb|oauth2-proxy| gates all external
+traffic and provides Google identity through \verb|/api/job2cool/me|. Voice services (STT,
+TTS, and avatar) route through nginx exclusively, never through the backend, which is why
+audio works on the deployed origin but not on a bare \verb|localhost:4920|.
+
+The backend joins two external Docker networks (\verb|noted-network| and
+\verb|logus2k_network|); a third, \verb|mcp_internal|, isolates the headless-browser
+web-search backend. The full request-path topology, fifteen containers rendered with the
+browser as a sixteen-box map, is live-health-monitored by the system itself
+(Section~\ref{sec:infra}), so the same artifact is both the design diagram and a running
+dashboard.
+
+The guiding constraint was \textbf{copy-only}: job2cool builds from copies of the
+\verb|cv| and \verb|noted| client files and consumes the shared services in place without
+modifying them. The single authorised exception is a one-line \verb|overflow: hidden| fix
+in \verb|noted|'s \verb|panels.css|. This is a real engineering constraint with real
+costs, since it forced new capabilities in the shared engines to be \emph{additive} (new
+endpoints rather than edits, Section~\ref{sec:impl-backend}), and it is revisited in the
+trade-offs (Section~\ref{sec:tradeoffs}). The decision to reuse the serving stack rather
+than rebuild chat, tool-calling, retrieval, and live-document buffers is what keeps the
+arc honest: A3 is an integration layer around the aligned model, not a from-scratch
+inference stack.
+
+\subsection{Component 1: Hybrid RAG over a Domain Knowledge Base}
+\label{sec:rag}
+
+The knowledge base is a set of per-domain corpora, each a ChromaDB collection
+(\verb|<domain>__corpus|) plus a graph project. Ten of eleven role-onboarding families are
+populated today: architect, backend, data, devops, frontend, general, ml\_ai, mobile, qa,
+and security; only \texttt{embedded} is not yet created. A separate vector-only
+collection, \verb|jobs_candidates__corpus|, holds the 210,048-CV candidate corpus, and
+several thematic corpora (\verb|jobs_eng_culture|, \verb|ai_and_jobs|, \verb|prod_mng|,
+\verb|sw_arch|, and research collections) are also indexed.
+
+Retrieval for each turn is \textbf{concurrent}. \verb|graph_and_vector_search| embeds the
+query once and runs vector and graph retrieval in parallel via \verb|asyncio|, then merges
+them into a single evidence block. Vector search is dense retrieval over the resolved
+domain's collection (bge-m3 cosine HNSW) followed by \verb|bge-reranker-v2-m3|
+cross-encoder re-ranking; its query is LLM-rewritten first (reusing the existing
+\verb|cv_query_rewriter| preset) because a cleaned, keyword-focused query retrieves better
+than a conversational sentence. Graph search over the same domain uses the \emph{raw}
+question, since entity-name search handles conversational phrasing better than a rewritten
+phrase, and returns entities, relationships, and chunk excerpts carrying page number and
+bounding-box regions. Citation tags distinguish the sources: \verb|[markdown_chunk:hex]|
+for chunks (dense and graph-grounded), \verb|[E:id]| for entities, and
+\verb|[R:src>type>tgt]| for edges. As an honest design note, the merged set is \emph{not}
+cross-reranked after the join: vector and graph results are concatenated, not globally
+re-scored, and a unified post-merge rerank is recorded as future work.
+
+The citation system closes the provenance loop. Clicking a \verb|[markdown_chunk:hex]|
+badge calls \verb|/api/citation/{tag}|, which resolves through
+\verb|noted-graph /chunk/{tag}| to a source path, a page number, and bbox regions; the
+frontend
+(\verb|js2c/pdfcite.js|) opens a PDF split pane, renders the cited page with pdf.js, and
+paints the overlay via \verb|viewport.convertToViewportRectangle| (handling the PDF
+bottom-left to top-left flip), re-rendering on resize. Bbox highlighting is available only
+for graph-grounded excerpts; dense-search-only chunks open the PDF at the inferred page
+without a box, a property of the retrieval source rather than a rendering bug.
+
+RAG was chosen over further fine-tuning because the onboarding, interview, and culture
+knowledge is broad and still growing: retrieval lets it change without retraining, and the
+graph half yields per-chunk citations to a PDF page and bounding box that fine-tuning
+fundamentally cannot provide. This addresses \emph{grounding and provenance}, an axis
+orthogonal to the \emph{writing quality} A1/A2 addressed (the basis of the
+Section~\ref{sec:arc} redundancy argument).
+
+\subsection{Component 2: Multi-Step Agentic Orchestration}
+\label{sec:agentic}
+
+\verb|orchestrator.run_chat| is a fully LLM-decided pipeline of eight steps, where every
+routing decision is a model call with a tight contract, not a rule or a regex:
+
+\begin{enumerate}
+  \item \textbf{\texttt{\_resolve\_need}} rewrites the request into a self-contained
+    sentence using the last six turns, folding role and skills mentioned earlier into the
+    current ask. This is the memory component an isolated aligned model lacks.
+  \item \textbf{\texttt{\_role\_label}} extracts the job title (\verb|gemma-4|,
+    \verb|think=False|). If no concrete role is found, Diana asks which role and returns
+    early, generating nothing, a guard against fabricating a package for an unspecified
+    role.
+  \item \textbf{\texttt{resolve\_onboard\_domain}} classifies the role into one of eleven
+    \verb|ONBOARD_FAMILIES|, then confirms via \verb|available_corpus_domains| (a lazy,
+    process-lifetime cache of the live \verb|*__corpus| collections) that the matching
+    \verb|jobs_onboard_<family>| actually exists, with fallback to
+    \verb|jobs_onboard_general|, then any existing \verb|jobs_onboard_*|, then a default.
+    Routing is grounded in what the KB really contains.
+  \item \textbf{\texttt{\_requested\_sections}} classifies which of \{offer, interview,
+    onboarding, culture\} the request asks for. This replaced an earlier keyword heuristic
+    that misfired on substrings (``full-stack'' falsely matching a ``full package''
+    trigger), a concrete case of moving a brittle rule to an LLM decision.
+  \item \textbf{Streamed intro} confirms the role and deliverables via \verb|llm_stream|.
+    The raw stream, including reasoning, is forwarded to the Thinking panel, and a
+    \verb|<voice>| tag is appended so the avatar speaks a brief summary.
+  \item \textbf{Per-section loop.} For each deliverable, a buffer tab is created lazily
+    (tabs appear one by one as sections complete); concurrent hybrid RAG retrieves over
+    the resolved domain; for the Job Offer, if \verb|ma2| is enabled, the A2 specialist
+    drafts via \verb|llm_complete| (\verb|DPO_MAX| about 1200), and if both MA2 and Gemma
+    are selected the raw A2 draft is written to a separate ``Job Offer (MA2)'' buffer for
+    side-by-side comparison; \verb|gemma-4| then composes the section
+    (\verb|SECTION_MAX=8192|), refining the A2 draft when one exists; and
+    \verb|_cited_sources| appends a clickable Sources line.
+  \item \textbf{\texttt{\_closing\_note}} emits a deterministic summary of what landed and
+    which domain was used, one grounded LLM sentence flagging thin KB coverage, and a nudge
+    toward the not-yet-requested deliverables, making gaps visible rather than hiding them.
+  \item \textbf{\texttt{cache.put\_turn}} records the full turn for the judge and
+    graph-trace endpoints without re-querying the engines.
+\end{enumerate}
+
+A fixed pipeline would force all four documents on every request and could not honour
+``just the job offer'' or context-dependent follow-ups (``now make the onboarding remote
+friendly''). The LLM-decided design buys that flexibility at the cost of determinism
+(harder to unit-test), a trade-off recorded in Section~\ref{sec:tradeoffs}.
+
+\subsection{Component 3: LLM-as-Judge}
+\label{sec:judge}
+
+Every turn is scored by a RAGAS-style judge (\verb|/api/score_answer|) that rates the
+composed documents against the retrieved evidence on faithfulness and answer-relevance,
+with a rationale, surfaced in a Score panel. For a grounded generator the load-bearing
+property is faithfulness-to-source, and an LLM judge gives a scalable signal of it that a
+deterministic ``did the citation resolve?'' check does not. The default \verb|cv_rag_judge|
+preset was tried first but took roughly 400 seconds per call on this stack; the
+replacement, \verb|gemma-4| with an explicit JSON instruction and \verb|think=False|, runs
+in under ten seconds with consistent structured output. The acknowledged limitation,
+doubly relevant given the A2 judge-discrimination ceiling, is that \verb|gemma-4| judges
+its own output; there is no cross-judge isolation.
+
+\subsection{Component 4: Performance Optimisation}
+\label{sec:perf}
+
+All models run on llama.cpp (the \verb|llama-vision| router) with quantised GGUF weights,
+namely \verb|gemma-4| at Q4\_K\_XL, the A2 model, bge-m3 at Q8, and bge-reranker at Q8,
+co-resident on one 24\,GB-class GPU under a model router with a bounded RAM cache and
+\verb|--models-max 4|. Quantisation plus a shared router is what lets a 4B orchestrator, a
+360M specialist, an embedder, and a reranker fit on a single GPU at all. The headline work
+was making this stack survive a 210,048-CV bulk-embedding job, which OOM-killed the host
+four times.
+
+The embedder's RSS climbed without bound, observed at 80--84\,GB for a roughly 2\,GB model,
+and the path to the fix is reported honestly because it included two wrong diagnoses. The
+first, an ``oversized embed batch'' theory, led to token-budgeted sub-batching that
+appeared to work on a 13,000-embed test but still failed at 45,000. The second, ``Cyrillic
+token explosion,'' was disproven directly: the corpus is about 0.1\% Cyrillic and the
+worst-case batch reached only about 4,900 tokens. Controlled experiments found the real
+cause: serial ingest stayed flat at about 3.7\,GB, but the moment concurrent
+\verb|/search| traffic overlapped the ingest, RSS ratcheted up in steps (3.8, 8.7, 13.8,
+24, then 44\,GB) and never released. The server logs showed the mechanism:
+\verb|total_slots = 4| with \verb|n_ctx_per_seq = 8192|. bge-m3 ran with four slots, each
+allocating and \emph{retaining} a compute/KV buffer sized for the 8192-token context;
+every overlapping request (a search, a chat turn, a stray health probe) activated another
+slot and grabbed another multi-GB buffer. It was never the data; it was concurrency
+multiplied by a retained per-slot buffer.
+
+The fix is one correctness-preserving line in \verb|agent_server/data/agent_config.json|:
+
+\begin{verbatim}
+{ "parallel": 1 }
+\end{verbatim}
+
+Reducing the context would have shrunk each buffer but truncated any caller sending a long
+sequence, a correctness regression on a \emph{shared} embedder. Capping slots to one
+instead leaves the 8192 context untouched: one slot means one buffer means bounded memory,
+and concurrent embeds queue rather than each allocating, at the cost of embedding
+parallelism (latency under simultaneous load) only.
+
+\begin{table}[h]
+\centering\small
+\caption{Embedder memory before and after the slot-cap fix.}
+\begin{tabular}{lll}
+\toprule
+& \textbf{Before (4 slots)} & \textbf{After (1 slot)} \\
+\midrule
+bge-m3 RSS under load & 80\,GB, host OOM (4x) & 2.2\,GB, flat \\
+Per-sequence capacity & 8192 tokens           & 8192 tokens (unchanged) \\
+Cost                  & n/a                   & concurrent embeds serialise \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The decisive stress test, 13,208 embeds plus 6 concurrent search threads (the exact
+overlap that hit 80\,GB), now peaks at 2,238\,MB and stays flat, and the full ingest
+completed with read-back acknowledgement equal to the indexed count. Without this fix the
+candidate corpus could not have been ingested at all.
+
+\subsection{Candidate Matching (Designed Extension)}
+\label{sec:candidates}
+
+A second HR capability extends the system from a hiring-package generator toward a
+recruiter-workflow assistant: once Diana has drafted a Job Offer, the natural next question
+is who the company already has who fits the role. As designed, a \verb|match_candidates|
+tool takes a role spec (family, seniority, skills, minimum English level) plus
+\verb|top_k| and a \verb|score_threshold|, and runs a three-stage hybrid retrieval. A
+ChromaDB structured pre-filter on \verb|primary_keyword|, \verb|english_level|, and
+\verb|experience_years| narrows the 210k pool exactly and cheaply; vector search ranks the
+filtered subset by cosine similarity; and \verb|bge-reranker-v2-m3| produces the final
+match score. The orchestrator then \emph{branches on the result}: with a strong internal
+candidate the downstream sections are composed candidate-aware (Interview targets missing
+skills, Onboarding calibrates to seniority), otherwise they stay role-generic and a
+Candidate Matches section recommends external sourcing. That state-dependent branch is the
+deepest form of the agentic and reasoning components.
+
+As built, the retrieval substrate is complete and verified: 210,048 CVs vector-indexed
+with structured metadata, a working semantic search, and a human-facing Candidates
+browser. But the \verb|match_candidates| tool and the conditional composition are
+\emph{deferred} (Section~\ref{sec:impl-backend}, Section~\ref{sec:limitations}). This is
+the single largest gap between as-designed and as-built, stated plainly.
+
+\subsection{Chain-of-Thought (Supporting Component)}
+\label{sec:cot}
+
+\verb|gemma-4| natively emits inline \verb|<think>| reasoning. The orchestrator relies on
+it for the conditional and section-selection steps and surfaces it live in the Thinking
+panel during the streamed intro. It is counted as supporting rather than headline because
+it is the model's native behaviour rather than an engineered strategy such as
+self-consistency or tree-of-thoughts. Crucially, it is also a load-bearing
+\emph{constraint}: on every non-streaming utility call the orchestrator sets
+\verb|think=False| (via \verb|chat_template_kwargs: {enable_thinking: False}|), because
+\verb|gemma-4| otherwise spends its entire token budget inside the reasoning block and
+returns empty visible content. Role and section classification, query rewriting, domain
+resolution, the closing note, and the judge therefore cannot use chain-of-thought, a
+concrete capability-versus-stability trade-off (Section~\ref{sec:tradeoffs}).
+
+\subsection{Models}
+
+\begin{table}[h]
+\centering
+\caption{Models in the request path. All open-source and quantised; no closed API is used.}
+\begin{tabular}{llll}
+\toprule
+\textbf{Model} & \textbf{Role} & \textbf{Format} & \textbf{Context} \\
+\midrule
+\texttt{gemma-4} (E4B)       & Orchestrator, composer, judge, rewriter & Q4\_K\_XL GGUF & 128\,K \\
+\texttt{ma2-360m-dpo-b01}    & Job Offer drafter (A1+A2 checkpoint)    & Q8 GGUF        & n/a    \\
+\texttt{bge-m3}              & Dense embeddings (1024-dim, cosine)     & Q8 GGUF        & 8192   \\
+\texttt{bge-reranker-v2-m3}  & Cross-encoder re-ranking                & Q8 GGUF        & n/a    \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The orchestrator runs with \verb|think=True| for generation and \verb|think=False| for
+every utility call (Section~\ref{sec:cot}). \verb|ma2-360m-dpo-b01| drafts at roughly 430
+tokens per second (about 0.7\,s per response); its \verb|repetition_penalty=1.3| is
+preserved in the serving configuration, without which the model collapses into repetition
+loops, as documented in Mini-Assignment~2 and reproduced during integration testing.

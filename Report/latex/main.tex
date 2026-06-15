@@ -1,0 +1,188 @@
+\documentclass[11pt,a4paper]{article}
+
+\linespread{1.3} % Espaçamento entre linhas
+\usepackage{indentfirst} % Indentar primeiro parágrafo
+\usepackage{enumitem}
+\usepackage[top=3cm, bottom=2.5 cm, right=2.5cm, left=2.5cm]{geometry}
+\usepackage{setspace}
+
+% Pacotes necessários/uteis
+\usepackage[english]{babel} 
+\usepackage{hyphenat}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lipsum}
+\usepackage{comment}
+\usepackage[dvipsnames,table,xcdraw]{xcolor}
+\usepackage{textgreek}
+\usepackage{subfiles} 
+\usepackage{blindtext}
+\usepackage{graphicx}
+\usepackage[font=footnotesize]{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{amsthm}
+\usepackage{exscale}
+\usepackage{csquotes}
+\usepackage{eurosym}
+\usepackage{multirow}
+\usepackage{outlines}
+\usepackage{colortbl}
+\usepackage{hhline}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{siunitx}
+\usepackage{gensymb}
+\usepackage{pdfpages}
+\usepackage{makecell}
+\usepackage{booktabs}
+\usepackage[edges]{forest} %http://mirrors.ibiblio.org/CTAN/graphics/pgf/contrib/forest/forest-doc.pdf
+\usetikzlibrary{arrows.meta,shadows.blur}
+
+
+\definecolor{iscteblue}{RGB}{27,93,150}
+\definecolor{atlmdark}{RGB}{16,86,112}
+\definecolor{redmini}{RGB}{210,0,0}
+
+ 
+% Cabeçalho e rodapé
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\lhead{\cadeira}
+\rhead{ISCTE}
+\rfoot{\thepage}
+
+% Anexos
+\usepackage[toc,page]{appendix}
+\renewcommand\appendixname{Anexo}
+\renewcommand\appendixpagename{Anexos}
+\renewcommand\appendixtocname{Anexos}
+
+% Índice, siglas/acrónimos e bibliografia
+\usepackage[hidelinks]{hyperref}
+\usepackage[acronym, toc]{glossaries}
+\makeglossaries
+\input{Lista_Siglas.tex}
+\usepackage{biblatex}
+\addbibresource{ref.bib}
+
+%------------------------------------------------------------------
+%
+%	         INFORMAÇÃO SOBRE O RELATÓRIO
+%
+%------------------------------------------------------------------
+
+
+\newcommand{\titulo}{Mini-assignment 1}
+\newcommand{\cadeira}{Advanced Techniques for Language Models}
+
+%
+\begin{document}
+
+%----------------------------------------------------------------
+%
+%                           CAPA
+%
+%---------------------------------------------------------------
+\begin{titlepage}
+    \newgeometry{top=1.5cm, bottom=1.5 cm, right=1.5 cm, left=1.5 cm}
+    \subfile{Capitulos/0.Capa}
+    \restoregeometry
+\end{titlepage}
+
+
+%---------------------------------------------------------------
+%
+%                           Resumo
+%
+%---------------------------------------------------------------
+%\newpage
+%\thispagestyle{empty}
+%\section*{\LARGE Resumo}
+%\subfile{Capitulos/0.Resumo}
+
+
+
+
+%---------------------------------------------------------------
+%
+%                           ÍNDICE
+%
+%---------------------------------------------------------------
+
+
+
+\clearpage
+\pagestyle{empty}
+\begingroup
+  \linespread{1.1}\selectfont
+  \renewcommand*\contentsname{ \huge Index}
+  \tableofcontents
+\endgroup
+\clearpage
+\pagestyle{fancy}
+
+
+%---------------------------------------------------------------
+%
+%                Lista de Acrónimos / Siglas
+%
+%---------------------------------------------------------------
+%\clearpage
+%\thispagestyle{empty}
+%\printglossary[type=\acronymtype, title= \huge Lista de Acrónimos / Siglas, toctitle=Lista de Acrónimos / Siglas]
+
+
+%-----------------------------------------------------------
+%
+%                           CAPÍTULOS
+%
+%------------------------------------------------------------
+
+
+\setcounter{page}{1} %Tem de se contar o número de páginas até aqui por forma a ficar certo.
+\subfile{Capitulos/1.Intro.tex}
+\subfile{Capitulos/2.Pipeline.tex}
+\subfile{Capitulos/3.SystemDesign.tex}
+\subfile{Capitulos/4.Implementation.tex}
+\subfile{Capitulos/5.Evaluation.tex}
+\subfile{Capitulos/6.Discussion.tex}
+\subfile{Capitulos/7.ArcReflection.tex}
+\subfile{Capitulos/8.Conclusion.tex}
+
+
+%\section{Future Work}
+%\subfile{Capitulos/9.Appendix.tex}
+
+
+
+
+
+
+\newpage
+\printbibliography[heading=bibintoc, title={Bibliography}]
+
+
+
+%------------------------------------------------------------
+%
+%                           ANEXOS
+%
+%------------------------------------------------------------
+
+%\newpage
+
+%\section{Annexes}
+%\subfile{Anexos/AnexoA}
+
+    
+
+
+
+\end{document}

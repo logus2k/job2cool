@@ -1,0 +1,62 @@
+\section{Introduction}
+
+This report documents the final stage of a project whose goal is to turn a hiring
+need, expressed in natural language, into a coherent pack of HR documents.
+Mini-Assignment~1 adapted a small, open-source language model to the domain of IT job
+postings. Mini-Assignment~2 taught that checkpoint to follow recruiter instructions
+through supervised fine-tuning and DPO-based preference alignment. The present work,
+\textit{job2cool}, integrates the resulting aligned model into a complete application.
+Its user-facing persona is Diana, an HR assistant that interacts with the recruiter to
+produce a Job Offer, a set of Technical Interviews, an Onboarding Plan, and a Cultural
+and Team Fit assessment, all grounded in a company knowledge base, written live into
+editable documents, and cited with click-through links to the exact source PDF page and
+bounding box.
+
+At the core of the system sits \verb|ma2-360m-dpo-b01|, the SmolLM2-360M checkpoint
+adapted in Mini-Assignment~1 and DPO-aligned in Mini-Assignment~2. Around it, job2cool
+adds a general-purpose orchestrator, \verb|gemma-4| (E4B-class, 128\,K context), and four
+additional course components beyond the alignment work already done, two more than the
+assignment requires:
+
+\begin{enumerate}
+  \item \textbf{Retrieval-augmented generation}: concurrent vector and graph search
+    over a knowledge base of ten role-specific onboarding domains and a 210,048-CV
+    candidate corpus, grounding output in company material and enabling clickable
+    citations to source PDFs with page-level bounding-box overlays.
+  \item \textbf{Tool use and agentic orchestration}: \verb|gemma-4| LLM-decides each
+    pipeline step (from conversational memory resolution, through section
+    classification, to per-section retrieval and composition) with no rule- or
+    regex-based routing.
+  \item \textbf{LLM-as-a-judge}: every response is scored for faithfulness and
+    answer-relevance against the retrieved evidence, surfaced per turn in the UI.
+  \item \textbf{Performance optimisation}: llama.cpp quantised inference under a model
+    router, plus a root-caused configuration fix for a multi-slot KV-buffer memory
+    failure that had crashed the host four times during development.
+\end{enumerate}
+
+A fifth course technique, advanced reasoning, is present but counted as supporting
+rather than headline: \verb|gemma-4| emits inline chain-of-thought that the orchestrator
+both consumes (for its routing decisions) and surfaces live in a Thinking panel
+(Section~\ref{sec:cot}). All models in the request path are open-source and quantised; no
+closed API is used anywhere in the serving path.
+
+The system is functional end-to-end, with two clear entry points: a recruiter-facing web
+UI and a command-line candidate-ingestion tool. In the UI, Diana identifies the role from
+conversational context, resolves the matching knowledge-base domain, determines which of
+the four documents were requested, retrieves evidence concurrently from vector and graph
+indices, streams a reasoning-aware introduction, and generates each document
+progressively in a tabbed workspace whose citations open the source PDF at the cited page
+with a bounding-box highlight. The interface is a left-nav-rail application (Workspace,
+Projects, Candidates, Agents, Skills, Tools, and Knowledge Base) served over fifteen
+request-path containers across three Docker networks, authenticated via Google identity
+through an \verb|oauth2-proxy| gateway. A Candidates browser gives direct access to the
+indexed CV corpus; a Projects view provides private and shared project management with
+full-fidelity replay of every past turn, including its reasoning and grounding panels;
+and a live infrastructure health map monitors all services event-driven.
+
+Although development and evaluation focused on IT recruitment, the architecture does not
+depend on characteristics specific to this sector. The domain-organised knowledge base,
+the domain-resolution mechanism, and the orchestration pipeline are all independent of
+the concrete content of those domains, so the same system could in principle be adapted
+to other recruitment areas by replacing the knowledge base and the specialised drafting
+model.

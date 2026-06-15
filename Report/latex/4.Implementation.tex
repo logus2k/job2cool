@@ -1,0 +1,143 @@
+\section{Implementation Details}
+
+\subsection{Backend}
+\label{sec:impl-backend}
+
+\verb|job2cool-backend| is a FastAPI application that owns a precise set of \verb|/api|
+prefixes (\verb|health|, \verb|chat| for SSE orchestration, \verb|citation|,
+\verb|graph_trace|, \verb|score_answer|, \verb|buffers|, \verb|job2cool| for identity,
+Projects, and Candidates, \verb|agents|, and \verb|mcp|) and reverse-proxies everything
+else to \verb|kb-service|, with \verb|noted| fall-through for PDF files. Seven modules
+implement it: \verb|main.py| (app, routes, proxy, Socket.IO mount), \verb|orchestrator.py|
+(the agentic pipeline), \verb|services.py| (async LLM and hybrid-RAG clients),
+\verb|buffers.py| (live documents), \verb|cache.py| (chunk and turn caches),
+\verb|health_monitor.py| (the probe loop), and \verb|socketio_relay.py| (KB-progress and
+health pushes).
+
+Live documents are \verb|DocBuffer| objects, in-memory and one per deliverable, with an
+\verb|asyncio| pub/sub that broadcasts each change over SSE
+(\verb|/api/buffers/events/stream|), so the workspace re-renders the document live, tab by
+tab. Token caps are conservative output bounds, not context limits: \verb|SECTION_MAX=8192|
+(section composition), \verb|INTRO_MAX=4096| (streamed intro), \verb|DPO_MAX| about 1200
+(A2 draft), and \verb|SUMMARY_MAX| about 320 (closing note); \verb|gemma-4|'s context
+window is 131,072 tokens, so none of these are system-level constraints. Two FIFO caches in
+\verb|cache.py| keep the judge and graph endpoints cheap: a chunk cache (max 2,048, keyed
+by \verb|sha1(chunk_id)[:12]|) so citation resolution does not re-query, and a turn cache
+(max 256, keyed by \verb|turn_id|) holding the full turn so \verb|/api/score_answer| and
+\verb|/api/graph_trace| operate on a finished turn without re-running retrieval. One honest
+limitation lives here: \verb|/api/buffers/{id}/save| acknowledges but does not persist to
+disk or the KB (a stub), though work still round-trips through the Projects store
+(Section~\ref{sec:projects}).
+
+\paragraph{Candidate ingestion.} \verb|scripts/ingest_candidates.py| streams the
+\texttt{lang-uk/\allowbreak recruitment-dataset-\allowbreak candidate-profiles-english}
+Parquet file (210,250 rows), drops 202 sub-50-character junk profiles, and stores the
+remaining 210,048 as \emph{single-chunk} documents. The design originally assumed
+section-chunked CVs, but the real CVs are tiny (median about 110 words, or 750 characters),
+so one vector per whole CV is both correct and cheaper; the atomic retrieval unit is ``this
+candidate,'' and a whole CV fits easily in bge-m3's 8192-token window. The corpus is also
+\emph{vector-only}: full graph entity-extraction over 210k CVs benchmarked at about 2.3
+days of GPU time and the matcher never reads the graph, so it was deliberately skipped.
+Structured fields (\verb|primary_keyword|, \verb|english_level|, \verb|experience_years|,
+and \verb|position|) are stored as ChromaDB metadata, the substrate for the
+Section~\ref{sec:candidates} pre-filter, and deterministic IDs (\verb|cand-{uuid}|) make
+re-runs idempotent.
+
+Honouring the copy-only guardrail, the bulk ingest required two \emph{additive} endpoints
+on \verb|noted-rag| rather than edits: \verb|POST /upsert_records| (bulk embed and upsert
+with the caller's own flat metadata, token-budgeted sub-batching, \verb|skip_existing|, and
+a \textbf{read-back verification} that re-reads the written IDs from ChromaDB before
+acknowledging, so a 200 means rows confirmed present) and \verb|POST /list_records|
+(paginated browse, powering the Candidates view). The final segment reported
+\verb|indexed 43008 (read-back ack 43008)|, every written row DB-confirmed.
+
+The candidate corpus shares a lineage with the A1/A2 training data: both come from the
+Djinni platform (job postings for A1/A2, candidate profiles for A3) and share an identical
+structured vocabulary (Primary Keyword, English Level, and Experience Years), so a
+posting's requirements filter directly into a candidate query with no schema translation.
+
+\subsection{Frontend and UX}
+
+The frontend is a custom single-page application (\verb|frontend/index.html|) baked into
+the Docker image at build time, so a frontend or backend change redeploys with a single
+\texttt{docker compose up -d -{}-build job2cool-backend}. Layout is a full-viewport flex row: a
+left nav rail and a main area with a workspace top bar, a tab bar, and a split document/PDF
+pane. Gold (\verb|--primary: #ffe19b|) is the accent; the TalentForge AI mockup is the
+\emph{layout} reference, not the colour spec. Each nav view is a small module under
+\verb|js2c/|, and Diana is a patched copy of the \verb|cv-chat.js| widget.
+
+The left rail, verified against the running build, is \textbf{Workspace, Projects,
+Candidates, Agents, Skills, Tools, Knowledge Base}, and \textbf{Company Profile} (the one
+remaining placeholder), with Help \& Support, Settings, and the authenticated-user profile
+at the bottom. Diana is patched in five places to live here: the chat POST carries
+\verb|JOB2COOL_CONFIG|; a new-turn signal resets tabs; a citation with a source path opens
+the PDF split pane (\verb|JOB2COOL_OPEN_PDF|) instead of an in-page highlight; asset paths
+are base-relative (\verb|document.baseURI|) for \verb|/job2cool/| sub-path deployment; and
+the persona becomes Diana with its own greetings. The widget retains the full stack: the
+Thinking, Graph, and Score panels, citations, and STT/TTS/avatar.
+
+The Workspace shows one tab per generated deliverable (created lazily as each section
+completes) and an ``All Documents'' overview presenting the deliverables as a cards grid
+with a Generation Progress checklist that updates live, the mockup's stepper wired to the
+real pipeline. The Job Offer tab shows a Gemma/MA2 segmented toggle when both versions
+exist. Per-tab actions are Copy Markdown and PDF export.
+
+The remaining nav views are each a \verb|js2c| module: \verb|kb.js| (Knowledge Base domain
+manager with live Socket.IO build progress), \verb|candidates.js| (the Candidates browser),
+\verb|agents.js| (CRUD over the \verb|job2cool_orchestrator|, \verb|_composer|, and
+\verb|_judge| presets that drive Diana), \verb|mcp.js| (the Skills and Tools admin served
+through \verb|mcp-service|), \verb|help.js| and \verb|architecture.js| (the live health
+map), \verb|pdfcite.js| (the PDF and bbox renderer), and \verb|sidepanel.js|.
+
+\paragraph{Candidates browser.} \verb|candidates.js| renders a paginated browse over all
+210k CVs, an Enter-to-search semantic retrieval whose results carry a match-percentage chip
+(the reranker score), and a per-CV detail side-panel. One bug surfaced during the build:
+the list page size (30) exceeded \verb|noted-rag|'s \verb|top_k <= 20| cap, so every search
+returned an empty 422 until the backend clamped \verb|top_k|; a \verb|setTimeout| search
+debounce, ruled out by the project's no-polling rule, was replaced with explicit
+Enter-to-search.
+
+\subsection{Projects}
+\label{sec:projects}
+
+Conversations are organised into Projects (\verb|chats.js| plus \verb|/api/job2cool/chats/*|),
+each with a name, optional description, and \textbf{private or shared visibility (shared by
+default)}. Access control is real: private projects live per user; shared projects are
+listed for everyone but are owner-only for edit and delete. Reopening a project performs
+full-fidelity replay, restoring the conversation, the workspace documents, the role, and
+the live Thinking, Graph, and Score panels of every past turn (panel snapshots are
+persisted with the project and re-rendered through the same widget code path). This is what
+compensates for the buffer-save stub: work persists in the project even though per-buffer
+save is deferred.
+
+\subsection{Infrastructure and Live Monitoring}
+\label{sec:infra}
+
+job2cool ships as one image (backend plus baked-in frontend) deployed with
+\texttt{docker compose up -d -{}-build job2cool-backend} against the shared stack. A
+project-wide rule shapes the implementation: \textbf{the browser never polls}.
+\verb|setTimeout| and \verb|setInterval| for data-fetching are banned, and live updates are
+pushed over SSE for the document buffers and over Socket.IO for KB build progress
+(\verb|kb:progress|) and infrastructure health.
+
+The Help \& Support view is a self-documenting, live-monitored architecture map: a
+hand-authored, data-driven SVG (no graph library) of sixteen boxes, the browser plus the
+fifteen request-path containers, deliberately excluding \verb|noted|'s ingestion and
+training infrastructure (Airflow, Postgres, Redis, MLflow, MinIO, and Evidently), which
+powers KB operations rather than the request path. Server-side, \verb|health_monitor.py|
+runs one \verb|asyncio| loop probing about 13 containers every 10\,s and pushing a
+\verb|health:status| snapshot to a Socket.IO room, but only while at least one browser is
+watching (watcher-gated). Each probe maps to a colour: a connection error or timeout is
+red, an HTTP 5xx is orange, any other response is green. Two cases are special:
+\verb|websearch_server|, isolated on \verb|mcp_internal|, is observed through a
+side-effect-free passthrough on \verb|mcp-service|; and the backend stamps itself, so if it
+dies no push arrives at all, which the client turns into the correct all-red signal.
+
+Detecting the \emph{absence} of an event (staleness) is solved without a timer too. A CSS
+animation decays a ``live feed'' badge from green through yellow and orange to red over
+about 40\,s, every incoming push restarts the keyframe (an event-driven reset), and if
+pushes stop the browser's own animation clock carries the badge to red and the
+\verb|animationend| event dims all dots. The monitoring is liveness, not deep health (a
+green dot means ``responded,'' not ``every subsystem healthy''), and it is a single-operator
+dashboard rather than an alerting pipeline, which is appropriate for a demo and recorded as
+such.

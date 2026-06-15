@@ -1,0 +1,20 @@
+\section{Conclusion}
+
+job2cool is a functional system, runnable end-to-end with two clear entry points (a
+recruiter-facing web UI and a CLI ingestion tool), that turns a recruiter's natural-language
+request into a grounded, citable pack of HR documents built on \verb|ma2-360m-dpo-b01|, the
+model produced across Mini-Assignments~1 and~2. On top of the fine-tuning and alignment it
+integrates four additional course components, namely hybrid RAG with PDF and bbox citations,
+a multi-step LLM-decided pipeline, a per-turn LLM-as-judge, and quantised inference with a
+root-caused performance fix, plus chain-of-thought as a supporting fifth. The whole runs
+across fifteen open-source, request-path containers with Google identity, live health
+monitoring, a 210,048-entry candidate CV corpus, and full-fidelity project replay; no closed
+API appears anywhere in the serving path.
+
+The arc is coherent and honest: the aligned A2 model is not replaced but kept as a live,
+visible specialist, and the final stage's value is in making it usable, grounded, and
+measurable rather than in superseding it. The main limitations, namely the unwired
+\verb|match_candidates| integration, the outstanding formal baseline run, incomplete
+per-section domain differentiation, and self-judging evaluation, are reported plainly. The
+most important next step is wiring candidate matching into the agentic composition pipeline,
+where the retrieval infrastructure is already complete and verified.

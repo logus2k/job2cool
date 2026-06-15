@@ -1,0 +1,97 @@
+\section{Pipeline Overview}
+
+The project is a single pipeline organised into three stages, from a generic pretrained
+model to the system presented here. Each stage adds a capability to the previous
+checkpoint without discarding what was already acquired (Figure~\ref{fig:arc}).
+
+\begin{figure}[h]
+\begin{verbatim}
+STAGE A1   domain adaptation
+   SmolLM2-360M continued-pretrained on ~12k Djinni IT postings (LoRA)
+   in-domain PPL 16.37 to 11.38 (-31%); out-of-domain unchanged
+   yields a domain-adapted 360M checkpoint (merged LoRA)
+
+STAGE A2   alignment
+   SFT on ~7.5k request-posting pairs (validation PPL 11.66 to 4.54)
+   DPO via RLAIF, beta = 0.10; win-rate 8-0 vs SFT; DPO val PPL 6.01
+   yields ma2-360m-dpo-b01, the Job-Offer specialist (~430 tok/s)
+
+STAGE A3   the system (this work)
+   gemma-4 E4B orchestrator + ma2-360m-dpo-b01 (live Job Offer drafter)
+   Component 1  Hybrid RAG: vector + graph, 10 domains + 210,048 CVs
+   Component 2  Agentic pipeline: 8 LLM-decided steps, memory, guard
+   Component 3  LLM-as-judge: RAGAS faithfulness + answer-relevance
+   Component 4  Performance optimisation: llama.cpp, router, slot cap
+   Supporting   Chain-of-thought reasoning, in the Thinking panel
+\end{verbatim}
+\caption{The three-stage arc from raw pretrained model to job2cool. The A3 stage is not a
+black box: it expands into the live, health-monitored dependency graph the system renders
+of itself (Section~\ref{sec:infra}).}
+\label{fig:arc}
+\end{figure}
+
+\subsection{A1: domain adaptation}
+
+Mini-Assignment~1 continued the pretraining of SmolLM2-360M on roughly 12,000 IT job
+postings from the Djinni dataset (141,897 postings in the full release), shifting the
+model's language distribution toward the vocabulary and conventions of this type of
+posting. Under identical conditions, LoRA beat full fine-tuning on in-domain perplexity
+(11.38 versus 13.12, against a base of 16.37) while training only 2.3\% of parameters in
+roughly a third of the time. Out-of-domain perplexity, measured on LinkedIn postings,
+remained practically unchanged for both, confirming the adaptation was IT-specific rather
+than a general drift. The merged LoRA checkpoint became the A2 starting point.
+
+\subsection{A2: alignment}
+
+Mini-Assignment~2 turned that domain-fluent but instruction-blind checkpoint into a
+recruiter-instructable drafter. Supervised fine-tuning on roughly 7,500
+request-and-posting pairs drove validation perplexity from 11.66 to 4.54 and made the
+model reliably emit the four Job-Offer sections (Summary, Required Skills,
+Responsibilities, and Requirements) in Markdown. DPO via Reinforcement Learning from AI
+Feedback then ranked sampled candidates against a rubric covering faithfulness, structural
+completeness, language quality, and absence of repetition; a sweep over four values of
+$\beta$ peaked at $\beta = 0.10$, yielding \verb|ma2-360m-dpo-b01|, which won 8 of 20
+held-out comparisons against the SFT model (0 losses) under a Granite judge with
+order-swap. DPO validation perplexity settled at 6.01, higher than SFT's 4.54, as
+expected under KL regularisation.
+
+Two A2 findings carry directly into A3. First, the aligned model's behaviour depends
+strongly on the prompt template and on inference parameters, most notably the repetition
+penalty, whose absence caused repetition collapses, so A3 must keep the same inference
+rigour when calling the model through a new orchestration layer. Second, judge-based
+evaluation has a discrimination ceiling: a smaller judge distinguished broad comparisons
+(base versus aligned) well but was unreliable on close comparisons between similar
+checkpoints, which motivates an evaluation design that does not rest on a single judge
+(Section~\ref{sec:eval}).
+
+\subsection{A3: the system, and the model-choice justification}
+
+Mini-Assignment~3 uses \verb|ma2-360m-dpo-b01| exactly as delivered, without further
+modification, assigning it one specific role: drafting Job Offers. Everything else, namely
+interpreting the conversation, resolving the knowledge-base domain, deciding which
+documents to produce, retrieving evidence, composing each section (including refining the
+A2 draft), and attaching citations, is handled by the orchestration layer and the
+\verb|gemma-4| general model.
+
+The assignment permits switching to a different open-source model or running a further
+adaptation pass. job2cool does neither as a replacement: it retains the A2 model and adds
+\verb|gemma-4| alongside it, and the justification is capability-versus-task fit. The A2
+model is a 360M-parameter specialist, excellent and fast at the one task it was aligned
+for (natural-language need into a Markdown Job Offer), but with no tool use, no
+long-context planning, and no general composition ability for onboarding, interview, or
+culture content; asking a 360M model to drive the whole pipeline would fail. \verb|gemma-4|
+is the open-source orchestrator (4B-class, 128\,K context) that runs the agentic plan,
+composes the RAG-grounded sections, and refines the A2 draft. Both are co-resident on
+\verb|agent_server| and selectable per request by model id, so the specialist and the
+orchestrator coexist rather than one superseding the other. This is the honest reading of
+the arc: the final stage is an orchestration-and-grounding layer that makes the aligned
+model \emph{usable}, not a larger model that makes it redundant. Whether \verb|gemma-4|'s
+composition step masks the A2 alignment in the final output is one of the questions the
+evaluation is built to answer (Section~\ref{sec:eval}, Section~\ref{sec:arc}).
+
+Retrieval and orchestration therefore operate on a different axis from the earlier work,
+which improved the quality of one output (the Job Offer) in isolation. They address what
+an isolated aligned model cannot resolve regardless of its quality: knowledge of the
+company's actual material, determining what a request is asking for, holding context
+across a conversation, and proving through citation that a claim has an identifiable
+source.

@@ -1,0 +1,108 @@
+\section{Evaluation}
+\label{sec:eval}
+
+\subsection{What ``the system works'' means}
+
+For a grounded HR-document generator, success is not a single accuracy number. The
+evaluation is defined on three axes, each with a measurable signal, plus an operational
+axis:
+
+\begin{enumerate}
+  \item \textbf{Routing correctness}: from a natural-language request, does the system
+    select the right deliverables and the right KB domain? Signals are section-segregation
+    accuracy and domain-resolution correctness, including correct fallback when a family
+    domain is absent from the KB.
+  \item \textbf{Grounding}: are claims backed by verifiable citations? Signals are the
+    resolvable-citation rate (a chunk tag resolving to a valid PDF page) and the
+    RAGAS-style faithfulness and answer-relevance scores from the per-turn judge.
+  \item \textbf{Preservation of the aligned model's contribution}: once the A2 Job Offer
+    draft passes through \verb|gemma-4|'s composition, is its quality preserved or
+    degraded? This is directly observable through the built-in MA2/Gemma toggle, with the
+    judge scoring both versions independently per turn.
+  \item \textbf{Operational}: per-turn latency and embedder memory under concurrency
+    (Section~\ref{sec:perf}).
+\end{enumerate}
+
+Pure automatic metrics under-measure a grounded-composition system, and a single LLM judge
+has a known discrimination ceiling (an A2 finding). The design therefore
+\emph{triangulates}: a faithfulness judge for grounding, a deterministic
+citation-resolution check for provenance, observable routing for the agentic behaviour, and
+a human-readable A/B view for the model-preservation question, with the A1/A2 quantitative
+baselines anchoring the bottom of the arc.
+
+\subsection{Baselines and results}
+
+The brief requires isolating the final-stage contribution against (a) the base pretrained
+model and (b) the A2 aligned model with no system around it. We carry the A1/A2 numbers and
+define the A3 comparison as (c) the full system.
+
+\begin{table}[h]
+\centering
+\caption{Quantitative results across the three-stage pipeline.}
+\begin{tabular}{cllr}
+\toprule
+\textbf{\#} & \textbf{Configuration} & \textbf{Metric} & \textbf{Result} \\
+\midrule
+(a) & SmolLM2-360M base            & In-domain PPL (Djinni)                & 16.37 \\
+(a) & SmolLM2-360M base            & Validation PPL                        & 11.66 \\
+(b) & \texttt{ma2-360m-sft}        & Validation PPL                        & 4.54  \\
+(b) & \texttt{ma2-360m-dpo-b01}    & Validation PPL                        & 6.01 ($\beta$=0.10) \\
+(b) & \texttt{ma2-360m-dpo-b01} vs SFT & Win-rate (Granite judge, order-swap) & 8--0 / 20 prompts \\
+(b) & A1 LoRA merge                & In-domain PPL (Djinni)                & 11.38 (31\% below base) \\
+(c) & Full job2cool                & Embedder RSS under stress             & 2,238\,MB peak, flat \\
+(c) & Full job2cool                & Candidate ingest throughput           & 100--120\,CV/s \\
+(c) & Full job2cool                & A2 drafter throughput                 & 430\,tok/s, 0.7\,s/response \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The step from (a) to (b) is real and measured, carried from the earlier reports. The
+comparison from (b) to (c), whether \verb|gemma-4|'s composition preserves the aligned
+draft's quality, is the question this assignment is centrally about, and the system makes
+it directly observable through the MA2/Gemma toggle and the per-turn judge.
+\textbf{The formal (a)/(b)/(c) baseline run over a fixed prompt set is the remaining
+evaluation task}: the harness and metrics are defined and the judge is live, but the
+systematic run and the comparative table are not yet executed. This is stated plainly
+rather than implied as done, consistent with the honest-reporting requirement.
+
+The following system-level signals are live and verifiable today:
+
+\begin{itemize}
+  \item The RAGAS judge returns faithfulness, answer-relevance, and a rationale per turn.
+  \item Citation resolution is testable end-to-end: graph-grounded chunks resolve to a PDF
+    page and bounding box, inspectable via the Score panel and \verb|/api/graph_trace|.
+  \item Routing is observable from the tabs that appear and from the closing note, which
+    states the resolved domain and flags thin coverage.
+  \item Candidate retrieval is strong on multi-word role phrases (``senior python backend
+    engineer with fastapi'' returns top hits of 0.99, 0.97, and 0.96, all genuine Python
+    backend engineers) and honestly weak on bare tokens or out-of-era vocabulary (``genai''
+    returns about 0.000x, because the 2020--2023 corpus predates LLM-engineering
+    terminology, a retrieval-quality finding rather than a bug).
+  \item Performance is measured: 100--120\,CV/s bulk-embed throughput, the embedder OOM
+    fixed and stress-verified flat at about 2.2\,GB, and the full 210,048-CV ingest
+    completed with read-back acknowledgement equal to the indexed count.
+\end{itemize}
+
+\subsection{Qualitative analysis}
+
+The report will include concrete turns illustrating each category:
+
+\begin{itemize}
+  \item \textbf{Success.} ``Backend developer on AWS'': the role is extracted,
+    \verb|jobs_onboard_backend| resolves, concurrent hybrid RAG runs, and four sections are
+    generated with resolvable bbox citations. Routing, grounding, and provenance end to
+    end.
+  \item \textbf{Fallback.} An embedded-systems role whose \verb|jobs_onboard_embedded|
+    domain is absent falls back to \verb|general|; the closing note surfaces the gap
+    explicitly, honest gap-reporting as a correct behaviour.
+  \item \textbf{Memory.} ``I need a DevOps engineer'' followed by ``now make the onboarding
+    remote-friendly'': \verb|_resolve_need| folds the prior role in, and the follow-up
+    updates only the Onboarding Plan.
+  \item \textbf{Refusal.} ``I need to hire someone'' carries no concrete role, so Diana asks
+    which role and generates nothing.
+  \item \textbf{MA2 preservation.} The same offer via the MA2 toggle versus the
+    gemma-composed version, judged side by side, is the (b)-versus-(c) evidence for
+    Section~\ref{sec:arc}. Qualitatively the A2 draft is structurally clean and
+    domain-specific; the composed version keeps that structure while integrating retrieved
+    evidence and citations.
+\end{itemize}
