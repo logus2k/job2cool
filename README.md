@@ -1,5 +1,10 @@
 # job2cool — "Diana", the HR Assistant
 
+> ## 🟢 Live demo
+> **job2cool is deployed and available for testing at <https://logus2k.com/job2cool>.**
+> You can try it there directly — no local setup required. The instructions below are
+> for reviewers who want to replicate the full stack locally.
+
 job2cool turns a plain-language hiring need into a complete, RAG-grounded hiring
 package, written live into a workspace by a chat assistant named **Diana**. From a
 single conversation Diana produces, on demand:
@@ -24,9 +29,7 @@ together with those dependencies.
 ## 1. Architecture at a glance
 
 ```
-                       Browser  (served under  https://<host>/job2cool/)
-                          │
-            proxy_server (nginx) + oauth2-proxy        ── identity, sub-path, /stt /tts /avatar
+                  Browser  →  http://localhost:4920   (or the hosted demo)
                           │
                  ┌────────▼─────────┐
                  │  job2cool-backend │  FastAPI + Socket.IO   (container, host :4920)
@@ -47,9 +50,8 @@ together with those dependencies.
   proxies the read-only KB/Explorer calls to noted.
 - The **frontend** (`frontend/`) is **baked into the image** (not bind-mounted), so
   any frontend or backend change requires an image rebuild (see §7).
-- Speech (STT/TTS/avatar) is reached through the shared **proxy origin**, not through
-  job2cool-backend. Audio therefore works when the app is served under the proxy, not
-  at `localhost:4920`.
+- Speech (STT/TTS/avatar) is provided by the agent/avatar stack and is fully wired up
+  in the hosted deployment (the live demo). A local `localhost:4920` run is text-only.
 
 ---
 
@@ -68,11 +70,38 @@ running.
 | `llama-vision` | `http://llama-vision:8500` | yes | embeddings (`bge-m3`) + rerank (`bge-reranker-v2-m3`) |
 | `mcp-service` | `http://mcp-service:8080` | yes | shared tools/skills host (web_search) + the Skills/Tools admin UI |
 | `noted` | `http://noted:8123` | yes | document-file serving + read-only KB/Explorer fallback |
-| `proxy_server` + `oauth2-proxy` | proxy origin | for prod | identity (user name/photo) + sub-path serving + speech routing |
-| `stt_server` / `tts_server` / `avatar_server` | `:2700` / `:7700` / `:7800` | optional | Diana's voice + talking-avatar (via the proxy origin) |
+| `stt_server` / `tts_server` / `avatar_server` | `:2700` / `:7700` / `:7800` | optional | Diana's voice + talking-avatar (hosted deployment only) |
 
 > The container also probes `noted-arcadedb` for the live infrastructure-health view;
 > it degrades gracefully if a probe target is absent.
+
+### 2.1 Source repositories (clone these to replicate)
+
+Every dependency is open-source under **`https://github.com/logus2k/<repo>`**. To run
+the full stack locally, clone job2cool plus the repositories below and bring up each
+stack (each repo has its own `docker-compose.yml` and README).
+
+| Repository | Provides | Needed for |
+|---|---|---|
+| [`agent_server`](https://github.com/logus2k/agent_server) | the LLM server (`gemma-4`, `ma2-360m-dpo-b01`, `cv_query_rewriter`) **and `llama-vision`** (embeddings `bge-m3` + rerank), defined in the same compose | core — all generation + retrieval |
+| [`noted`](https://github.com/logus2k/noted) | the KB engines: **noted** backend (doc serving) + **noted-rag** (vector) + **noted-graph** (knowledge graph). Monorepo. | core — grounding, citations, candidate corpus |
+| [`kb`](https://github.com/logus2k/kb) | **kb-service**, the KB gateway that forwards `/rag` and `/graph` to the noted engines | core — job2cool talks to KB through this |
+| [`mcp`](https://github.com/logus2k/mcp) | **mcp-service**, the shared tools/skills host (the `web_search` tool, Skills/Tools admin) | core — web search + Skills/Tools UI |
+| [`websearch_server`](https://github.com/logus2k/websearch_server) | the Camoufox web-search backend invoked by the mcp `web_search` tool | web-search intent |
+| [`avatar_server`](https://github.com/logus2k/avatar_server) | Diana's talking-avatar video stream | voice/avatar (optional) |
+| [`tts_server`](https://github.com/logus2k/tts_server) | text-to-speech (Kokoro) | voice (optional) |
+| [`stt_server`](https://github.com/logus2k/stt_server) | speech-to-text | voice input (optional) |
+
+**Third-party image** (pulled automatically by the noted stack, not cloned):
+**ArcadeDB** (`noted-arcadedb`, used by noted-graph).
+
+> Not required to run job2cool: `noted-tools` (a former MCP host, no longer called) and
+> the `cv` repo (job2cool's chat widget originated there but is vendored into
+> `frontend/widget/`, so the cv repo is not a runtime dependency).
+>
+> Running job2cool **behind a domain** (TLS, Google login, voice routing) additionally
+> needs an nginx reverse proxy and an oauth2-proxy; those are deployment concerns and
+> are not required to replicate the app locally.
 
 ---
 
@@ -83,7 +112,8 @@ running.
   stacks):
   - `noted-network` (the noted stack)
   - `logus2k_network` (the agent/avatar stack)
-- The **shared services in §2 must be up** on those networks.
+- The **shared services in §2 must be up** on those networks. Clone and start them
+  from their repositories (see **§2.1 Source repositories**).
 - The required **models** must be loaded in `agent_server`: `gemma-4`,
   `ma2-360m-dpo-b01`, `cv_query_rewriter`.
 - The required **knowledge-base domains** must exist in noted-rag/noted-graph
@@ -121,11 +151,11 @@ both external networks. The container listens on **`:4920`**.
 
 **Access**
 
-- **Full experience** (identity + voice/avatar): browse to the app under the shared
-  proxy, e.g. `https://<your-host>/job2cool/`. The proxy provides login and routes
-  `/stt`, `/tts`, `/avatar`.
-- **API / text only** (no audio, no identity): `http://localhost:4920/` directly. Useful
-  for development and for `curl`-ing the API.
+- **Local run:** open `http://localhost:4920/` directly. This is the full app
+  (chat, generation, citations, candidate match, workspace) as **text** — no voice/
+  avatar and no per-user identity, which are wired up only in the hosted deployment.
+- **Hosted experience** (identity + voice/avatar): the live demo at
+  <https://logus2k.com/job2cool>.
 
 ---
 
@@ -191,11 +221,6 @@ docker compose up -d --build job2cool-backend
 Then **hard-refresh** the browser (static JS is served without a cache-busting query),
 e.g. Ctrl/Cmd+Shift+R.
 
-If you change nginx (for example to raise the upload limit), note that document upload
-needs `client_max_body_size 100m` on **both** the `/job2cool/` block **and** the
-shared `/oauth2/auth` subrequest, and a single-file nginx mount requires
-`docker restart proxy_server` (a reload is not enough).
-
 ---
 
 ## 8. Data and persistence
@@ -213,7 +238,7 @@ These survive container restarts and rebuilds. They are git-ignored.
 ## 9. Local development without Docker (optional)
 
 You can run the backend on the host against the in-network services (you need network
-reachability to them, e.g. via the proxy or by running inside the same Docker host).
+reachability to them, e.g. by running on the same Docker host / on `noted-network`).
 
 ```bash
 python3.12 -m venv .venv_job2cool
@@ -271,11 +296,9 @@ job2cool/
 - **Container won't start, "network noted-network not found"** — start the noted and
   agent/avatar stacks first so both external networks and the shared services exist
   (§3).
-- **No audio / Diana doesn't speak** — you are on `localhost:4920`; speech is routed
-  by the proxy. Use the proxy URL (§4).
+- **No audio / Diana doesn't speak** — expected on a local `localhost:4920` run; voice
+  and avatar are wired up only in the hosted deployment (§4). Text generation is unaffected.
 - **A frontend change isn't showing** — rebuild the image and hard-refresh (§7).
-- **Document upload fails with 413/500** — raise the nginx body limit on both the
-  `/job2cool/` and `/oauth2/auth` blocks and restart `proxy_server` (§7).
 - **Citations show text instead of opening the PDF** — the cited document is not
   graph-indexed for that domain; (re)build the domain's graph so chunks resolve to PDF
   regions (§6).

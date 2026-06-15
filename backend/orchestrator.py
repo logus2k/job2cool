@@ -253,6 +253,8 @@ def _candidates_doc_body(cands: list[dict], basis: str) -> str:
     for i, c in enumerate(cands, 1):
         title = c.get("position") or "(no title)"
         score = int(round((c.get("score") or 0.0) * 100))
+        # Each candidate is one `### {i}. …` section — the Workspace splits on this
+        # heading to render a sub-tab per candidate within the Candidates document.
         parts.append(f"### {i}. {title} — match {score}%")
         bits = []
         if c.get("primary_keyword"):
@@ -263,9 +265,12 @@ def _candidates_doc_body(cands: list[dict], basis: str) -> str:
             bits.append(f"**English:** {c['english_level']}")
         if bits:
             parts.append("  ·  ".join(bits))
-        if c.get("snippet"):
+        cv = (c.get("cv") or c.get("snippet") or "").strip()
+        if cv:
             parts.append("")
-            parts.append(c["snippet"][:400])
+            parts.append("**CV**")
+            parts.append("")
+            parts.append(cv)
         parts.append("")
     return "\n".join(parts).strip()
 
@@ -383,6 +388,33 @@ async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]
         return full
 
 
+# Labels that name NO concrete position — placeholders or generic fillers the
+# composer would otherwise turn into a "[Role name]" stub. Treated as no role so
+# Diana asks which position to hire for instead of generating a hollow offer.
+_NON_ROLE = {
+    "none", "n a", "na", "unknown", "tbd", "tba", "role", "the role", "a role",
+    "new role", "open role", "this role", "that role", "some role", "any role",
+    "position", "the position", "a position", "open position", "new position",
+    "job", "the job", "a job", "role title", "job title", "title", "role name",
+    "position name", "candidate", "new hire", "hire", "new employee", "employee",
+    "someone", "somebody", "person", "various", "multiple", "general", "any",
+}
+
+
+def _is_placeholder_role(lbl: str) -> bool:
+    """True when the label is empty, a bracketed placeholder (e.g. "[Role name]",
+    "{role}", "<position>"), or a generic non-role filler — none of which is a
+    concrete position to hire for."""
+    s = (lbl or "").strip()
+    if not s:
+        return True
+    if any(ch in s for ch in "[]{}<>"):
+        return True
+    norm = re.sub(r"[^a-z ]+", " ", s.lower()).strip()
+    norm = re.sub(r"\s+", " ", norm)
+    return norm in _NON_ROLE
+
+
 async def _role_label(client: httpx.AsyncClient, need: str) -> str:
     """Return the job role title, or "" when the request (with conversation
     context already folded in) names NO concrete position — so the caller asks
@@ -397,7 +429,7 @@ async def _role_label(client: httpx.AsyncClient, need: str) -> str:
               f"NONE\n\nRequest: {need}"}],
             max_tokens=16, temperature=0.0, timeout=30, think=False)
         lbl = (lbl or "").strip().strip('"').splitlines()[0].strip()
-        if not lbl or lbl.strip(" .!\"'").upper() == "NONE":
+        if _is_placeholder_role(lbl):
             return ""
         return lbl
     except Exception:
@@ -424,13 +456,15 @@ async def _resolve_need(client: httpx.AsyncClient, history: list[dict],
                         message: str, project_name: str = "") -> str:
     """Make the latest message self-contained using the conversation, so a
     follow-up like 'also find interview questions' inherits the role and skills
-    from earlier turns. The active project's name is folded in too, so a first
-    message like 'I need a technical interview for this role' resolves the role
-    from the project even with no prior turns. Falls back to the raw message."""
+    from earlier turns. Falls back to the raw message.
+
+    The project name is deliberately NOT asserted as "the target role" here: that
+    primed a GENERIC project name (e.g. the default "New project") to be extracted
+    as a concrete role, so Diana would generate a hollow "[Role name]" offer. The
+    project name is instead judged directly by `_role_label(project_name)` in
+    run_chat, which accepts it only when it is genuinely a job title."""
     turns = [h for h in (history or []) if isinstance(h, dict) and h.get("content")]
     lines: list[str] = []
-    if project_name:
-        lines.append(f"This project is for hiring a {project_name} (the target role).")
     for m in turns[-6:]:
         who = "User" if m.get("role") == "user" else "Diana"
         txt = _strip_blocks(m.get("content"))
@@ -650,7 +684,36 @@ async def _match_candidates(client: httpx.AsyncClient, message: str, history: li
     the composed deliverables. Ranks against the open Job Offer (the job description, the
     richest signal) when one exists, else the role title + the request."""
     docs = _docs_map(buffers.snapshot())
-    query, basis = _candidate_query(docs, project_name, message)
+    jd = (docs.get("Job Offer") or docs.get("Job Offer (MA2)") or "").strip()
+    # Like the generate path: don't search with no basis. Rank against the open
+    # Job Offer when present, else a CONCRETE role (from the message, the project
+    # name, or the conversation). With neither, ask instead of returning whatever
+    # the vector store loosely matches for a roleless request.
+    role = ""
+    if not jd:
+        role = await _role_label(client, message)
+        if not role and project_name:
+            role = await _role_label(client, project_name)
+        if not role and history:
+            role = await _role_label(
+                client, await _resolve_need(client, history, message, project_name))
+        if not role:
+            ask = ("Sure. Which role should I find candidates for? Tell me the job "
+                   "title and a few key skills, or generate a Job Offer first and "
+                   "I'll match candidates against it.")
+            yield _sse({"delta": ask})
+            yield _sse({"delta": "\n\n<voice>Which role should I find candidates "
+                                 "for? Tell me the job title and a few key "
+                                 "skills.</voice>"})
+            yield _empty_meta(message, "cand")
+            return
+    if jd:
+        query, basis = jd, "the open Job Offer"
+    else:
+        query = message.strip()
+        if role.lower() not in query.lower():
+            query = f"{role}. {query}".strip()
+        basis = f"the {role} role"
     cands = await services.search_candidates(client, query, top_k=3)
     body = f"# {CANDIDATES_TITLE}\n\n{_candidates_doc_body(cands, basis)}"
     # Always create a fresh buffer (= a new tab that opens and focuses), exactly
@@ -733,7 +796,12 @@ async def run_chat(message: str, history: list[dict],
             return
         domain = await services.resolve_onboard_domain(client, need)
         domains = [domain]
-        requested = await _requested_sections(client, need)
+        # Deliverable SCOPE comes from the user's literal message, NOT the resolved
+        # need: `_resolve_need` rewrites the turn to carry the role+skills forward,
+        # which can drift into generic "full hiring package" framing and make a
+        # narrow request ("the onboarding plan and tech interview") regenerate
+        # everything. The literal words are the ground truth for what to produce.
+        requested = await _requested_sections(client, message)
         want_candidates = "candidates" in requested
         doc_keys = [k for k in requested if k in _SECTION_BY_KEY]
         secs = [_SECTION_BY_KEY[k] for k in doc_keys]
@@ -901,7 +969,7 @@ async def run_chat(message: str, history: list[dict],
             prog[ci]["state"] = "active"
             cbuf = buffers.create(
                 name=CANDIDATES_TITLE,
-                initial_content=f"# {CANDIDATES_TITLE}\n\n_Matching candidates…_")
+                initial_content=f"# {CANDIDATES_TITLE}\n\n_Generating…_")
             yield _sse({"progress": {"steps": prog}})
             cq, cbasis = _candidate_query(_docs_map(buffers.snapshot()),
                                           project_name, need)

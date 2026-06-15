@@ -264,6 +264,14 @@
   .card .ic.c-onboard{background:#dcfce7;color:#15803d}
   .card .ic.c-tech{background:#dbeafe;color:#1d4ed8}
   .card .ic.c-culture{background:#ffedd5;color:#c2410c}
+  .card .ic.c-cand{background:#cffafe;color:#0e7490}
+  /* per-candidate sub-tabs inside the Candidates document — mirror the Workspace tabs */
+  .candintro{color:#6b7280;font-size:13px;margin-bottom:.5rem}
+  .subtabs{display:flex;gap:1.4rem;flex-wrap:wrap;margin:.1rem 0 1rem;border-bottom:1px solid var(--line)}
+  .subtab{padding:.55rem .1rem;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap;
+          border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s}
+  .subtab:hover{color:var(--ink)}
+  .subtab.on{color:#2f9be6;border-bottom-color:#2f9be6}
   .cardfoot{display:flex;gap:.4rem;align-items:center;margin-top:.1rem}
   .cardfoot .open{flex:1}
   .card .kebab{border:1px solid var(--line);background:#fff;border-radius:9px;padding:.5rem .55rem;cursor:pointer;color:var(--muted);font-weight:700;line-height:1}
@@ -472,9 +480,9 @@ const COPY_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 
 // deliverable tabs (created on demand from buffer events)
 const ALL='All Documents';
-const MAIN=['Job Offer','Technical Interviews','Onboarding Plan','Cultural & Team Fit'];
+const MAIN=['Job Offer','Technical Interviews','Onboarding Plan','Cultural & Team Fit','Candidates'];
 const ORDER=Object.fromEntries(MAIN.map((t,i)=>[t,i]));
-const doc={order:[],content:{},active:ALL,offerView:'gemma',role:'',prev:{},pview:{}};
+const doc={order:[],content:{},active:ALL,offerView:'gemma',role:'',prev:{},pview:{},candTab:0};
 // Version history (Option B): doc.prev[name] = the immediately-prior content kept
 // when a deliverable is improved/regenerated in place; doc.pview[name] = 'cur'|'prev'.
 // _preTurn snapshots content at the start of a turn so the SSE handler can stash the
@@ -487,17 +495,19 @@ const ICONS={
   'Job Offer':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
   'Onboarding Plan':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 20V8l7-4 7 4v12"/><path d="M9 20v-5h6v5"/><path d="M12 4v4"/></svg>',
   'Technical Interviews':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg>',
-  'Cultural & Team Fit':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.3a3 3 0 0 1 0 5.4M20.5 19a5 5 0 0 0-3.2-4.6"/></svg>'
+  'Cultural & Team Fit':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.3a3 3 0 0 1 0 5.4M20.5 19a5 5 0 0 0-3.2-4.6"/></svg>',
+  'Candidates':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="7" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 4.8"/></svg>'
 };
 const DESC={
   'Job Offer':'Comprehensive job description with responsibilities, requirements and compensation.',
   'Onboarding Plan':'Structured 30-60-90 day plan with goals, milestones and resources.',
   'Technical Interviews':'Technical interview set with curated questions and assessment guidelines.',
-  'Cultural & Team Fit':'Assessment framework for cultural fit and team alignment.'
+  'Cultural & Team Fit':'Assessment framework for cultural fit and team alignment.',
+  'Candidates':'Best-fit candidates matched from the internal CV pool, ranked against the role.'
 };
 const DOC_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
-const ICON_CLASS={'Job Offer':'c-offer','Onboarding Plan':'c-onboard','Technical Interviews':'c-tech','Cultural & Team Fit':'c-culture'};
-const STEP_SUB={'Job Offer':'Creating the comprehensive job offer document','Onboarding Plan':'Designing the 30-60-90 day onboarding experience','Technical Interviews':'Building the technical assessment framework','Cultural & Team Fit':'Creating the cultural fit evaluation framework'};
+const ICON_CLASS={'Job Offer':'c-offer','Onboarding Plan':'c-onboard','Technical Interviews':'c-tech','Cultural & Team Fit':'c-culture','Candidates':'c-cand'};
+const STEP_SUB={'Job Offer':'Creating the comprehensive job offer document','Onboarding Plan':'Designing the 30-60-90 day onboarding experience','Technical Interviews':'Building the technical assessment framework','Cultural & Team Fit':'Creating the cultural fit evaluation framework','Candidates':'Matching the best-fit candidates from the CV pool'};
 const PROG_ART='<svg viewBox="0 0 210 150" fill="none"><rect x="58" y="36" width="78" height="98" rx="10" fill="#eef5fb" stroke="#e6e8ef" transform="rotate(-8 97 85)"/><rect x="70" y="30" width="78" height="98" rx="10" fill="#f6fbfe" stroke="#e6e8ef" transform="rotate(-3 109 79)"/><rect x="80" y="26" width="78" height="98" rx="10" fill="#fff" stroke="#e6e8ef"/><rect x="92" y="44" width="50" height="6" rx="3" fill="#e7e9f2"/><rect x="92" y="58" width="40" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="72" width="50" height="6" rx="3" fill="#eef0f5"/><rect x="92" y="86" width="34" height="6" rx="3" fill="#eef0f5"/><circle cx="150" cy="40" r="20" fill="#2f9be6"/><path d="M150 29l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff"/></svg>';
 
 function shownFor(title){
@@ -552,6 +562,34 @@ function citeBadges(md){
   return s;
 }
 
+// The Candidates document holds several CVs, one per `### {i}. …` heading. Render
+// a sub-tab strip (one per candidate) inside the document body and show only the
+// active candidate's CV. doc.candTab = active candidate index.
+function splitCandidates(md){
+  const lines=(md||'').split('\n');const items=[];let pre=[],cur=null;
+  const head=/^###\s+(\d+)\.\s+(.+)$/;
+  for(const ln of lines){const m=ln.match(head);
+    if(m){if(cur)items.push(cur);
+      const num=m[1];let rest=m[2].trim(),pct='';
+      const mm=rest.match(/^(.*?)\s+—\s+match\s+(\d+)%\s*$/);
+      if(mm){rest=mm[1].trim();pct=mm[2];}
+      // Keep the rank number (+ match %) so badges stay distinct even when several
+      // candidates share the same position title.
+      const lbl=`${num}. ${rest||('Candidate '+num)}`+(pct?` · ${pct}%`:'');
+      cur={label:lbl,body:[ln]};}
+    else if(cur){cur.body.push(ln);}else{pre.push(ln);}}
+  if(cur)items.push(cur);
+  return {preamble:pre.join('\n').trim(),items:items.map(it=>({label:it.label,body:it.body.join('\n').trim()}))};
+}
+function renderCandidatesBody(md){
+  const p=splitCandidates(md);
+  if(!p.items.length){_citeMap=new Map();return md2html(md);}
+  let idx=doc.candTab||0;if(idx<0||idx>=p.items.length)idx=0;
+  const tabs=p.items.map((it,i)=>`<button class="subtab${i===idx?' on':''}" data-ci="${i}">${esc(it.label)}</button>`).join('');
+  _citeMap=new Map();
+  const intro=p.preamble?`<div class="candintro">${md2html(p.preamble)}</div>`:'';
+  return `${intro}<div class="subtabs">${tabs}</div><div class="candpane">${md2html(p.items[idx].body)}</div>`;
+}
 function render(){
   const tb=$('#tabbar');tb.innerHTML='';
   [ALL,...doc.order].forEach(title=>{const t=document.createElement('div');
@@ -581,9 +619,10 @@ function render(){
       <div class="doctool"><span class="ttl">${esc(name)}</span>${vseg}${seg}${verBtns}
         <button class="iconbtn" id="t-copy" title="Copy Markdown">${COPY_ICON}</button>
         <button class="iconbtn" id="t-pdf" title="Export to PDF">${PDF_ICON}</button></div>
-      <div class="docbody${pending?' pending':''}">${pending?'Generating…':(_citeMap=new Map(),md2html(citeBadges(shown)))}</div></div>`;
+      <div class="docbody${pending?' pending':''}">${pending?'Generating…':(name==='Candidates'?renderCandidatesBody(shown):(_citeMap=new Map(),md2html(citeBadges(shown))))}</div></div>`;
   col.querySelector('#t-copy').onclick=()=>copyMD(name,shown);
   col.querySelector('#t-pdf').onclick=()=>exportPDF(name,shown);
+  col.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{doc.candTab=parseInt(b.dataset.ci,10)||0;render();});
   col.querySelectorAll('.seg button[data-v]').forEach(b=>b.onclick=()=>{doc.offerView=b.dataset.v;render();});
   col.querySelectorAll('.seg button[data-pv]').forEach(b=>b.onclick=()=>{doc.pview[name]=b.dataset.pv;render();});
   if(onPrev){
@@ -696,7 +735,7 @@ window.JOB2COOL_OPEN_PDF=function(data){
 function closePdf(){const col=$('#pdfcol');col.hidden=true;col.innerHTML='';$('#docpane').classList.remove('split');}
 
 // reset tabs at the start of a new turn (hook called by cv-chat on send)
-window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';doc.role='';doc.prev={};doc.pview={};render();};
+window.JOB2COOL_NEW_TURN=function(){doc.order=[];doc.content={};doc.active=ALL;doc.offerView='gemma';doc.role='';doc.prev={};doc.pview={};doc.candTab=0;render();};
 // Start of a turn (no wipe): snapshot current content so a regeneration can stash
 // the prior version once, when its first chunk arrives (see the buffer SSE handler).
 window.JOB2COOL_TURN_START=function(){_preTurn=Object.assign({},doc.content);_snapped=new Set();};
@@ -705,7 +744,7 @@ window.JOB2COOL_SET_ROLE=function(role){doc.role=(role||'').trim();if(typeof ren
 window.JOB2COOL_GET_ROLE=function(){return doc.role||'';};
 // Workspace doc snapshot get/set — used by chats.js to persist docs with the thread.
 window.JOB2COOL_GET_DOCS=function(){return{order:doc.order.slice(),content:Object.assign({},doc.content),role:doc.role||'',prev:Object.assign({},doc.prev)};};
-window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.order.slice():[];doc.content=(d&&d.content&&typeof d.content==='object')?Object.assign({},d.content):{};doc.role=(d&&typeof d.role==='string')?d.role:'';doc.prev=(d&&d.prev&&typeof d.prev==='object')?Object.assign({},d.prev):{};doc.pview={};doc.active=ALL;doc.offerView='gemma';closePdf();render();};
+window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.order.slice():[];doc.content=(d&&d.content&&typeof d.content==='object')?Object.assign({},d.content):{};doc.role=(d&&typeof d.role==='string')?d.role:'';doc.prev=(d&&d.prev&&typeof d.prev==='object')?Object.assign({},d.prev):{};doc.pview={};doc.active=ALL;doc.offerView='gemma';doc.candTab=0;closePdf();render();};
 
 // live document via buffer SSE -> tabs
 (function(){const es=new EventSource('api/buffers/events/stream');
@@ -721,6 +760,7 @@ window.JOB2COOL_SET_DOCS=function(d){doc.order=(d&&Array.isArray(d.order))?d.ord
       if(prior!=null&&!isPending(prior)){doc.prev[name]=prior;doc.pview[name]='cur';}
     }
     doc.content[name]=p.doc.content||'';
+    if(name==='Candidates')doc.candTab=0;   // a fresh match lands on the first candidate
     document.dispatchEvent(new CustomEvent('job2cool:docschanged'));   // event-driven persist hook (chats.js)
     if(name==='Job Offer (MA2)'){ if(doc.active==='Job Offer')render(); return; }
     if(!(name in ORDER))return;                       // ignore unknown buffers

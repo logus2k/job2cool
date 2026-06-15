@@ -176,13 +176,15 @@ async def search_candidates(client: httpx.AsyncClient, query: str, top_k: int = 
     out: list[dict] = []
     for c in chunks[:top_k]:
         m = meta_by_id.get(c.get("id"), {})
+        cv = (c.get("text") or "").strip()
         out.append({
             "position": m.get("position") or "",
             "primary_keyword": m.get("primary_keyword") or "",
             "english_level": m.get("english_level") or "",
             "experience_years": m.get("experience_years"),
             "score": round(float(c.get("score") or 0.0), 3),
-            "snippet": (c.get("text") or "").replace("\n", " ")[:240],
+            "cv": cv,                                       # full CV text (untruncated)
+            "snippet": cv.replace("\n", " ")[:240],         # short form for chat/voice
         })
     return out
 
