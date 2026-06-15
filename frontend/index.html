@@ -359,6 +359,15 @@
     #printarea h3{font-size:13.5px;margin:.8rem 0 .3rem}
     #printarea ul{margin:.3rem 0 .3rem 1.1rem}
     #printarea em{color:#666}
+    /* Company chrome: <thead>/<tfoot> repeat on every printed page. */
+    #printarea .printdoc{width:100%;border-collapse:collapse}
+    #printarea .printdoc thead{display:table-header-group}
+    #printarea .printdoc tfoot{display:table-footer-group}
+    #printarea .printdoc td{padding:0}
+    #printarea .ph-head{display:flex;align-items:center;gap:.8rem;border-bottom:1px solid #d9dde6;padding-bottom:.5rem;margin-bottom:1rem}
+    #printarea .ph-logo{max-height:46px;max-width:190px;object-fit:contain}
+    #printarea .ph-htext{font-size:11px;color:#555;white-space:pre-line;line-height:1.4}
+    #printarea .ph-foot{border-top:1px solid #d9dde6;padding-top:.45rem;margin-top:1rem;font-size:10px;color:#777;white-space:pre-line;text-align:center}
     @page{margin:1.6cm}
   }
   /* Assistant panel width: ~1/3 of the screen on wide displays, growing to ~1/2
@@ -380,7 +389,7 @@
     <a class="navitem" data-nav="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 8h6M8 12h8M8 16h5"/></svg>Skills</a>
     <a class="navitem" data-nav="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8 7.2 20l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.7 2.7-2.3-2.3z"/></svg>Tools</a>
     <a class="navitem" data-nav="kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>Knowledge Base</a>
-    <a class="navitem" data-nav="company"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>Company Profile<span class="soon">soon</span></a>
+    <a class="navitem" data-nav="company"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>Company Profile</a>
   </div>
   <div class="navspace"></div>
   <a class="navitem" data-nav="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></svg>Help &amp; Support</a>
@@ -420,6 +429,8 @@
 
   <!-- Candidates view (browse the ingested CV corpus + per-CV detail panel) -->
   <div id="view-candidates" class="viewpane" hidden></div>
+
+  <div id="view-company" class="viewpane" hidden></div>
 
   <!-- Help & Support view (architecture/service-map diagram + live health) -->
   <div id="view-help" class="viewpane" hidden></div>
@@ -494,9 +505,32 @@ function shownFor(title){
   return title;
 }
 function copyMD(name,override){navigator.clipboard.writeText(override!=null?override:(doc.content[name]||'')).then(()=>toast('Markdown copied')).catch(()=>toast('Copy failed'));}
-function exportPDF(name,override){
-  // Print the document in place (no extra tab) -> browser Save-as-PDF, like cv.
-  const pa=$('#printarea');pa.innerHTML=md2html(override!=null?override:(doc.content[name]||''));
+
+// Company chrome: the shared logo + header/footer (Company Profile area) injected
+// at export time only — never into the document content. Fetched once and cached;
+// reset by Company Profile on save. Wrapping the printed body in a <table> with
+// <thead>/<tfoot> makes the browser REPEAT the header/footer on every printed page.
+let _companyChrome=null;            // cached {head,foot} HTML
+async function companyChrome(){
+  if(_companyChrome)return _companyChrome;
+  let p={logo:'',header:'',footer:''};
+  try{p=await(await fetch('api/job2cool/company-profile',{credentials:'include'})).json();}catch(e){}
+  const head=(p.logo||p.header)?`<thead><tr><td><div class="ph-head">${p.logo?`<img class="ph-logo" src="${p.logo}" alt="">`:''}${p.header?`<div class="ph-htext">${esc(p.header)}</div>`:''}</div></td></tr></thead>`:'';
+  const foot=p.footer?`<tfoot><tr><td><div class="ph-foot">${esc(p.footer)}</div></td></tr></tfoot>`:'';
+  _companyChrome={head,foot};return _companyChrome;
+}
+function printDoc(bodyHtml){
+  const c=_companyChrome||{head:'',foot:''};
+  return `<table class="printdoc">${c.head}${c.foot}<tbody><tr><td>${bodyHtml}</td></tr></tbody></table>`;
+}
+// Company Profile calls this after a save so the next export uses the new chrome.
+window.JOB2COOL_COMPANY_CHROME_RESET=function(){_companyChrome=null;};
+
+async function exportPDF(name,override){
+  // Print the document in place (no extra tab) -> browser Save-as-PDF, like cv,
+  // wrapped in the company header/footer chrome.
+  await companyChrome();
+  const pa=$('#printarea');pa.innerHTML=printDoc(md2html(override!=null?override:(doc.content[name]||'')));
   const prev=document.title;document.title=name;            // sensible filename
   function after(){document.title=prev;pa.innerHTML='';window.removeEventListener('afterprint',after);}
   window.addEventListener('afterprint',after);
@@ -615,12 +649,13 @@ function updateWsBar(){
 // Set/clear the active project name shown in the Workspace bar (called by chats.js).
 window.JOB2COOL_SET_PROJECT_NAME=function(name){wsProjectName=(name||'').trim();if(window.JOB2COOL_CONFIG)window.JOB2COOL_CONFIG.project_name=wsProjectName;updateWsBar();};
 // Export All: print every completed deliverable (one per page) -> Save as PDF.
-function exportAll(){
+async function exportAll(){
   const names=doc.order.filter(n=>!isPending(doc.content[n]));
   if(!names.length){toast('Nothing to export yet');return;}
+  await companyChrome();
   const html=names.map(n=>md2html(doc.content[shownFor(n)]||doc.content[n]||''))
                   .join('<div style="page-break-after:always"></div>');
-  const pa=$('#printarea');pa.innerHTML=html;
+  const pa=$('#printarea');pa.innerHTML=printDoc(html);
   const prev=document.title;document.title='Hiring Package';
   function after(){document.title=prev;pa.innerHTML='';window.removeEventListener('afterprint',after);}
   window.addEventListener('afterprint',after);window.print();
@@ -716,14 +751,14 @@ function toggleAssistant(){
 }
 (function(){const b=document.getElementById('asstToggle');if(b)b.onclick=toggleAssistant;})();
 // main-pane view switching: Workspace | Knowledge Base | Settings (all native views).
-const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Projects',candidates:'Candidates',help:'Help & Support'};
+const VIEW_TITLES={workspace:'Workspace',kb:'Knowledge Base',settings:'Settings',skills:'Skills',tools:'Tools',agents:'Agents',chats:'Projects',candidates:'Candidates',company:'Company Profile',help:'Help & Support'};
 // Only one right-edge panel is ever open at a time. Hides every .j2c-side
 // panel except the one passed (exceptId); the chat panel closes itself.
 window.JOB2COOL_CLOSE_SIDE_PANELS=function(exceptId){
   document.querySelectorAll('.j2c-side').forEach(p=>{if(p.id!==exceptId)p.hidden=true;});
 };
 function showView(name){
-  ['workspace','kb','settings','skills','tools','agents','chats','candidates','help'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
+  ['workspace','kb','settings','skills','tools','agents','chats','candidates','company','help'].forEach(v=>{const el=$('#view-'+v);if(el)el.hidden=(v!==name);});
   {const tt=$('#topTitle');if(tt)tt.textContent=VIEW_TITLES[name]||'';}
   document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===name));
   if(name==='settings')syncSettingsView();
@@ -733,13 +768,14 @@ function showView(name){
   if(name==='agents'){window.JOB2COOL_AGENTS_OPEN&&window.JOB2COOL_AGENTS_OPEN();}
   if(name==='chats'){window.JOB2COOL_CHATS_OPEN&&window.JOB2COOL_CHATS_OPEN();}
   if(name==='candidates'){window.JOB2COOL_CANDIDATES_OPEN&&window.JOB2COOL_CANDIDATES_OPEN();}
+  if(name==='company'){window.JOB2COOL_COMPANY_OPEN&&window.JOB2COOL_COMPANY_OPEN();}
   if(name==='help'){window.JOB2COOL_HELP_OPEN&&window.JOB2COOL_HELP_OPEN();}
 }
 // left-nav wiring: views switch the main pane; Assistant toggles the chat overlay; rest are placeholders.
 document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',e=>{
   e.preventDefault();const k=n.dataset.nav;
   if(k==='assistant')return openAssistant();
-  if(k==='workspace'||k==='kb'||k==='settings'||k==='skills'||k==='tools'||k==='agents'||k==='chats'||k==='candidates'||k==='help')return showView(k);
+  if(k==='workspace'||k==='kb'||k==='settings'||k==='skills'||k==='tools'||k==='agents'||k==='chats'||k==='candidates'||k==='company'||k==='help')return showView(k);
   toast(n.textContent.replace('soon','').trim()+' — coming soon');
 }));
 $('#newReq').onclick=()=>{ if(window.JOB2COOL_NEW_PROJECT) window.JOB2COOL_NEW_PROJECT(); };
@@ -781,6 +817,7 @@ render();
 <script src="static/js2c/chats.js"></script>
 <script src="static/js2c/agents.js"></script>
 <script src="static/js2c/candidates.js"></script>
+<script src="static/js2c/company.js"></script>
 <script src="static/js2c/architecture.js"></script>
 <script src="static/js2c/help.js"></script>
 <!-- cv-chat Assistant (chat + STT/TTS/avatar + Thinking/Graph/Score/citations) -->

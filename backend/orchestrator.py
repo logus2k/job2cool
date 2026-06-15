@@ -34,6 +34,7 @@ import services
 SECTION_MAX = 8192
 INTRO_MAX = 4096
 DPO_MAX = 1200
+CONVERSE_MAX = 1500
 SUMMARY_MAX = 320
 
 
@@ -211,6 +212,63 @@ SECTIONS = [
 ]
 _SECTION_BY_KEY = {s["key"]: s for s in SECTIONS}
 
+# Candidates is a deliverable too, but it is MATCHED from the CV pool (vector +
+# rerank) rather than composed from the knowledge base — so it lives outside
+# SECTIONS and is handled by its own step, while still landing as one Workspace
+# document (one tab), exactly like the four composed deliverables.
+CANDIDATES_TITLE = "Candidates"
+
+
+def _docs_map(snapshot) -> dict:
+    """name -> content for the current workspace buffers (one entry per tab)."""
+    out: dict = {}
+    for ev in snapshot:
+        d = ev.get("doc") or {}
+        if d.get("name") and d.get("content"):
+            out[d["name"]] = d["content"]
+    return out
+
+
+def _candidate_query(docs: dict, project_name: str, fallback: str):
+    """Build the candidate-matching query + a human label for what we ranked
+    against. Ranks against the open Job Offer (the job description, the richest
+    signal) when one exists, else the role/title plus the request text."""
+    jd = (docs.get("Job Offer") or docs.get("Job Offer (MA2)") or "").strip()
+    if jd:
+        return jd, "the open Job Offer"
+    query = (fallback or "").strip()
+    if project_name and project_name.lower() not in query.lower():
+        query = f"{project_name}. {query}".strip()
+    return (query or project_name), "the requested role"
+
+
+def _candidates_doc_body(cands: list[dict], basis: str) -> str:
+    """Render matched candidates as a Workspace-document body (Markdown, without
+    the leading title — the caller prepends `# Candidates`)."""
+    if not cands:
+        return (f"_No matching candidates were found in our pool for {basis}._\n\n"
+                "Try broadening the role or the key skills.")
+    parts = [f"_Top {len(cands)} candidates from our internal pool of 210,000 CVs, "
+             f"ranked against {basis}._", ""]
+    for i, c in enumerate(cands, 1):
+        title = c.get("position") or "(no title)"
+        score = int(round((c.get("score") or 0.0) * 100))
+        parts.append(f"### {i}. {title} — match {score}%")
+        bits = []
+        if c.get("primary_keyword"):
+            bits.append(f"**Focus:** {c['primary_keyword']}")
+        if c.get("experience_years") is not None:
+            bits.append(f"**Experience:** {c['experience_years']} yrs")
+        if c.get("english_level"):
+            bits.append(f"**English:** {c['english_level']}")
+        if bits:
+            parts.append("  ·  ".join(bits))
+        if c.get("snippet"):
+            parts.append("")
+            parts.append(c["snippet"][:400])
+        parts.append("")
+    return "\n".join(parts).strip()
+
 INTRO_SYSTEM = (
     "You are Diana, the HR Assistant. Given a plain-language hiring need, you "
     "assemble the requested hiring deliverables (job offer, technical interviews, "
@@ -253,6 +311,40 @@ SECTION_SYSTEM = (
     "After </think>, output the section as Markdown only - no <think> tags, no "
     "preamble.")
 
+# Editable in the Agents tab as the preset job2cool_router (seeded in main.py).
+ROUTER_SYSTEM = (
+    "You are the intent router of Diana, an HR hiring assistant. Read the user's "
+    "LATEST message in context and output ONLY one of these labels:\n"
+    "- GENERATE: asks to create / draft / produce a hiring document or the full "
+    "package (job offer, technical interviews, onboarding plan, cultural & team "
+    "fit), or confirms a prior offer to do so.\n"
+    "- IMPROVE: asks to change, refine, shorten, expand, or fix an EXISTING "
+    "document already in the workspace.\n"
+    "- WEB_SEARCH: asks to look something up on the web or find current external "
+    "information about a topic, company, salary, or technology.\n"
+    "- CANDIDATES: asks to find, match, rank, or show candidates from the internal "
+    "CV database for a role.\n"
+    "- CHAT: anything else (greetings, questions, discussion, or just describing a "
+    "role without asking for one of the actions above).\n"
+    "Having an active project does NOT by itself mean GENERATE. Reply with ONLY "
+    "the single label.")
+
+# Editable in the Agents tab as the preset job2cool_converse (seeded in main.py).
+CONVERSE_SYSTEM = (
+    "You are Diana, a warm, knowledgeable HR Assistant having a normal "
+    "conversation with a recruiter. Converse naturally: greet back, answer "
+    "questions, discuss roles and hiring, give practical advice, and ask "
+    "clarifying questions. If asked who you are, say \"I'm Diana, your HR "
+    "Assistant\".\n\n"
+    "This turn you are ONLY conversing. Do NOT write a job offer, technical "
+    "interviews, an onboarding plan, a cultural-fit assessment, or any deliverable "
+    "document, and do not output document sections. When it helps, briefly remind "
+    "the recruiter you can prepare those documents, search the web, or find "
+    "matching candidates when they ask.\n\n"
+    "First reason privately inside ONE <think>...</think> block (two to four short "
+    "headed phases), then write a brief, plain-prose reply (one to four "
+    "sentences). Do not use em-dashes. No <voice> tag in your reply.")
+
 
 async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]:
     """Which deliverables the request wants — classified by the LLM so phrasing
@@ -260,6 +352,7 @@ async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]
     an explicit 'full package' maps to all four. Robust to substrings that broke
     the old keyword heuristic (e.g. 'full-stack'). Falls back to all on error."""
     keys = [s["key"] for s in SECTIONS]
+    full = keys + ["candidates"]
     try:
         out = await services.llm_complete(
             client, services.GEMMA_MODEL,
@@ -270,21 +363,24 @@ async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]
               "- offer: a job offer / job description / job posting\n"
               "- interview: technical interview questions or plan\n"
               "- onboarding: an onboarding plan (30-60-90)\n"
-              "- culture: a cultural & team-fit assessment\n\n"
+              "- culture: a cultural & team-fit assessment\n"
+              "- candidates: best-fit candidates matched from the CV database\n\n"
               "Which deliverable(s) does the request below ask for? If it asks "
               "for a full/complete hiring package, OR is a general hiring need "
               "that does not name a specific deliverable, answer exactly: all\n"
               "Otherwise answer ONLY the matching keyword(s), comma-separated "
-              "(e.g. 'offer' or 'offer, interview'). No other words.\n\n"
+              "(e.g. 'offer' or 'offer, candidates'). No other words.\n\n"
               f"Request: {need}\n\nAnswer:"}],
             max_tokens=24, temperature=0.0, think=False, timeout=30)
         out = (out or "").strip().lower()
         if "all" in out:
-            return keys
+            return full
         hit = [k for k in keys if k in out]
-        return hit or keys
+        if "candidate" in out:
+            hit.append("candidates")
+        return hit or full
     except Exception:
-        return keys
+        return full
 
 
 async def _role_label(client: httpx.AsyncClient, need: str) -> str:
@@ -361,6 +457,223 @@ async def _resolve_need(client: httpx.AsyncClient, history: list[dict],
         return message
 
 
+def _empty_meta(message: str, prefix: str = "chat") -> str:
+    """Meta event for a non-generating turn (no deliverables)."""
+    return _sse({"meta": {
+        "turn_id": hashlib.sha1((f"{prefix}:" + (message or "")).encode()).hexdigest()[:12],
+        "buffers": [], "deliverables": [], "role": "", "domain": "",
+        "retrieved_chunks": 0, "retrieved_entities": 0, "retrieved_edges": 0,
+        "avg_similarity": 0.0}})
+
+
+async def _route(client: httpx.AsyncClient, history: list[dict], message: str,
+                 project_name: str = "") -> str:
+    """Multi-intent router (the job2cool_router preset). Returns one of:
+    generate | improve | web_search | match_candidates | converse. Fails soft to
+    converse, so a classification error never auto-generates."""
+    turns = [h for h in (history or []) if isinstance(h, dict) and h.get("content")]
+    convo = "\n".join(
+        f"{'User' if m.get('role') == 'user' else 'Diana'}: {_strip_blocks(m.get('content'))[:300]}"
+        for m in turns[-6:] if _strip_blocks(m.get("content")))
+    parts: list[str] = []
+    if project_name:
+        parts.append(f"(Active project / likely role: {project_name})")
+    if convo:
+        parts.append("Conversation so far:\n" + convo)
+    parts.append("Latest user message: " + (message or ""))
+    try:
+        sys = await services.get_agent_prompt(client, "job2cool_router", ROUTER_SYSTEM)
+        out = await services.llm_complete(
+            client, services.GEMMA_MODEL,
+            [{"role": "system", "content": sys},
+             {"role": "user", "content": "\n\n".join(parts)}],
+            max_tokens=4, temperature=0.0, think=False, timeout=30)
+        lbl = (out or "").strip().upper()
+    except Exception:
+        return "converse"
+    if lbl.startswith("GEN"):
+        return "generate"
+    if lbl.startswith("IMP"):
+        return "improve"
+    if lbl.startswith("WEB"):
+        return "web_search"
+    if lbl.startswith("CAND"):
+        return "match_candidates"
+    return "converse"
+
+
+async def _converse(client: httpx.AsyncClient, message: str, history: list[dict],
+                    project_name: str = "", user_name: str = "") -> AsyncIterator[str]:
+    """Stream a conversational Diana reply (the job2cool_converse preset) — answers,
+    discusses, asks clarifying questions — with NO document generation. Used when
+    the turn is not a generation request."""
+    turns = [h for h in (history or []) if isinstance(h, dict) and h.get("content")]
+    convo_msgs: list[dict] = []
+    for m in turns[-8:]:
+        role = "user" if m.get("role") == "user" else "assistant"
+        txt = _strip_blocks(m.get("content"))
+        if txt:
+            convo_msgs.append({"role": role, "content": txt[:600]})
+    ctx: list[str] = []
+    if user_name:
+        ctx.append(f"You are talking with {user_name}.")
+    if project_name:
+        ctx.append(f"The active project is about hiring a {project_name}; keep it in "
+                   f"mind, but only build a document if explicitly asked.")
+    base = await services.get_agent_prompt(client, "job2cool_converse", CONVERSE_SYSTEM)
+    sys = base + (("\n\n" + " ".join(ctx)) if ctx else "")
+    msgs = [{"role": "system", "content": sys}] + convo_msgs + [{"role": "user", "content": message}]
+    parts: list[str] = []
+    try:
+        async for delta in services.llm_stream(client, services.GEMMA_MODEL, msgs,
+                                                max_tokens=CONVERSE_MAX, temperature=0.6):
+            parts.append(delta)
+            yield _sse({"delta": delta})
+    except Exception:
+        pass
+    reply = _strip_blocks("".join(parts))
+    if not reply:
+        reply = "I'm here to help with your hiring. What would you like to talk through?"
+        yield _sse({"delta": reply})
+    voice = re.split(r"(?<=[.!?])\s", reply.strip())[0][:180] if reply.strip() else "I'm here to help."
+    yield _sse({"delta": f"\n\n<voice>{voice}</voice>"})
+    yield _empty_meta(message)
+
+
+async def _improve(client: httpx.AsyncClient, message: str, history: list[dict],
+                   project_name: str = "", user_name: str = "") -> AsyncIterator[str]:
+    """Refine an EXISTING workspace document per the user's instruction, writing the
+    revision back to its buffer (so the workspace updates live)."""
+    docs = [(ev.get("doc") or {}) for ev in buffers.snapshot()]
+    docs = [d for d in docs if d.get("name") and d.get("content")]
+    # The "(MA2)" buffer is a behind-the-scenes A/B draft, not a primary document to
+    # edit — hide it from improve unless the user explicitly names MA2, so "the job
+    # offer" targets "Job Offer", not "Job Offer (MA2)".
+    if "ma2" not in (message or "").lower():
+        primary = [d for d in docs if "(ma2)" not in d["name"].lower()]
+        if primary:
+            docs = primary
+    if not docs:
+        msg = ("There isn't a document open to improve yet. Ask me to create a job "
+               "offer, technical interviews, an onboarding plan, or a culture-fit "
+               "assessment first, then I can refine it.")
+        yield _sse({"delta": msg})
+        yield _sse({"delta": f"\n\n<voice>{msg}</voice>"})
+        yield _empty_meta(message, "improve")
+        return
+    if len(docs) == 1:
+        target = docs[0]
+    else:
+        names = [d["name"] for d in docs]
+        try:
+            pick = await services.llm_complete(
+                client, services.GEMMA_MODEL,
+                [{"role": "user", "content":
+                  f"Open documents: {', '.join(names)}.\nUser request: {message}\n"
+                  f"Which ONE document should be edited? Reply with ONLY its exact "
+                  f"name from the list."}],
+                max_tokens=16, temperature=0.0, think=False, timeout=30)
+            pick = (pick or "").strip().strip('"')
+        except Exception:
+            pick = ""
+        target = next((d for d in docs if d["name"].lower() == pick.lower()), docs[0])
+    sysp = await services.get_agent_prompt(client, "job2cool_composer", SECTION_SYSTEM)
+    parts: list[str] = []
+    try:
+        async for delta in services.llm_stream(
+                client, services.GEMMA_MODEL,
+                [{"role": "system", "content": sysp},
+                 {"role": "user", "content":
+                  f"Revise the following {target['name']} exactly as the instruction "
+                  f"asks. Keep the existing Markdown structure and any citation tags; "
+                  f"change only what the instruction requires. Output ONLY the revised "
+                  f"document.\n\nINSTRUCTION: {message}\n\nCURRENT {target['name']}:\n"
+                  f"{target['content']}"}],
+                max_tokens=SECTION_MAX, temperature=0.4, timeout=300):
+            parts.append(delta)
+    except Exception:
+        pass
+    revised = services._strip_think("".join(parts)).strip()
+    if revised:
+        buffers.replace(target["buffer_id"], revised)
+        note = f"Done — I've updated the **{target['name']}** in your workspace."
+    else:
+        note = (f"I wasn't able to revise the {target['name']} just now. Could you "
+                f"rephrase what you'd like changed?")
+    yield _sse({"delta": note})
+    yield _sse({"delta": f"\n\n<voice>I've updated the {target['name'].lower()} for you.</voice>"})
+    yield _sse({"meta": {
+        "turn_id": hashlib.sha1(("improve:" + (message or "")).encode()).hexdigest()[:12],
+        "buffers": [], "deliverables": [target["name"]] if revised else [],
+        "role": "", "domain": "", "retrieved_chunks": 0, "retrieved_entities": 0,
+        "retrieved_edges": 0, "avg_similarity": 0.0}})
+
+
+async def _web_search(client: httpx.AsyncClient, message: str, history: list[dict],
+                      project_name: str = "", user_name: str = "") -> AsyncIterator[str]:
+    """Answer using the shared web_search tool (mcp-service -> websearch_server)."""
+    results = await services.web_search(client, (message or "").strip(), max_results=5)
+    if not results:
+        msg = ("I couldn't reach web search just now. Want me to try again, or help "
+               "another way?")
+        yield _sse({"delta": msg})
+        yield _sse({"delta": f"\n\n<voice>{msg}</voice>"})
+        yield _empty_meta(message, "web")
+        return
+    src = "\n".join(
+        f"- {r.get('title', '')}: {r.get('snippet', '')} ({r.get('url', '')})"
+        for r in results[:5])
+    base = await services.get_agent_prompt(client, "job2cool_converse", CONVERSE_SYSTEM)
+    sysp = (base + "\n\nAnswer the user's question using the web results below. Be "
+            "concise and mention the key sources by name. Do not output a document.")
+    parts: list[str] = []
+    try:
+        async for delta in services.llm_stream(
+                client, services.GEMMA_MODEL,
+                [{"role": "system", "content": sysp},
+                 {"role": "user", "content": f"Question: {message}\n\nWeb results:\n{src}"}],
+                max_tokens=CONVERSE_MAX, temperature=0.4):
+            parts.append(delta)
+            yield _sse({"delta": delta})
+    except Exception:
+        pass
+    if not _strip_blocks("".join(parts)):
+        yield _sse({"delta": "Here's what I found:\n" + src})
+    yield _sse({"delta": "\n\n<voice>Here's what I found on the web.</voice>"})
+    yield _empty_meta(message, "web")
+
+
+async def _match_candidates(client: httpx.AsyncClient, message: str, history: list[dict],
+                            project_name: str = "", user_name: str = "") -> AsyncIterator[str]:
+    """Match best-fit internal candidates (vector + rerank over the 210k-CV corpus)
+    and write them as a **Candidates** document in the workspace — one fresh tab, like
+    the composed deliverables. Ranks against the open Job Offer (the job description, the
+    richest signal) when one exists, else the role title + the request."""
+    docs = _docs_map(buffers.snapshot())
+    query, basis = _candidate_query(docs, project_name, message)
+    cands = await services.search_candidates(client, query, top_k=3)
+    body = f"# {CANDIDATES_TITLE}\n\n{_candidates_doc_body(cands, basis)}"
+    # Always create a fresh buffer (= a new tab that opens and focuses), exactly
+    # like the composed deliverables — documents accumulate, and this avoids a
+    # silent no-op when an orphaned same-named buffer lingers in the global store.
+    bid = buffers.create(name=CANDIDATES_TITLE, initial_content=body).buffer_id
+    if cands:
+        note = (f"Done — I've put the top {len(cands)} **{CANDIDATES_TITLE}** "
+                f"(ranked against {basis}) in your workspace.")
+        voice = "I've added the top candidates to your workspace."
+    else:
+        note = (f"I matched against {basis} but found no strong candidates in our "
+                "pool. Tell me the role and a few key skills and I'll search again.")
+        voice = "I couldn't find strong candidates just now."
+    yield _sse({"delta": note})
+    yield _sse({"delta": f"\n\n<voice>{voice}</voice>"})
+    yield _sse({"meta": {
+        "turn_id": hashlib.sha1(("cand:" + (message or "")).encode()).hexdigest()[:12],
+        "buffers": [bid], "deliverables": [CANDIDATES_TITLE] if cands else [],
+        "role": "", "domain": "", "retrieved_chunks": 0, "retrieved_entities": 0,
+        "retrieved_edges": 0, "avg_similarity": 0.0}})
+
+
 async def run_chat(message: str, history: list[dict],
                    config: dict | None = None) -> AsyncIterator[str]:
     """Yield cv-contract SSE for one HR-pack turn."""
@@ -381,7 +694,19 @@ async def run_chat(message: str, history: list[dict],
         return
 
     async with httpx.AsyncClient() as client:
-        # 0) Resolve the message against the conversation (memory/context) ---
+        # 0) Intent router: Diana converses by default and only acts when asked —
+        #    generate a doc, improve an open doc, search the web, or match
+        #    candidates. Everything else is a normal conversation.
+        intent = await _route(client, history, message, project_name)
+        if intent != "generate":
+            handler = {"improve": _improve, "web_search": _web_search,
+                       "match_candidates": _match_candidates}.get(intent, _converse)
+            async for ev in handler(client, message, history, project_name, user_name):
+                yield ev
+            yield "data: [DONE]\n\n"
+            return
+
+        # 1) Resolve the message against the conversation (memory/context) ---
         need = await _resolve_need(client, history, need, project_name)
 
         # 1) Role + domain + requested deliverables --------------------------
@@ -409,9 +734,13 @@ async def run_chat(message: str, history: list[dict],
         domain = await services.resolve_onboard_domain(client, need)
         domains = [domain]
         requested = await _requested_sections(client, need)
-        secs = [_SECTION_BY_KEY[k] for k in requested]
-        names = ", ".join(s["title"] for s in secs)
-        offer_both = ("offer" in requested) and use_ma2 and use_gemma_offer
+        want_candidates = "candidates" in requested
+        doc_keys = [k for k in requested if k in _SECTION_BY_KEY]
+        secs = [_SECTION_BY_KEY[k] for k in doc_keys]
+        deliv_titles = ([s["title"] for s in secs]
+                        + ([CANDIDATES_TITLE] if want_candidates else []))
+        names = ", ".join(deliv_titles)
+        offer_both = ("offer" in doc_keys) and use_ma2 and use_gemma_offer
 
         # Buffers (= tabs) are created lazily, one per requested deliverable,
         # right before that deliverable generates — so tabs appear and focus
@@ -448,8 +777,8 @@ async def run_chat(message: str, history: list[dict],
 
         # Brief spoken summary — the avatar speaks the <voice> only, not the
         # whole answer (cv pattern). Stripped from the visible text by cv-chat.
-        if len(secs) == 1:
-            voice = (f"Sure. I'm preparing the {secs[0]['title'].lower()} for a "
+        if len(deliv_titles) == 1:
+            voice = (f"Sure. I'm preparing the {deliv_titles[0].lower()} for a "
                      f"{role} now. I'll write it into the document for you.")
         else:
             voice = (f"Sure. I'm preparing the {role} hiring package now: {names}. "
@@ -461,7 +790,10 @@ async def run_chat(message: str, history: list[dict],
         # Live "Generation Progress" checklist in the chat (mirrors the workspace
         # stepper). We stream a structured snapshot instead of inline ▸/✓ text so
         # the widget can render a real checklist that updates per deliverable.
+        # Candidates is the trailing step when requested (matched, not composed).
         prog = [{"title": s["title"], "state": "pending"} for s in secs]
+        if want_candidates:
+            prog.append({"title": CANDIDATES_TITLE, "state": "pending"})
         yield _sse({"progress": {"steps": prog}})
 
         # 3) Generate requested deliverables ---------------------------------
@@ -560,6 +892,27 @@ async def run_chat(message: str, history: list[dict],
             prog[i - 1]["state"] = "done"
             yield _sse({"progress": {"steps": prog}})
 
+        # 3b) Candidates — matched from the CV pool as its own Workspace document,
+        #     ranked against the Job Offer we just wrote (richest signal) else the
+        #     resolved need. The trailing step of the package when requested.
+        cand_buf_id = None
+        if want_candidates:
+            ci = len(prog) - 1
+            prog[ci]["state"] = "active"
+            cbuf = buffers.create(
+                name=CANDIDATES_TITLE,
+                initial_content=f"# {CANDIDATES_TITLE}\n\n_Matching candidates…_")
+            yield _sse({"progress": {"steps": prog}})
+            cq, cbasis = _candidate_query(_docs_map(buffers.snapshot()),
+                                          project_name, need)
+            cands = await services.search_candidates(client, cq, top_k=3)
+            cbody = f"# {CANDIDATES_TITLE}\n\n{_candidates_doc_body(cands, cbasis)}"
+            buffers.replace(cbuf.buffer_id, cbody)
+            cand_buf_id = cbuf.buffer_id
+            doc_bodies.append(cbody)
+            prog[ci]["state"] = "done"
+            yield _sse({"progress": {"steps": prog}})
+
         # 4) Closing chat note (grounding + gaps + nudge) + turn cache --------
         turn_id = hashlib.sha1((need + str(total_chunks)).encode()).hexdigest()[:12]
         remaining = [s["title"] for s in SECTIONS if s["key"] not in set(requested)]
@@ -585,8 +938,9 @@ async def run_chat(message: str, history: list[dict],
         cited_edges = len(set(re.findall(r"\[R:([^\]]+)\]", _docs)))
 
         yield _sse({"meta": {"turn_id": turn_id,
-                             "buffers": [b.buffer_id for b in section_bufs.values()],
-                             "deliverables": [s["title"] for s in secs],
+                             "buffers": ([b.buffer_id for b in section_bufs.values()]
+                                         + ([cand_buf_id] if cand_buf_id else [])),
+                             "deliverables": deliv_titles,
                              "offer_ma2": bool(offer_both),
                              "role": role, "domain": domain,
                              # citable chunk pool = dense vector chunks + graph

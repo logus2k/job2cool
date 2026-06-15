@@ -118,6 +118,8 @@ async def _seed_job2cool_agents():
         await services.ensure_agent_preset(client, "job2cool_orchestrator", orchestrator.INTRO_SYSTEM)
         await services.ensure_agent_preset(client, "job2cool_composer", orchestrator.SECTION_SYSTEM)
         await services.ensure_agent_preset(client, "job2cool_judge", JUDGE_SYSTEM)
+        await services.ensure_agent_preset(client, "job2cool_router", orchestrator.ROUTER_SYSTEM)
+        await services.ensure_agent_preset(client, "job2cool_converse", orchestrator.CONVERSE_SYSTEM)
 
 
 @app.on_event("startup")
@@ -425,6 +427,71 @@ async def chats_delete(tid: str, request: Request):
     return JSONResponse({"deleted": True})
 
 
+# --- Company Profile (one shared record: logo + header/footer for exports) ----
+# A single company-wide record reused by every generated document at export time
+# (the browser print path injects it as a repeating page header/footer). Readable
+# by any authenticated user; editable by an admin allowlist (JOB2COOL_ADMIN_EMAILS,
+# comma-separated) — if that env is unset, any authenticated user may edit.
+_PROFILE_PATH = os.path.join(JOB2COOL_DATA_DIR, "company_profile.json")
+_ADMIN_EMAILS = {e for e in re.split(r"[,\s]+",
+                 os.getenv("JOB2COOL_ADMIN_EMAILS", "").lower()) if e}
+_DEFAULT_PROFILE = {"logo": "", "header": "", "footer": ""}
+# Cap the embedded logo: it is inlined as a data-URI into every printed page, so
+# keep it small. ~2.7M base64 chars ≈ 2MB decoded.
+_LOGO_MAX = 2_700_000
+
+
+def _is_company_admin(request: Request) -> bool:
+    email = _user_email(request)
+    if not email:
+        return False
+    return (not _ADMIN_EMAILS) or (email in _ADMIN_EMAILS)
+
+
+def _load_profile() -> dict:
+    try:
+        rec = json.load(open(_PROFILE_PATH))
+        return {**_DEFAULT_PROFILE, **(rec if isinstance(rec, dict) else {})}
+    except Exception:  # noqa: BLE001 — missing/corrupt → defaults
+        return dict(_DEFAULT_PROFILE)
+
+
+class CompanyProfileIn(BaseModel):
+    logo: str = ""      # data-URI (data:image/*;base64,...) or ""
+    header: str = ""
+    footer: str = ""
+
+
+@app.get("/api/job2cool/company-profile")
+async def company_profile_get(request: Request):
+    rec = _load_profile()
+    return JSONResponse({**rec, "can_edit": _is_company_admin(request)},
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.put("/api/job2cool/company-profile")
+async def company_profile_put(body: CompanyProfileIn, request: Request):
+    if not _is_company_admin(request):
+        return JSONResponse(
+            {"error": "forbidden — only an administrator can edit the company profile"},
+            status_code=403)
+    logo = (body.logo or "").strip()
+    if logo and not re.match(r"^data:image/[a-z.+-]+;base64,", logo, re.I):
+        return JSONResponse({"error": "logo must be an image data-URI"}, status_code=400)
+    if len(logo) > _LOGO_MAX:
+        return JSONResponse({"error": "logo image too large (max ~2MB)"}, status_code=400)
+    rec = {"logo": logo,
+           "header": (body.header or "")[:500],
+           "footer": (body.footer or "")[:500],
+           "updated_by": _user_email(request), "updated_at": time.time()}
+    os.makedirs(JOB2COOL_DATA_DIR, exist_ok=True)
+    tmp = _PROFILE_PATH + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(rec, f, ensure_ascii=False)
+    os.replace(tmp, _PROFILE_PATH)
+    return JSONResponse({"ok": True})
+
+
 # --- Assistant (cv contract) + live-document buffers (owned by job2cool) ------
 class ChatRequest(BaseModel):
     message: str = ""
@@ -480,6 +547,9 @@ async def citation(tag: str):
     page_no + bbox + regions so the viewer can open the PDF and highlight it."""
     raw = tag.strip().strip("[]").strip()
     hx = raw.split(":", 1)[1] if raw.startswith("markdown_chunk:") else raw
+    memo = cache.get_cite(hx)
+    if memo is not None:
+        return JSONResponse(memo)
     cached = cache.get_chunk(hx) or {}
 
     turn = cache.last_turn() or {}
@@ -487,6 +557,14 @@ async def citation(tag: str):
     region_hit = None
     async with httpx.AsyncClient() as client:
         region_hit = await services.resolve_chunk_regions(client, hx, domains)
+        # Dense-corpus chunks use a different id scheme than the graph, so they
+        # miss the hex lookup. Cross-walk by content to recover PDF regions so
+        # the citation opens the PDF instead of showing text only.
+        if (not region_hit or not region_hit.get("regions")) \
+                and cached.get("source_path") and cached.get("text"):
+            cw = await services.resolve_chunk_via_content(client, cached, domains)
+            if cw:
+                region_hit = cw
 
     src = (region_hit or {}).get("source_path") or cached.get("source_path") or ""
     section = ((region_hit or {}).get("section_path")
@@ -508,13 +586,18 @@ async def citation(tag: str):
         fields.append(["Section", section])
     if regions:
         fields.append(["Page", str(regions[0].get("page_no", ""))])
-    return JSONResponse({
+    payload = {
         "kind": "chunk", "title": "Source passage", "fields": fields,
         "body": body, "section_path": section,
         "source_path": src, "domain_id": domain_id,
         "page_no": (regions[0].get("page_no") if regions else None),
         "regions": regions,
-    })
+    }
+    # Memoize resolved citations that found a PDF region so a repeat click is
+    # instant (skips the graph lookup + content cross-walk).
+    if regions:
+        cache.put_cite(hx, payload)
+    return JSONResponse(payload)
 
 
 class GraphTraceRequest(BaseModel):

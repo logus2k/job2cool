@@ -16,9 +16,27 @@ import hashlib
 _CHUNK_MAX = 2048
 _chunks: dict[str, dict] = {}
 
+# Resolved citation payloads (hex -> /api/citation response), so a repeat click
+# skips the graph lookup / content cross-walk.
+_CITE_MAX = 1024
+_cites: dict[str, dict] = {}
+
 _TURN_MAX = 256
 _turns: dict[str, dict] = {}
 _last_turn_id: list[str | None] = [None]
+
+
+def put_cite(hx: str, payload: dict) -> None:
+    if not hx:
+        return
+    _cites[hx] = payload
+    if len(_cites) > _CITE_MAX:
+        for k in list(_cites)[: len(_cites) - _CITE_MAX]:
+            _cites.pop(k, None)
+
+
+def get_cite(hx: str) -> dict | None:
+    return _cites.get(hx)
 
 
 def chunk_hex(chunk_id: str) -> str:

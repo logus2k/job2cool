@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any, AsyncIterator
 from urllib.parse import quote
@@ -24,6 +25,9 @@ import httpx
 AGENT_SERVER = os.getenv("AGENT_SERVER_URL", "http://agent_server:7701")
 NOTED_RAG    = os.getenv("NOTED_RAG_URL",    "http://noted-rag:8200")
 NOTED_GRAPH  = os.getenv("NOTED_GRAPH_URL",  "http://noted-graph:5523")
+MCP_SERVICE  = os.getenv("MCP_SERVICE_URL",  "http://mcp-service:8080").rstrip("/")
+MCP_APP      = os.getenv("MCP_APP", "job2cool")
+CANDIDATES_COLLECTION = os.getenv("CANDIDATES_COLLECTION", "jobs_candidates__corpus")
 
 GEMMA_MODEL = os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4")
 DPO_MODEL   = os.getenv("JOB2COOL_DPO_MODEL",   "ma2-360m-dpo-b01")
@@ -128,6 +132,61 @@ def _strip_think(text: str) -> str:
     return t.strip()
 
 
+# --- tools: web search + candidate matching ----------------------------------
+async def web_search(client: httpx.AsyncClient, query: str,
+                     max_results: int = 5) -> list[dict]:
+    """Call the shared web_search MCP tool (mcp-service -> websearch_server).
+    Returns [{title, url, snippet}], or [] on failure (invoke is open/unauthed)."""
+    try:
+        r = await client.post(f"{MCP_SERVICE}/tools/web_search/invoke",
+                              params={"app": MCP_APP},
+                              json={"args": {"query": query, "max_results": max_results}},
+                              timeout=90)
+        if r.status_code == 200:
+            return ((r.json() or {}).get("result") or {}).get("results") or []
+    except Exception:  # noqa: BLE001
+        pass
+    return []
+
+
+async def search_candidates(client: httpx.AsyncClient, query: str, top_k: int = 3,
+                            where: dict | None = None) -> list[dict]:
+    """Semantic search over the candidate CV corpus (vector + rerank), enriched
+    with structured metadata by id. Returns up to top_k candidate dicts."""
+    try:
+        body: dict = {"collection": CANDIDATES_COLLECTION, "query": query,
+                      "top_k": min(max(top_k, 1), 20), "rerank_min_score": 0.0}
+        if where:
+            body["where"] = where
+        r = await client.post(f"{NOTED_RAG}/search", json=body, timeout=60)
+        chunks = (r.json().get("chunks") or []) if r.status_code == 200 else []
+    except Exception:  # noqa: BLE001
+        return []
+    ids = [c.get("id") for c in chunks if c.get("id")]
+    meta_by_id: dict = {}
+    if ids:
+        try:
+            rr = await client.post(f"{NOTED_RAG}/list_records",
+                                   json={"collection": CANDIDATES_COLLECTION, "ids": ids,
+                                         "include_text": True}, timeout=30)
+            for rec in (rr.json().get("records") or []):
+                meta_by_id[rec.get("id")] = rec.get("metadata") or {}
+        except Exception:  # noqa: BLE001
+            pass
+    out: list[dict] = []
+    for c in chunks[:top_k]:
+        m = meta_by_id.get(c.get("id"), {})
+        out.append({
+            "position": m.get("position") or "",
+            "primary_keyword": m.get("primary_keyword") or "",
+            "english_level": m.get("english_level") or "",
+            "experience_years": m.get("experience_years"),
+            "score": round(float(c.get("score") or 0.0), 3),
+            "snippet": (c.get("text") or "").replace("\n", " ")[:240],
+        })
+    return out
+
+
 # --- RAG: query rewrite + multi-domain vector + graph ------------------------
 async def formulate_query(client: httpx.AsyncClient, text: str) -> str:
     """LLM-rewrite a need/section topic into a focused retrieval phrase
@@ -178,6 +237,56 @@ async def resolve_chunk_regions(client: httpx.AsyncClient, hx: str,
                 return j
         except Exception:
             continue
+    return None
+
+
+def _toks(s: str) -> set[str]:
+    return {w for w in re.split(r"[^0-9a-z]+", (s or "").lower()) if len(w) > 3}
+
+
+async def resolve_chunk_via_content(client: httpx.AsyncClient, chunk: dict,
+                                    domains: list[str]) -> dict | None:
+    """Cross-walk a dense-corpus chunk to the graph's PDF regions by CONTENT.
+
+    The dense `<id>__corpus` and the knowledge-graph use independent chunk-id
+    schemes (path-style `file.pdf#section#n` vs `markdown_chunk:<hex>`), so a
+    dense citation never resolves via the hex lookup. Here we instead retrieve in
+    the chunk's own domain, keep excerpts from the SAME document, pick the best
+    section/text match, and resolve THAT graph chunk's hex to page + bbox — so a
+    dense citation opens the PDF at the cited passage instead of falling back to
+    text. None when no same-document graph chunk exists (e.g. a graph-less domain)."""
+    src = chunk.get("source_path") or ""
+    text = chunk.get("text") or ""
+    if not src or not text:
+        return None
+    section = (chunk.get("section_path") or "").strip().lower()
+    kb = chunk.get("kb_id")
+    order = ([kb] + [d for d in domains if d != kb]) if kb else list(domains)
+    dt = _toks(text)
+    for d in order:
+        if not d:
+            continue
+        g = await graph_retrieve(client, text[:300], d)
+        same = [x for x in (g.get("chunk_excerpts") or [])
+                if (x.get("doc_path") or "") == src]
+        if not same:
+            continue
+
+        def _score(x: dict) -> tuple:
+            xs = (x.get("section_path") or "").strip().lower()
+            sec = 1 if (section and xs and
+                        (section == xs or section in xs or xs in section)) else 0
+            xt = _toks(x.get("text") or "")
+            ov = len(dt & xt) / (len(dt | xt) or 1)
+            return (sec, ov)
+
+        best = max(same, key=_score)
+        tag = best.get("id") or ""
+        hx2 = tag.split(":", 1)[1] if tag.startswith("markdown_chunk:") else tag
+        hit = await resolve_chunk_regions(client, hx2, [d])
+        if hit and hit.get("regions"):
+            hit.setdefault("source_path", src)
+            return hit
     return None
 
 
