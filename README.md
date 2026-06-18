@@ -1,4 +1,4 @@
-# job2cool — Tour Hiring AI Assistant
+# job2cool — Your Hiring AI Assistant
 
 job2cool turns a plain-language hiring need into a complete, RAG-grounded hiring
 package, written live into a workspace by a chat assistant named **Diana**. From a
