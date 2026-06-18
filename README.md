@@ -1,9 +1,4 @@
-# job2cool — "Diana", the HR Assistant
-
-> ## 🟢 Live demo
-> **job2cool is deployed and available for testing at <https://logus2k.com/job2cool>.**
-> You can try it there directly — no local setup required. The instructions below are
-> for reviewers who want to replicate the full stack locally.
+# job2cool — Tour Hiring AI Assistant
 
 job2cool turns a plain-language hiring need into a complete, RAG-grounded hiring
 package, written live into a workspace by a chat assistant named **Diana**. From a
