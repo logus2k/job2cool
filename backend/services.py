@@ -29,10 +29,45 @@ MCP_SERVICE  = os.getenv("MCP_SERVICE_URL",  "http://mcp-service:8080").rstrip("
 MCP_APP      = os.getenv("MCP_APP", "job2cool")
 CANDIDATES_COLLECTION = os.getenv("CANDIDATES_COLLECTION", "jobs_candidates__corpus")
 
-GEMMA_MODEL = os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4")
 DPO_MODEL   = os.getenv("JOB2COOL_DPO_MODEL",   "ma2-360m-dpo-b01")
 # Reuse cv's query-rewriter preset by default (it already exists on agent_server).
 QUERY_REWRITER = os.getenv("JOB2COOL_QUERY_REWRITER", "cv_query_rewriter")
+
+# job2cool stays MODEL-AGNOSTIC, like CV and noted: rather than hardcoding a
+# model id (which breaks the moment the active model changes — e.g. gemma-4 →
+# gemma-4-e2b), it resolves whatever chat model is ACTIVE in agent_server.
+# CV/noted achieve this by calling agent_server with an AGENT name (the agent is
+# model-agnostic); job2cool sends custom system prompts so it needs the model
+# id, but it discovers the active one via /v1/models instead of coupling to it.
+# JOB2COOL_GEMMA_MODEL is only a last-resort fallback if discovery fails.
+_FALLBACK_MODEL = os.getenv("JOB2COOL_GEMMA_MODEL", "")
+_active_model: str | None = None
+
+
+async def active_model(client: httpx.AsyncClient) -> str:
+    """Currently-active agent_server chat model id (cached, self-healing)."""
+    global _active_model
+    if _active_model:
+        return _active_model
+    try:
+        r = await client.get(f"{AGENT_SERVER}/v1/models", timeout=5)
+        r.raise_for_status()
+        for m in (r.json().get("data") or []):
+            if m.get("active") and (m.get("kind") or "model") != "agent":
+                _active_model = m.get("id")
+                break
+    except Exception:  # noqa: BLE001
+        pass
+    if not _active_model:
+        _active_model = _FALLBACK_MODEL or "gemma-4-e2b"
+    return _active_model
+
+
+def invalidate_active_model() -> None:
+    """Drop the cached active model so the next call re-resolves. Called on an
+    LLM error, so an admin model switch self-heals after one failed turn."""
+    global _active_model
+    _active_model = None
 
 
 # --- editable agent prompts (job2cool_* presets on agent_server) -------------
@@ -88,9 +123,13 @@ async def llm_complete(client: httpx.AsyncClient, model: str,
                   "max_tokens": max_tokens, "temperature": temperature}
     if not think:
         body["chat_template_kwargs"] = {"enable_thinking": False}
-    r = await client.post(
-        f"{AGENT_SERVER}/v1/chat/completions", json=body, timeout=timeout)
-    r.raise_for_status()
+    try:
+        r = await client.post(
+            f"{AGENT_SERVER}/v1/chat/completions", json=body, timeout=timeout)
+        r.raise_for_status()
+    except Exception:
+        invalidate_active_model()  # a stale model id self-heals on the next call
+        raise
     data = r.json()
     content = ((data.get("choices") or [{}])[0]
                .get("message", {}).get("content", "")) or ""
@@ -109,7 +148,11 @@ async def llm_stream(client: httpx.AsyncClient, model: str,
               "max_tokens": max_tokens, "temperature": temperature},
         timeout=timeout,
     ) as resp:
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except Exception:
+            invalidate_active_model()  # stale model id self-heals next call
+            raise
         async for line in resp.aiter_lines():
             if not line or not line.startswith("data:"):
                 continue
@@ -340,7 +383,7 @@ async def classify_role_family(client: httpx.AsyncClient, need: str) -> str:
     options = ", ".join(ONBOARD_FAMILIES)
     try:
         out = await llm_complete(
-            client, GEMMA_MODEL,
+            client, await active_model(client),
             [{"role": "user", "content":
               f"Classify this hiring need into exactly ONE of these role "
               f"families: {options}. Reply with ONLY the keyword.\n\n{need}"}],

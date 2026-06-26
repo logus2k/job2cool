@@ -45,8 +45,9 @@ import services
 import socketio_relay
 
 # Judge with gemma-4 + explicit JSON (the cv_rag_judge preset's grammar 400s here).
-JUDGE_MODEL = os.getenv("JOB2COOL_JUDGE",
-                        os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4"))
+# Empty => use whatever model is ACTIVE in agent_server (resolved at call time).
+# Set JOB2COOL_JUDGE only to pin the judge to a specific model.
+JUDGE_MODEL = os.getenv("JOB2COOL_JUDGE", "")
 JUDGE_SYSTEM = (
     "You are a strict, fair judge of an HR assistant's output. You receive: "
     "USER QUERY (what the user asked); SOURCE MATERIAL (the full pool of approved "
@@ -86,8 +87,8 @@ MCP_SERVICE     = os.getenv("MCP_SERVICE_URL", "http://mcp-service:8080").rstrip
 MCP_ADMIN_TOKEN = os.getenv("MCP_ADMIN_TOKEN", "")
 MCP_APP         = os.getenv("MCP_APP", "job2cool")
 
-# Models (both co-resident on agent_server, selected per request by `model`).
-GEMMA_MODEL = os.getenv("JOB2COOL_GEMMA_MODEL", "gemma-4")
+# The chat model is whatever is ACTIVE in agent_server (resolved via
+# services.active_model); job2cool no longer pins a model id. DPO is its own.
 DPO_MODEL   = os.getenv("JOB2COOL_DPO_MODEL",   "ma2-360m-dpo-b01")
 
 # Default KB domains the agent fans out over (multi-domain RAG, like noted).
@@ -157,11 +158,15 @@ async def health():
     ]
     async with httpx.AsyncClient() as client:
         results = await asyncio.gather(*(_probe(client, n, u) for n, u in checks))
+        try:
+            active = await services.active_model(client)
+        except Exception:
+            active = "(unresolved)"
     deps_ok = all(r["ok"] for r in results)
     return JSONResponse({
         "status": "ok" if deps_ok else "degraded",
         "service": "job2cool-backend",
-        "models": {"gemma": GEMMA_MODEL, "dpo": DPO_MODEL},
+        "models": {"gemma": active, "dpo": DPO_MODEL},
         "domains": JOB2COOL_DOMAINS,
         "dependencies": results,
     })
@@ -657,7 +662,7 @@ async def score_answer(req: ScoreRequest):
     try:
         async with httpx.AsyncClient() as client:
             content = await services.llm_complete(
-                client, JUDGE_MODEL,
+                client, JUDGE_MODEL or await services.active_model(client),
                 [{"role": "system", "content": await services.get_agent_prompt(
                     client, "job2cool_judge", JUDGE_SYSTEM)},
                  {"role": "user", "content": judge_user}],

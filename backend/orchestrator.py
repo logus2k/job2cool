@@ -378,7 +378,7 @@ async def _requested_sections(client: httpx.AsyncClient, need: str) -> list[str]
     full = keys + ["candidates"]
     try:
         out = await services.llm_complete(
-            client, services.GEMMA_MODEL,
+            client, await services.active_model(client),
             [{"role": "system", "content":
               "You classify a hiring request by which deliverables it asks for."},
              {"role": "user", "content":
@@ -439,7 +439,7 @@ async def _role_label(client: httpx.AsyncClient, need: str) -> str:
     which role instead of inventing one."""
     try:
         lbl = await services.llm_complete(
-            client, services.GEMMA_MODEL,
+            client, await services.active_model(client),
             [{"role": "user", "content":
               "Identify the job position in this hiring request. If a concrete "
               "role is named, reply with ONLY its title (2-5 words). If the "
@@ -493,7 +493,7 @@ async def _resolve_need(client: httpx.AsyncClient, history: list[dict],
     convo = "\n".join(lines)
     try:
         out = await services.llm_complete(
-            client, services.GEMMA_MODEL,
+            client, await services.active_model(client),
             [{"role": "system", "content":
               "You rewrite the user's latest message in an HR hiring chat into "
               "ONE self-contained request, resolving references to earlier turns "
@@ -536,7 +536,7 @@ async def _route(client: httpx.AsyncClient, history: list[dict], message: str,
     try:
         sys = await services.get_agent_prompt(client, "job2cool_router", ROUTER_SYSTEM)
         out = await services.llm_complete(
-            client, services.GEMMA_MODEL,
+            client, await services.active_model(client),
             [{"role": "system", "content": sys},
              {"role": "user", "content": "\n\n".join(parts)}],
             max_tokens=4, temperature=0.0, think=False, timeout=30)
@@ -577,7 +577,7 @@ async def _converse(client: httpx.AsyncClient, message: str, history: list[dict]
     msgs = [{"role": "system", "content": sys}] + convo_msgs + [{"role": "user", "content": message}]
     parts: list[str] = []
     try:
-        async for delta in services.llm_stream(client, services.GEMMA_MODEL, msgs,
+        async for delta in services.llm_stream(client, await services.active_model(client), msgs,
                                                 max_tokens=CONVERSE_MAX, temperature=0.6):
             parts.append(delta)
             yield _sse({"delta": delta})
@@ -619,7 +619,7 @@ async def _improve(client: httpx.AsyncClient, message: str, history: list[dict],
         names = [d["name"] for d in docs]
         try:
             pick = await services.llm_complete(
-                client, services.GEMMA_MODEL,
+                client, await services.active_model(client),
                 [{"role": "user", "content":
                   f"Open documents: {', '.join(names)}.\nUser request: {message}\n"
                   f"Which ONE document should be edited? Reply with ONLY its exact "
@@ -633,7 +633,7 @@ async def _improve(client: httpx.AsyncClient, message: str, history: list[dict],
     parts: list[str] = []
     try:
         async for delta in services.llm_stream(
-                client, services.GEMMA_MODEL,
+                client, await services.active_model(client),
                 [{"role": "system", "content": sysp},
                  {"role": "user", "content":
                   f"Revise the following {target['name']} exactly as the instruction "
@@ -681,7 +681,7 @@ async def _web_search(client: httpx.AsyncClient, message: str, history: list[dic
     parts: list[str] = []
     try:
         async for delta in services.llm_stream(
-                client, services.GEMMA_MODEL,
+                client, await services.active_model(client),
                 [{"role": "system", "content": sysp},
                  {"role": "user", "content": f"Question: {message}\n\nWeb results:\n{src}"}],
                 max_tokens=CONVERSE_MAX, temperature=0.4):
@@ -841,7 +841,7 @@ async def run_chat(message: str, history: list[dict],
         intro_parts: list[str] = []
         try:
             async for delta in services.llm_stream(
-                    client, services.GEMMA_MODEL,
+                    client, await services.active_model(client),
                     [{"role": "system", "content": await services.get_agent_prompt(
                         client, "job2cool_orchestrator", INTRO_SYSTEM)},
                      {"role": "user", "content":
@@ -970,7 +970,7 @@ async def run_chat(message: str, history: list[dict],
                     "[markdown_chunk:<hex>] for passages, [E:<id>] for graph "
                     "entities, [R:<...>] for relationships; never invent a tag.")
                 section_md = await services.llm_complete(
-                    client, services.GEMMA_MODEL,
+                    client, await services.active_model(client),
                     [{"role": "system", "content": await services.get_agent_prompt(
                         client, "job2cool_composer", SECTION_SYSTEM)},
                      {"role": "user", "content": "\n\n".join(user_parts)}],
