@@ -3401,7 +3401,7 @@
             // perMessageDeflate off — avatar chunks are already H.264-compressed
             // entropy, gzip can't help; pays only a small per-message latency.
             perMessageDeflate: false,
-            query: { client_id: clientId }
+            query: { client_id: clientId, avatar: 'diana' }
         });
         // CRITICAL: attach event listeners *before* the connect handler
         // resolves. The avatar server emits 'avatar_init' immediately on
