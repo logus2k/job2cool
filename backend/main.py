@@ -141,7 +141,7 @@ async def _start_health_monitor():
 async def _probe(client: httpx.AsyncClient, name: str, url: str) -> dict:
     try:
         r = await client.get(url, timeout=5)
-        return {"service": name, "url": url, "ok": r.status_code == 200,
+        return {"service": name, "url": url, "ok": 200 <= r.status_code < 300,
                 "status": r.status_code}
     except Exception as e:
         return {"service": name, "url": url, "ok": False,
@@ -151,10 +151,9 @@ async def _probe(client: httpx.AsyncClient, name: str, url: str) -> dict:
 @app.get("/api/health")
 async def health():
     checks = [
-        ("agent_server", f"{AGENT_SERVER}/v1/models"),
-        ("noted-rag",    f"{NOTED_RAG}/health"),
-        ("noted-graph",  f"{NOTED_GRAPH}/health"),
-        ("noted",        f"{NOTED_BACKEND}/api/domains"),
+        ("agent_server",      f"{AGENT_SERVER}/v1/models"),
+        ("graph_server",      f"{services.ARCADEDB_URL}/api/v1/ready"),
+        ("embeddings_server", f"{services.EMBED_URL}/health"),
     ]
     async with httpx.AsyncClient() as client:
         results = await asyncio.gather(*(_probe(client, n, u) for n, u in checks))
@@ -712,57 +711,57 @@ async def candidates_list(offset: int = 0, limit: int = 30, q: str = "",
 
     if q:
         try:
-            # noted-rag /search caps top_k at 20; clamp so the browse page size
-            # (30) doesn't 422 the search path into empty results.
-            r = await _proxy_client.post(
-                f"{NOTED_RAG}/search",
-                json={"collection": CANDIDATES_COLLECTION, "query": q,
-                      "top_k": min(limit, 20), "rerank_min_score": 0.0})
-            chunks = r.json().get("chunks", []) if r.status_code == 200 else []
+            v = await services._embed_dense(_proxy_client, q)
+            rows = await services._arcade(_proxy_client, services.CANDIDATES_DB,
+                "SELECT chunk_id AS id, text, metadata_json FROM "
+                "(SELECT expand(vector.neighbors('Chunk[embedding]', :v, :k)))",
+                {"v": v, "k": 60})
+            res = await services._rerank_results(_proxy_client, q,
+                                                 [x.get("text") or "" for x in rows])
+            ranked = sorted(res, key=lambda x: -float(x["relevance_score"]))
         except Exception as e:  # noqa: BLE001
             return {"mode": "search", "total": 0, "items": [], "error": str(e)}
-        # /search trims metadata, so re-fetch full metadata by id for the cards.
-        ids = [c.get("id") for c in chunks if c.get("id")]
-        by_id: dict = {}
-        if ids:
-            try:
-                rr = await _proxy_client.post(
-                    f"{NOTED_RAG}/list_records",
-                    json={"collection": CANDIDATES_COLLECTION, "ids": ids,
-                          "include_text": True})
-                for rec in (rr.json().get("records") or []):
-                    by_id[rec["id"]] = rec
-            except Exception:  # noqa: BLE001
-                pass
         items = []
-        for c in chunks:
-            rec = by_id.get(c.get("id")) or {"id": c.get("id"), "metadata": {},
-                                             "text": c.get("text", "")}
-            card = _cand_card(rec)
-            card["score"] = round(float(c.get("score") or 0.0), 4)
+        for x in ranked[:limit]:
+            i = int(x.get("index", 0))
+            if not (0 <= i < len(rows)):
+                continue
+            row = rows[i]
+            try:
+                m = json.loads(row.get("metadata_json") or "{}")
+            except Exception:
+                m = {}
+            card = _cand_card({"id": row.get("id"), "metadata": m, "text": row.get("text") or ""})
+            card["score"] = round(services._sigmoid(float(x.get("relevance_score") or 0.0)), 4)
             items.append(card)
         return {"mode": "search", "total": len(items), "items": items}
 
-    where_terms = []
+    conds, params = [], {}
     if primary_keyword:
-        where_terms.append({"primary_keyword": primary_keyword})
+        conds.append("primary_keyword = :pk"); params["pk"] = primary_keyword
     if english_level:
-        where_terms.append({"english_level": english_level})
+        conds.append("english_level = :el"); params["el"] = english_level
     if min_experience >= 0:
-        where_terms.append({"experience_years": {"$gte": min_experience}})
-    where = where_terms[0] if len(where_terms) == 1 else (
-        {"$and": where_terms} if where_terms else None)
-
+        conds.append("experience_years >= :me"); params["me"] = min_experience
+    where = (" WHERE " + " AND ".join(conds)) if conds else ""
     try:
-        r = await _proxy_client.post(
-            f"{NOTED_RAG}/list_records",
-            json={"collection": CANDIDATES_COLLECTION, "where": where,
-                  "limit": limit, "offset": offset, "include_text": True})
-        data = r.json()
+        tot = await services._arcade(_proxy_client, services.CANDIDATES_DB,
+                                     f"SELECT count(*) AS n FROM Chunk{where}", params)
+        total = tot[0]["n"] if tot else 0
+        rows = await services._arcade(_proxy_client, services.CANDIDATES_DB,
+            f"SELECT chunk_id AS id, text, metadata_json FROM Chunk{where} "
+            "ORDER BY chunk_id SKIP :off LIMIT :lim",
+            {**params, "off": offset, "lim": limit})
     except Exception as e:  # noqa: BLE001
         return {"mode": "browse", "total": 0, "items": [], "error": str(e)}
-    items = [_cand_card(rec) for rec in (data.get("records") or [])]
-    return {"mode": "browse", "total": data.get("total", 0),
+    items = []
+    for row in rows:
+        try:
+            m = json.loads(row.get("metadata_json") or "{}")
+        except Exception:
+            m = {}
+        items.append(_cand_card({"id": row.get("id"), "metadata": m, "text": row.get("text") or ""}))
+    return {"mode": "browse", "total": total,
             "offset": offset, "limit": limit, "items": items}
 
 
@@ -770,26 +769,26 @@ async def candidates_list(offset: int = 0, limit: int = 30, q: str = "",
 async def candidate_detail(cid: str):
     """Full detail for one candidate: structured fields + the whole CV text."""
     try:
-        r = await _proxy_client.post(
-            f"{NOTED_RAG}/list_records",
-            json={"collection": CANDIDATES_COLLECTION, "ids": [cid],
-                  "include_text": True})
-        recs = (r.json().get("records") or []) if r.status_code == 200 else []
+        rows = await services._arcade(_proxy_client, services.CANDIDATES_DB,
+            "SELECT chunk_id AS id, text, metadata_json FROM Chunk "
+            "WHERE chunk_id = :id LIMIT 1", {"id": cid})
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"upstream: {e}")
-    if not recs:
+    if not rows:
         raise HTTPException(status_code=404, detail="candidate not found")
-    rec = recs[0]
-    m = rec.get("metadata") or {}
+    try:
+        m = json.loads(rows[0].get("metadata_json") or "{}")
+    except Exception:
+        m = {}
     return {
-        "id": rec.get("id"),
+        "id": rows[0].get("id"),
         "candidate_id": m.get("id") or "",
         "position": m.get("position") or "",
         "primary_keyword": m.get("primary_keyword") or "",
         "english_level": m.get("english_level") or "",
         "experience_years": m.get("experience_years"),
         "cv_chars": m.get("cv_chars"),
-        "cv": rec.get("text") or "",
+        "cv": rows[0].get("text") or "",
     }
 
 

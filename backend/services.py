@@ -29,6 +29,53 @@ MCP_SERVICE  = os.getenv("MCP_SERVICE_URL",  "http://mcp-service:8080").rstrip("
 MCP_APP      = os.getenv("MCP_APP", "job2cool")
 CANDIDATES_COLLECTION = os.getenv("CANDIDATES_COLLECTION", "jobs_candidates__corpus")
 
+# --- consolidated stack: ArcadeDB (graph_server) + embeddings_server ---------
+# Retrieval migrated off noted-rag/noted-graph (via kb-service) onto the shared
+# graph-server-arcadedb (dbs: `job2cool` = content domains, `job2cool_candidates`
+# = 210k CVs) + embeddings_server (dense embed + cross-encoder rerank). Dense-only
+# (no sparse) — matches job2cool's prior vector+rerank behavior.
+import math
+ARCADEDB_URL  = os.getenv("ARCADEDB_URL",  "http://graph-server-arcadedb:2480")
+ARCADEDB_USER = os.getenv("ARCADEDB_USER", "root")
+ARCADEDB_PW   = os.getenv("ARCADEDB_PW",   "poc-dev-pass")
+JOB2COOL_DB   = os.getenv("JOB2COOL_DB",   "job2cool")
+CANDIDATES_DB = os.getenv("CANDIDATES_DB", "job2cool_candidates")
+EMBED_URL     = os.getenv("EMBED_URL",     "http://embeddings-server:8600")
+RERANK_URL    = os.getenv("RERANK_URL",    "http://embeddings-server:8600")
+ARCADE_CAND   = int(os.getenv("JOB2COOL_ARCADE_CAND", "60"))  # ANN candidates before rerank
+
+
+def _sigmoid(x: float) -> float:
+    if x >= 0:
+        return 1.0 / (1.0 + math.exp(-x))
+    e = math.exp(x)
+    return e / (1.0 + e)
+
+
+async def _embed_dense(client: httpx.AsyncClient, text: str) -> list[float]:
+    r = await client.post(f"{EMBED_URL}/embed",
+                          json={"texts": [text], "dense": True, "sparse": False}, timeout=30)
+    r.raise_for_status()
+    return r.json()["vectors"][0]
+
+
+async def _arcade(client: httpx.AsyncClient, db: str, command: str, params: dict) -> list[dict]:
+    r = await client.post(f"{ARCADEDB_URL}/api/v1/query/{db}",
+                          auth=(ARCADEDB_USER, ARCADEDB_PW),
+                          json={"language": "sql", "command": command, "params": params}, timeout=90)
+    r.raise_for_status()
+    return r.json().get("result") or []
+
+
+async def _rerank_results(client: httpx.AsyncClient, query: str, docs: list[str]) -> list[dict]:
+    """embeddings_server /v1/rerank -> [{index, relevance_score}] sorted desc."""
+    if not docs:
+        return []
+    r = await client.post(f"{RERANK_URL}/v1/rerank",
+                          json={"query": query, "documents": docs}, timeout=90)
+    r.raise_for_status()
+    return r.json().get("results") or []
+
 DPO_MODEL   = os.getenv("JOB2COOL_DPO_MODEL",   "ma2-360m-dpo-b01")
 # Reuse cv's query-rewriter preset by default (it already exists on agent_server).
 QUERY_REWRITER = os.getenv("JOB2COOL_QUERY_REWRITER", "cv_query_rewriter")
@@ -197,35 +244,34 @@ async def search_candidates(client: httpx.AsyncClient, query: str, top_k: int = 
     """Semantic search over the candidate CV corpus (vector + rerank), enriched
     with structured metadata by id. Returns up to top_k candidate dicts."""
     try:
-        body: dict = {"collection": CANDIDATES_COLLECTION, "query": query,
-                      "top_k": min(max(top_k, 1), 20), "rerank_min_score": 0.0}
-        if where:
-            body["where"] = where
-        r = await client.post(f"{NOTED_RAG}/search", json=body, timeout=60)
-        chunks = (r.json().get("chunks") or []) if r.status_code == 200 else []
+        v = await _embed_dense(client, query)
+        rows = await _arcade(client, CANDIDATES_DB,
+            "SELECT chunk_id AS id, text, metadata_json FROM "
+            "(SELECT expand(vector.neighbors('Chunk[embedding]', :v, :k)))",
+            {"v": v, "k": ARCADE_CAND})
+        if not rows:
+            return []
+        res = await _rerank_results(client, query, [r.get("text") or "" for r in rows])
+        ranked = sorted(res, key=lambda r: -float(r["relevance_score"]))
     except Exception:  # noqa: BLE001
         return []
-    ids = [c.get("id") for c in chunks if c.get("id")]
-    meta_by_id: dict = {}
-    if ids:
-        try:
-            rr = await client.post(f"{NOTED_RAG}/list_records",
-                                   json={"collection": CANDIDATES_COLLECTION, "ids": ids,
-                                         "include_text": True}, timeout=30)
-            for rec in (rr.json().get("records") or []):
-                meta_by_id[rec.get("id")] = rec.get("metadata") or {}
-        except Exception:  # noqa: BLE001
-            pass
     out: list[dict] = []
-    for c in chunks[:top_k]:
-        m = meta_by_id.get(c.get("id"), {})
-        cv = (c.get("text") or "").strip()
+    for r in ranked[:top_k]:
+        i = int(r.get("index", 0))
+        if not (0 <= i < len(rows)):
+            continue
+        row = rows[i]
+        try:
+            m = json.loads(row.get("metadata_json") or "{}")
+        except Exception:
+            m = {}
+        cv = (row.get("text") or "").strip()
         out.append({
             "position": m.get("position") or "",
             "primary_keyword": m.get("primary_keyword") or "",
             "english_level": m.get("english_level") or "",
             "experience_years": m.get("experience_years"),
-            "score": round(float(c.get("score") or 0.0), 3),
+            "score": round(_sigmoid(float(r.get("relevance_score") or 0.0)), 3),
             "cv": cv,                                       # full CV text (untruncated)
             "snippet": cv.replace("\n", " ")[:240],         # short form for chat/voice
         })
@@ -249,16 +295,30 @@ async def formulate_query(client: httpx.AsyncClient, text: str) -> str:
 
 async def search_multi(client: httpx.AsyncClient, query: str,
                        domains: list[str], top_k: int = 6) -> list[dict]:
-    """Multi-domain vector retrieval over `<domain>__corpus` collections."""
+    """Multi-domain vector retrieval over the `job2cool` db (dense + rerank),
+    restricted to the requested domains' `<domain>__corpus` collections."""
     collections = [f"{d}__corpus" for d in domains]
     try:
-        r = await client.post(
-            f"{NOTED_RAG}/search_multi",
-            json={"query": query, "collections": collections, "top_k": top_k},
-            timeout=40,
-        )
-        r.raise_for_status()
-        return r.json().get("chunks") or []
+        v = await _embed_dense(client, query)
+        rows = await _arcade(client, JOB2COOL_DB,
+            "SELECT chunk_id AS id, text, source_path, section_path, page_no, "
+            "regions_json, collection FROM (SELECT expand("
+            "vector.neighbors('Chunk[embedding]', :v, :k))) WHERE collection IN :colls",
+            {"v": v, "k": 100, "colls": collections})
+        if not rows:
+            return []
+        res = await _rerank_results(client, query, [r.get("text") or "" for r in rows])
+        order = [int(x["index"]) for x in sorted(res, key=lambda x: -float(x["relevance_score"]))]
+        top = [rows[i] for i in order if 0 <= i < len(rows)][:top_k]
+        for ch in top:
+            ch["kb_id"] = (ch.get("collection") or "").replace("__corpus", "")
+            rj = ch.pop("regions_json", None)
+            if rj:
+                try:
+                    ch["regions"] = json.loads(rj)
+                except Exception:
+                    pass
+        return top
     except Exception:
         return []
 
@@ -270,18 +330,21 @@ async def resolve_chunk_regions(client: httpx.AsyncClient, hx: str,
     the data the viewer needs to open the PDF and draw the bbox highlight.
     Fans out across the turn's domains; first hit wins. None if unresolved
     (e.g. a dense-corpus-only chunk that noted-graph doesn't index)."""
-    tag = f"markdown_chunk:{hx}"
-    for d in domains:
+    for db in (JOB2COOL_DB, CANDIDATES_DB):
         try:
-            r = await client.get(
-                f"{NOTED_GRAPH}/research/{d}/chunk/{quote(tag, safe=':')}",
-                timeout=5)
-            if r.status_code == 200:
-                j = r.json() or {}
-                j["domain_id"] = d
-                return j
+            rows = await _arcade(client, db,
+                "SELECT source_path, page_no, regions_json, collection FROM "
+                "Chunk WHERE cite_hex = :h LIMIT 1", {"h": hx})
         except Exception:
-            continue
+            rows = []
+        if rows:
+            d = dict(rows[0])
+            try:
+                d["regions"] = json.loads(d.pop("regions_json", "") or "[]")
+            except Exception:
+                d["regions"] = []
+            d["domain_id"] = (d.get("collection") or "").replace("__corpus", "")
+            return d
     return None
 
 
@@ -337,15 +400,49 @@ async def resolve_chunk_via_content(client: httpx.AsyncClient, chunk: dict,
 
 async def graph_retrieve(client: httpx.AsyncClient, question: str,
                          domain: str) -> dict:
-    """Per-domain knowledge-graph retrieval (mode=local). Fails soft to {}."""
+    """Per-domain knowledge-graph retrieval from ArcadeDB (`job2cool` db, entities
+    tagged by domain): entity-embedding vector search -> connected entities, edges,
+    chunk excerpts. Same shape the orchestrator consumed from noted-graph. Soft-fails {}."""
     try:
-        r = await client.post(
-            f"{NOTED_GRAPH}/research/{domain}/retrieve",
-            json={"question": question, "mode": "local"},
-            timeout=40,
-        )
-        r.raise_for_status()
-        return r.json() or {}
+        v = await _embed_dense(client, question)
+
+        def _props(s):
+            try:
+                return json.loads(s.get("properties_json") or "{}")
+            except Exception:
+                return {}
+
+        seeds = await _arcade(client, JOB2COOL_DB,
+            "SELECT id, label, type, properties_json FROM (SELECT expand("
+            "vector.neighbors('Entity[embedding]', :v, 40))) WHERE domain=:d LIMIT 7",
+            {"v": v, "d": domain})
+        if not seeds:
+            return {}
+        ids = [s["id"] for s in seeds]
+        entities = [{"id": s["id"], "label": s.get("label"), "type": s.get("type"),
+                     "properties": _props(s)} for s in seeds]
+        excerpts = []
+        for cx in await _arcade(client, JOB2COOL_DB,
+                "SELECT id, properties_json FROM (SELECT expand(both('RELATES')) FROM Entity "
+                "WHERE domain=:d AND id IN :ids) WHERE type='markdown_chunk' LIMIT 8",
+                {"d": domain, "ids": ids}):
+            p = _props(cx)
+            txt = p.get("text", "")
+            if txt:
+                excerpts.append({"id": cx["id"], "text": txt,
+                                 "doc_path": p.get("source_path") or p.get("doc_path") or "",
+                                 "section_path": p.get("section_path") or ""})
+        seen, edges = set(), []
+        for e in await _arcade(client, JOB2COOL_DB,
+                "SELECT outV().id AS source, inV().id AS target, type FROM (SELECT expand("
+                "bothE('RELATES')) FROM Entity WHERE domain=:d AND id IN :ids) LIMIT 30",
+                {"d": domain, "ids": ids}):
+            key = (e.get("source"), e.get("target"), e.get("type"))
+            if key not in seen:
+                seen.add(key)
+                edges.append({"source": e.get("source"), "target": e.get("target"),
+                              "type": e.get("type")})
+        return {"entities": entities, "edges": edges, "chunk_excerpts": excerpts}
     except Exception:
         return {}
 
@@ -366,10 +463,10 @@ async def available_corpus_domains(client: httpx.AsyncClient) -> set[str]:
         return _corpus_cache["domains"]
     found: set[str] = set()
     try:
-        r = await client.get(f"{NOTED_RAG}/collections", timeout=8)
-        r.raise_for_status()
-        for c in (r.json().get("collections") or []):
-            name = c.get("name") or ""
+        rows = await _arcade(client, JOB2COOL_DB,
+            "SELECT collection, count(*) AS n FROM Chunk GROUP BY collection", {})
+        for r in rows:
+            name = r.get("collection") or ""
             if name.endswith("__corpus"):
                 found.add(name[: -len("__corpus")])
     except Exception:
