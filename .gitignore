@@ -11,3 +11,10 @@ data/candidates2/
 testing/.venv-eval/
 delivery/
 movie/
+
+# Python build leftovers
+__pycache__/
+*.pyc
+
+# secrets (database password, MCP admin token)
+.env

@@ -22,13 +22,14 @@ services:
       # Shared MCP tool/skill host (Skills/Tools admin UI). The backend holds the
       # admin token so the browser never sees it. Keep token in sync with mcp/.env.
       MCP_SERVICE_URL: "http://mcp-service:8080"
-      MCP_ADMIN_TOKEN: "${MCP_ADMIN_TOKEN:-mcp-admin-7f3c9a2e5b14d806}"
+      MCP_ADMIN_TOKEN: "${MCP_ADMIN_TOKEN:-}"
       MCP_APP: "job2cool"
       # No hardcoded chat model: the backend resolves whatever model is ACTIVE
       # in agent_server (via /v1/models), like CV and noted. JOB2COOL_GEMMA_MODEL
       # may be set as a last-resort fallback if discovery is unreachable.
       JOB2COOL_DPO_MODEL: "ma2-360m-dpo-b01"
       JOB2COOL_DOMAINS: "jobs_onboard_devops,ai_and_jobs,prod_mng,sw_arch"
+      ARCADEDB_PW: "${ARCADEDB_PW:?set ARCADEDB_PW in .env}"     # the graph database's password (.env, never committed)
     volumes:
       # Frontend is baked into the image (see Dockerfile) — no live mount, so
       # the image is self-contained. Frontend changes now require a rebuild.

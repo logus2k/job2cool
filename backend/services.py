@@ -37,7 +37,7 @@ CANDIDATES_COLLECTION = os.getenv("CANDIDATES_COLLECTION", "jobs_candidates__cor
 import math
 ARCADEDB_URL  = os.getenv("ARCADEDB_URL",  "http://graph-server-arcadedb:2480")
 ARCADEDB_USER = os.getenv("ARCADEDB_USER", "root")
-ARCADEDB_PW   = os.getenv("ARCADEDB_PW",   "poc-dev-pass")
+ARCADEDB_PW   = os.getenv("ARCADEDB_PW",   "")
 JOB2COOL_DB   = os.getenv("JOB2COOL_DB",   "job2cool")
 CANDIDATES_DB = os.getenv("CANDIDATES_DB", "job2cool_candidates")
 EMBED_URL     = os.getenv("EMBED_URL",     "http://embeddings-server:8600")
